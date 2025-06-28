@@ -1,6 +1,11 @@
 # Stock Scan Frontend
 
 > 股票推荐与回测系统前端应用
+![image](https://github.com/user-attachments/assets/5611462b-aa9f-4164-a6a3-27915111be88)
+![image](https://github.com/user-attachments/assets/17f47f83-23f9-48ee-80e7-3518df4e0581)
+![image](https://github.com/user-attachments/assets/f04b8979-2a44-40c6-984a-285e4f1ed468)
+![image](https://github.com/user-attachments/assets/58942757-05a1-406a-b715-c3ba97f05634)
+
 
 基于 Vue 3 + TypeScript + Vite 构建的现代化股票分析前端应用，提供策略回测、实时行情、自选股管理等功能的可视化界面。
 
