@@ -1,210 +1,251 @@
 <template>
-  <div class="p-6">
-    <h1 class="text-3xl font-bold mb-6">策略回测</h1>
-    <el-row :gutter="24">
-      <!-- Left Panel: Configuration -->
-      <el-col :span="10">
-        <el-card shadow="never" class="border border-gray-700/50 h-full">
-          <template #header>
-            <div class="font-bold text-lg">回测设置</div>
-          </template>
-          <el-form :model="form" label-position="top">
-              <el-form-item label="选择策略">
-                <el-select v-model="form.strategy_id" placeholder="请选择策略" @change="onStrategyChange" class="w-full">
-                  <el-option
-                    v-for="item in strategyOptions"
-                    :key="item.id"
-                    :label="item.name"
-                    :value="item.id"
-                  />
-                </el-select>
-              </el-form-item>
+  <div class="backtest-container">
+    <!-- Header moved to NavBar -->
+
+    <div class="backtest-content">
+      <el-row :gutter="24" class="h-full">
+        <!-- Left Panel: Configuration -->
+        <el-col :span="10" class="h-full">
+          <div class="relative group h-full">
+            <div class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+            <el-card shadow="never" class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+              <template #header>
+                <div class="flex items-center space-x-3">
+                  <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <span class="font-bold text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">回测设置</span>
+                </div>
+              </template>
               
-              <el-form-item>
-                <template #label>
-                  <span>初始资金</span>
-                  <el-tooltip content="回测开始时使用的虚拟资金总额" placement="top">
-                    <el-icon class="ml-1 align-middle"><QuestionFilled /></el-icon>
-                  </el-tooltip>
-                </template>
-                <el-input-number v-model="form.initial_capital" :min="1000" :step="1000" class="w-full" />
-              </el-form-item>
-            
-            <el-alert v-if="strategyDescription" :title="strategyDescription" type="info" :closable="false" class="mb-5" />
+              <div class="h-full overflow-y-auto custom-scrollbar">
+                <el-form :model="form" label-position="top" class="custom-form">
+                    <el-form-item label="选择策略">
+                      <el-select v-model="form.strategy_id" placeholder="请选择策略" @change="onStrategyChange" class="w-full custom-select">
+                        <el-option
+                          v-for="item in strategyOptions"
+                          :key="item.id"
+                          :label="item.name"
+                          :value="item.id"
+                        />
+                      </el-select>
+                    </el-form-item>
+                    
+                    <el-form-item>
+                      <template #label>
+                        <span>初始资金</span>
+                        <el-tooltip content="回测开始时使用的虚拟资金总额" placement="top">
+                          <el-icon class="ml-1 align-middle"><QuestionFilled /></el-icon>
+                        </el-tooltip>
+                      </template>
+                      <el-input-number v-model="form.initial_capital" :min="1000" :step="1000" class="w-full custom-input-number" />
+                    </el-form-item>
+                  
+                  <el-alert v-if="strategyDescription" :title="strategyDescription" type="info" :closable="false" class="mb-5 custom-alert" />
 
-            <!-- 动态参数表单 -->
-            <div v-if="parameterDefinitions.length > 0" class="pt-5 mt-5 border-t border-gray-600/50">
-                <h3 class="text-base font-medium mb-4">策略参数</h3>
-                <el-row :gutter="20">
-                    <el-col :span="12" v-for="param in parameterDefinitions" :key="param.name">
-                        <el-form-item :label="param.label">
-                             <template #label>
-                                <span>{{ param.label }}</span>
-                                <el-tooltip :content="param.description" placement="top" v-if="param.description">
-                                    <el-icon class="ml-1 align-middle"><QuestionFilled /></el-icon>
-                                </el-tooltip>
-                            </template>
-                            <el-input-number v-if="param.type === 'number'" v-model="formParameters[param.name]" class="w-full" />
-                            <el-input v-else v-model="formParameters[param.name]" class="w-full" />
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-            </div>
+                  <!-- 动态参数表单 -->
+                  <div v-if="parameterDefinitions.length > 0" class="pt-5 mt-5 border-t border-gray-600/50">
+                      <h3 class="text-base font-medium mb-4 text-gray-200">策略参数</h3>
+                      <el-row :gutter="20">
+                          <el-col :span="12" v-for="param in parameterDefinitions" :key="param.name">
+                              <el-form-item :label="param.label">
+                                   <template #label>
+                                      <span>{{ param.label }}</span>
+                                      <el-tooltip :content="param.description" placement="top" v-if="param.description">
+                                          <el-icon class="ml-1 align-middle"><QuestionFilled /></el-icon>
+                                      </el-tooltip>
+                                  </template>
+                                  <el-input-number v-if="param.type === 'number'" v-model="formParameters[param.name]" class="w-full custom-input-number" />
+                                  <el-input v-else v-model="formParameters[param.name]" class="w-full custom-input" />
+                              </el-form-item>
+                          </el-col>
+                      </el-row>
+                  </div>
 
-            <el-form-item class="mt-5">
-                <template #label>
-                    <span>回测日期</span>
-                    <el-tooltip content="回测模拟交易的时间区间" placement="top">
-                        <el-icon class="ml-1 align-middle"><QuestionFilled /></el-icon>
-                    </el-tooltip>
-                </template>
-                <el-date-picker
-                    v-model="form.date_range"
-                    type="daterange"
-                    range-separator="至"
-                    start-placeholder="开始日期"
-                    end-placeholder="结束日期"
-                    class="w-full"
-                />
-            </el-form-item>
+                  <el-form-item class="mt-5">
+                      <template #label>
+                          <span>回测日期</span>
+                          <el-tooltip content="回测模拟交易的时间区间" placement="top">
+                              <el-icon class="ml-1 align-middle"><QuestionFilled /></el-icon>
+                          </el-tooltip>
+                      </template>
+                      <el-date-picker
+                          v-model="form.date_range"
+                          type="daterange"
+                          range-separator="至"
+                          start-placeholder="开始日期"
+                          end-placeholder="结束日期"
+                          class="w-full custom-date-picker"
+                      />
+                  </el-form-item>
 
-            <el-form-item>
-                <template #label>
-                    <span>选择股票</span>
-                    <el-tooltip content="选择一只或多只股票进行回测" placement="top">
-                        <el-icon class="ml-1 align-middle"><QuestionFilled /></el-icon>
-                    </el-tooltip>
-                </template>
-               <el-select
-                 v-model="form.stock_codes"
-                 multiple
-                 filterable
-                 remote
-                 reserve-keyword
-                 placeholder="输入股票代码或名称搜索"
-                 :remote-method="searchStocks"
-                 :loading="stockSearchLoading"
-                 class="w-full"
-               >
-                 <el-option
-                   v-for="item in stockOptions"
-                   :key="item.code"
-                   :label="`${item.name} (${item.code})`"
-                   :value="item.code"
-                 />
-               </el-select>
-            </el-form-item>
+                  <el-form-item>
+                      <template #label>
+                          <span>选择股票</span>
+                          <el-tooltip content="选择一只或多只股票进行回测" placement="top">
+                              <el-icon class="ml-1 align-middle"><QuestionFilled /></el-icon>
+                          </el-tooltip>
+                      </template>
+                     <el-select
+                       v-model="form.stock_codes"
+                       multiple
+                       filterable
+                       remote
+                       reserve-keyword
+                       placeholder="输入股票代码或名称搜索"
+                       :remote-method="searchStocks"
+                       :loading="stockSearchLoading"
+                       class="w-full custom-select"
+                     >
+                       <el-option
+                         v-for="item in stockOptions"
+                         :key="item.code"
+                         :label="`${item.name} (${item.code})`"
+                         :value="item.code"
+                       />
+                     </el-select>
+                  </el-form-item>
 
-            <el-form-item class="mt-4">
-              <el-button type="primary" @click="onSubmit" :loading="loading" class="w-full" size="large">开始回测</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </el-col>
-      
-      <!-- Right Panel: Results -->
-      <el-col :span="14">
-        <el-card v-if="backtestResult" class="h-full">
-            <template #header>
-              <div class="flex justify-between items-center">
-                <span class="font-bold text-lg">回测结果 (ID: {{ backtestResult.id }})</span>
+                  <el-form-item class="mt-6">
+                    <button @click="onSubmit" :disabled="loading" class="action-btn action-btn-primary w-full">
+                      <div class="flex items-center justify-center space-x-3">
+                        <div class="w-6 h-6 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                          <div class="w-3 h-3 bg-purple-400 rounded" :class="loading ? 'animate-spin' : ''"></div>
+                        </div>
+                        <span class="font-medium text-lg">
+                          {{ loading ? '正在回测...' : '开始回测' }}
+                        </span>
+                      </div>
+                      <div v-if="loading" class="absolute inset-0 bg-purple-500/10 rounded-xl animate-pulse"></div>
+                    </button>
+                  </el-form-item>
+                </el-form>
               </div>
-            </template>
+            </el-card>
+          </div>
+        </el-col>
+        
+        <!-- Right Panel: Results -->
+        <el-col :span="14" class="h-full">
+          <div class="relative group h-full">
+            <div class="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+            <el-card v-if="backtestResult" class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
+                <template #header>
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span class="font-bold text-xl bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
+                        回测结果 (ID: {{ backtestResult.id }})
+                      </span>
+                    </div>
+                  </div>
+                </template>
 
-            <div v-if="backtestResult.status === 'running'">
-                <div class="flex flex-col items-center justify-center p-10">
-                  <el-progress type="circle" :percentage="pollProgress" class="mb-4" />
-                  <p class="text-gray-400">正在努力回测中，请稍候...</p>
+                <div class="h-full overflow-y-auto custom-scrollbar">
+                  <div v-if="backtestResult.status === 'running'">
+                      <div class="flex flex-col items-center justify-center p-16">
+                        <el-progress type="circle" :percentage="pollProgress" class="mb-6" />
+                        <p class="text-gray-300 text-lg">正在努力回测中，请稍候...</p>
+                      </div>
+                  </div>
+                  <div v-else-if="backtestResult.status === 'completed' && backtestResult.data">
+                      
+                      <div class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center p-6 rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/30 mb-6">
+                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                          <div class="text-sm text-gray-400 mb-2">初始资产</div>
+                          <div class="text-xl font-semibold text-white">{{ new Intl.NumberFormat('en-US').format(backtestResult.data.initial_capital) }}</div>
+                        </div>
+                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                          <div class="text-sm text-gray-400 mb-2">最终资产</div>
+                          <div class="text-xl font-semibold text-white">{{ new Intl.NumberFormat('en-US').format(backtestResult.data.final_capital) }}</div>
+                        </div>
+                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                          <div class="text-sm text-gray-400 mb-2">总回报率</div>
+                          <div :class="['text-xl font-semibold', performanceMetrics.totalReturn >= 0 ? 'text-red-500' : 'text-green-500']">
+                            {{ (performanceMetrics.totalReturn * 100).toFixed(2) }}%
+                          </div>
+                        </div>
+                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                          <div class="text-sm text-gray-400 mb-2">年化回报率</div>
+                          <div :class="['text-xl font-semibold', performanceMetrics.annualReturn >= 0 ? 'text-red-500' : 'text-green-500']">
+                            {{ (performanceMetrics.annualReturn * 100).toFixed(2) }}%
+                          </div>
+                        </div>
+                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                          <div class="text-sm text-gray-400 mb-2">最大回撤</div>
+                          <div class="text-xl font-semibold text-green-500">
+                            {{ (performanceMetrics.maxDrawdown * 100).toFixed(2) }}%
+                          </div>
+                        </div>
+                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                            <div class="text-sm text-gray-400 mb-2">夏普比率</div>
+                            <div class="text-xl font-semibold text-white">{{ performanceMetrics.sharpeRatio.toFixed(2) }}</div>
+                        </div>
+                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                          <div class="text-sm text-gray-400 mb-2">总交易次数</div>
+                          <div class="text-xl font-semibold text-white">{{ performanceMetrics.totalTrades }}</div>
+                        </div>
+                         <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                          <div class="text-sm text-gray-400 mb-2">胜率</div>
+                          <div class="text-xl font-semibold text-white">
+                            {{ (performanceMetrics.winRate * 100).toFixed(2) }}%
+                          </div>
+                        </div>
+                         <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                          <div class="text-sm text-gray-400 mb-2">盈亏比</div>
+                          <div class="text-xl font-semibold text-white">{{ performanceMetrics.profitFactor.toFixed(2) }}</div>
+                        </div>
+                      </div>
+
+                      <!-- 股票切换选择器 -->
+                      <el-form-item v-if="form.stock_codes.length > 1" label="查看图表" class="mb-6">
+                        <el-select v-model="chartStock" placeholder="请选择要查看的股票K线" class="custom-select">
+                          <el-option v-for="code in form.stock_codes" :key="code" :label="getStockName(code)" :value="code" />
+                        </el-select>
+                      </el-form-item>
+
+                      <el-tabs v-model="activeTab" class="custom-tabs">
+                        <el-tab-pane label="业绩图表" name="chart">
+                          <div ref="chartRef" style="width: 100%; height: 500px;" class="mt-5 rounded-xl border border-gray-700/30"></div>
+                        </el-tab-pane>
+                        <el-tab-pane label="交易日志" name="trades">
+                          <el-table :data="filteredTrades" class="custom-table">
+                            <el-table-column prop="trade_date" label="交易日期" width="180" />
+                            <el-table-column prop="stock_code" label="股票代码" width="120" />
+                            <el-table-column prop="trade_type" label="操作" width="100">
+                               <template #default="scope">
+                                  <el-tag :type="scope.row.trade_type === 'buy' ? 'success' : 'danger'" effect="dark" class="!font-bold custom-tag">
+                                    {{ scope.row.trade_type.toUpperCase() }}
+                                  </el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="price" label="成交价" />
+                            <el-table-column prop="quantity" label="股数" />
+                          </el-table>
+                        </el-tab-pane>
+                      </el-tabs>
+                  </div>
+                  <div v-else>
+                     <el-alert type="error" :closable="false" class="custom-alert">
+                       获取结果失败或任务超时。请检查后台日志。
+                     </el-alert>
+                  </div>
                 </div>
-            </div>
-            <div v-else-if="backtestResult.status === 'completed' && backtestResult.data">
-                
-                <div class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center p-4 rounded-lg bg-white/5 dark:bg-black/10">
-                  <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                    <div class="text-sm text-gray-400 mb-2">初始资产</div>
-                    <div class="text-xl font-semibold">{{ new Intl.NumberFormat('en-US').format(backtestResult.data.initial_capital) }}</div>
+            </el-card>
+            <div v-else class="relative h-full">
+              <div class="absolute -inset-1 bg-gradient-to-r from-gray-500/20 to-gray-600/20 rounded-2xl blur opacity-50"></div>
+              <div class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl flex items-center justify-center">
+                <div class="text-center">
+                  <div class="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <div class="w-8 h-8 border-2 border-gray-600 rounded-full"></div>
                   </div>
-                  <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                    <div class="text-sm text-gray-400 mb-2">最终资产</div>
-                    <div class="text-xl font-semibold">{{ new Intl.NumberFormat('en-US').format(backtestResult.data.final_capital) }}</div>
-                  </div>
-                  <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                    <div class="text-sm text-gray-400 mb-2">总回报率</div>
-                    <div :class="['text-xl font-semibold', performanceMetrics.totalReturn >= 0 ? 'text-red-500' : 'text-green-500']">
-                      {{ (performanceMetrics.totalReturn * 100).toFixed(2) }}%
-                    </div>
-                  </div>
-                  <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                    <div class="text-sm text-gray-400 mb-2">年化回报率</div>
-                    <div :class="['text-xl font-semibold', performanceMetrics.annualReturn >= 0 ? 'text-red-500' : 'text-green-500']">
-                      {{ (performanceMetrics.annualReturn * 100).toFixed(2) }}%
-                    </div>
-                  </div>
-                  <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                    <div class="text-sm text-gray-400 mb-2">最大回撤</div>
-                    <div class="text-xl font-semibold text-green-500">
-                      {{ (performanceMetrics.maxDrawdown * 100).toFixed(2) }}%
-                    </div>
-                  </div>
-                  <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                      <div class="text-sm text-gray-400 mb-2">夏普比率</div>
-                      <div class="text-xl font-semibold">{{ performanceMetrics.sharpeRatio.toFixed(2) }}</div>
-                  </div>
-                  <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                    <div class="text-sm text-gray-400 mb-2">总交易次数</div>
-                    <div class="text-xl font-semibold">{{ performanceMetrics.totalTrades }}</div>
-                  </div>
-                   <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                    <div class="text-sm text-gray-400 mb-2">胜率</div>
-                    <div class="text-xl font-semibold">
-                      {{ (performanceMetrics.winRate * 100).toFixed(2) }}%
-                    </div>
-                  </div>
-                   <div class="kpi-item p-4 rounded-lg transition-colors hover:bg-white/10">
-                    <div class="text-sm text-gray-400 mb-2">盈亏比</div>
-                    <div class="text-xl font-semibold">{{ performanceMetrics.profitFactor.toFixed(2) }}</div>
-                  </div>
+                  <p class="text-lg font-medium text-gray-300 mb-2">开始您的策略回测</p>
+                  <p class="text-sm text-gray-400">配置参数后点击"开始回测"查看结果</p>
                 </div>
-
-                <!-- 股票切换选择器 -->
-                <el-form-item v-if="form.stock_codes.length > 1" label="查看图表" class="mt-6">
-                  <el-select v-model="chartStock" placeholder="请选择要查看的股票K线">
-                    <el-option v-for="code in form.stock_codes" :key="code" :label="getStockName(code)" :value="code" />
-                  </el-select>
-                </el-form-item>
-
-                <el-tabs v-model="activeTab" class="mt-6">
-                  <el-tab-pane label="业绩图表" name="chart">
-                    <div ref="chartRef" style="width: 100%; height: 500px;" class="mt-5"></div>
-                  </el-tab-pane>
-                  <el-tab-pane label="交易日志" name="trades">
-                    <el-table :data="filteredTrades" stripe style="width: 100%">
-                      <el-table-column prop="trade_date" label="交易日期" width="180" />
-                      <el-table-column prop="stock_code" label="股票代码" width="120" />
-                      <el-table-column prop="trade_type" label="操作" width="100">
-                         <template #default="scope">
-                            <el-tag :type="scope.row.trade_type === 'buy' ? 'success' : 'danger'" effect="dark" class="!font-bold">
-                              {{ scope.row.trade_type.toUpperCase() }}
-                            </el-tag>
-                          </template>
-                      </el-table-column>
-                      <el-table-column prop="price" label="成交价" />
-                      <el-table-column prop="quantity" label="股数" />
-                    </el-table>
-                  </el-tab-pane>
-                </el-tabs>
+              </div>
             </div>
-            <div v-else>
-               <el-alert type="error" :closable="false">
-                 获取结果失败或任务超时。请检查后台日志。
-               </el-alert>
-            </div>
-        </el-card>
-        <el-card v-else class="border border-gray-700/50 h-full flex items-center justify-center">
-          <el-empty description="运行回测后在此处查看结果" />
-        </el-card>
-      </el-col>
-    </el-row>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
   </div>
 </template>
 
@@ -614,5 +655,300 @@ const renderChart = async (resultData: any, stockCode: string) => {
 </script>
 
 <style scoped>
-/* All custom styles have been replaced by Tailwind CSS */
+/* Backtest Container */
+.backtest-container {
+  @apply h-full flex flex-col overflow-hidden;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+.backtest-content {
+  @apply flex-1 min-h-0;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.6) rgba(31, 41, 55, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.8), rgba(147, 51, 234, 0.8));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 1), rgba(147, 51, 234, 1));
+}
+
+/* Action Buttons */
+.action-btn {
+  @apply relative px-6 py-4 rounded-xl font-semibold transition-all duration-300 border backdrop-blur-sm overflow-hidden;
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.8) 100%);
+  border-color: rgba(75, 85, 99, 0.3);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.action-btn-primary {
+  @apply text-purple-300 hover:text-purple-200;
+}
+
+.action-btn-primary:hover {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+}
+
+/* KPI Items */
+.kpi-item {
+  @apply transition-all duration-300 cursor-pointer;
+  backdrop-filter: blur(4px);
+}
+
+.kpi-item:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced Element Plus overrides */
+:deep(.el-card) {
+  background: rgba(31, 41, 55, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+:deep(.el-card__header) {
+  background: rgba(17, 24, 39, 0.3) !important;
+  border-bottom: 1px solid rgba(75, 85, 99, 0.2) !important;
+}
+
+:deep(.el-card__body) {
+  height: calc(100% - 60px) !important;
+  padding: 1.5rem !important;
+  overflow: hidden !important;
+}
+
+/* Form Styles */
+.custom-form :deep(.el-form-item__label) {
+  color: #d1d5db !important;
+  font-weight: 500;
+}
+
+.custom-input :deep(.el-input__wrapper) {
+  background: rgba(31, 41, 55, 0.6) !important;
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+  border-radius: 8px;
+}
+
+.custom-input :deep(.el-input__inner) {
+  color: #f3f4f6 !important;
+  background: transparent !important;
+}
+
+.custom-input-number :deep(.el-input-number__decrease),
+.custom-input-number :deep(.el-input-number__increase) {
+  background: rgba(31, 41, 55, 0.8) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: #d1d5db !important;
+}
+
+.custom-input-number :deep(.el-input__wrapper) {
+  background: rgba(31, 41, 55, 0.6) !important;
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+.custom-select :deep(.el-input__wrapper) {
+  background: rgba(31, 41, 55, 0.6) !important;
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+.custom-select :deep(.el-input__inner) {
+  color: #f3f4f6 !important;
+}
+
+.custom-date-picker :deep(.el-input__wrapper) {
+  background: rgba(31, 41, 55, 0.6) !important;
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+.custom-date-picker :deep(.el-input__inner) {
+  color: #f3f4f6 !important;
+}
+
+/* Alert Styles */
+.custom-alert :deep(.el-alert__content) {
+  color: #d1d5db !important;
+}
+
+.custom-alert :deep(.el-alert) {
+  background: rgba(31, 41, 55, 0.6) !important;
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+/* Enhanced Table Styles */
+.custom-table :deep(.el-table) {
+  background: transparent !important;
+  color: #f3f4f6 !important;
+  height: 100% !important;
+}
+
+.custom-table :deep(.el-table__inner-wrapper) {
+  height: 100% !important;
+}
+
+.custom-table :deep(.el-table__body-wrapper) {
+  max-height: calc(100% - 48px) !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.6) rgba(31, 41, 55, 0.3);
+}
+
+.custom-table :deep(.el-table__body-wrapper)::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-table :deep(.el-table__body-wrapper)::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.3);
+  border-radius: 4px;
+}
+
+.custom-table :deep(.el-table__body-wrapper)::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.8), rgba(147, 51, 234, 0.8));
+  border-radius: 4px;
+}
+
+.custom-table :deep(.el-table__body-wrapper)::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 1), rgba(147, 51, 234, 1));
+}
+
+.custom-table :deep(.el-table th) {
+  background: rgba(17, 24, 39, 0.6) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  color: #d1d5db !important;
+}
+
+.custom-table :deep(.el-table td) {
+  border-color: rgba(75, 85, 99, 0.2) !important;
+  background: rgba(31, 41, 55, 0.3) !important;
+}
+
+.custom-table :deep(.el-table__row:hover) {
+  background: rgba(55, 65, 81, 0.5) !important;
+}
+
+/* Tag Styles */
+.custom-tag :deep(.el-tag) {
+  backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+/* Tabs Styles */
+.custom-tabs :deep(.el-tabs__header) {
+  border-bottom: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+.custom-tabs :deep(.el-tabs__nav-wrap::after) {
+  background: rgba(75, 85, 99, 0.3) !important;
+}
+
+.custom-tabs :deep(.el-tabs__item) {
+  color: #9ca3af !important;
+}
+
+.custom-tabs :deep(.el-tabs__item.is-active) {
+  color: #a855f7 !important;
+}
+
+.custom-tabs :deep(.el-tabs__active-bar) {
+  background: #a855f7 !important;
+}
+
+/* Progress Styles */
+:deep(.el-progress-circle__track) {
+  stroke: rgba(75, 85, 99, 0.3) !important;
+}
+
+:deep(.el-progress-circle__path) {
+  stroke: #a855f7 !important;
+}
+
+:deep(.el-progress__text) {
+  color: #f3f4f6 !important;
+}
+
+/* Tooltip Styles */
+:deep(.el-tooltip__trigger) {
+  color: #9ca3af !important;
+}
+
+/* Loading animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Change Colors */
+.text-red-500 {
+  color: #ef4444 !important;
+}
+
+.text-green-500 {
+  color: #22c55e !important;
+}
+
+/* Hover effects */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+/* Enhanced scrollbar for dropdown */
+:deep(.el-select-dropdown) {
+  background: rgba(31, 41, 55, 0.95) !important;
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+  backdrop-filter: blur(10px);
+}
+
+:deep(.el-select-dropdown__item) {
+  color: #f3f4f6 !important;
+}
+
+:deep(.el-select-dropdown__item:hover) {
+  background: rgba(55, 65, 81, 0.5) !important;
+}
+
+:deep(.el-select-dropdown__item.selected) {
+  background: rgba(168, 85, 247, 0.2) !important;
+  color: #e9d5ff !important;
+}
 </style> 

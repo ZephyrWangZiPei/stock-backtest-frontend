@@ -85,4 +85,66 @@ export const rescheduleJob = (jobId: string, data: { trigger: Record<string, any
  */
 export const deleteJob = (jobId: string) => {
     return service.delete(`/scheduler/jobs/${jobId}`);
-}; 
+};
+
+/**
+ * 获取指定股票的实时数据
+ * @param code 股票代码
+ * @returns 实时股价数据
+ */
+export const getRealtimeData = (code: string) => {
+    return service.get(`/realtime/${code}`);
+}
+
+/**
+ * 批量获取多只股票的实时数据
+ * @param codes 股票代码数组
+ * @returns 批量实时股价数据
+ */
+export const getBatchRealtimeData = (codes: string[]) => {
+    const codesParam = codes.join(',');
+    return service.get('/realtime/batch', { params: { codes: codesParam } });
+}
+
+/**
+ * 获取市场概况数据
+ * @returns 主要指数的实时数据
+ */
+export const getMarketSummary = () => {
+    return service.get('/realtime/market/summary');
+}
+
+/**
+ * 批量获取多只股票的策略信号
+ * @param codes 股票代码数组
+ * @returns 批量策略信号汇总
+ */
+export const getBatchSignals = (codes: string[]) => {
+    const codesParam = codes.join(',');
+    return service.get('/signals/batch', { params: { codes: codesParam } });
+}
+
+/**
+ * 获取系统统计数据
+ * @returns 系统统计信息
+ */
+export const getSystemStats = () => {
+    return service.get('/stats/');
+}
+
+/**
+ * 获取策略推荐股票
+ * @returns 推荐的股票列表
+ */
+export const getRecommendations = () => {
+    return service.get('/signals/recommendations');
+}
+
+/**
+ * 手动触发一个后台任务
+ * @param jobName 任务名称
+ * @returns 任务启动状态
+ */
+export const runJob = (jobName: string) => {
+    return service.post(`/jobs/run/${jobName}`);
+} 

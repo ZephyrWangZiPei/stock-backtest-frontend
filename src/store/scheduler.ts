@@ -106,6 +106,45 @@ export const useSchedulerStore = defineStore('scheduler', {
           };
         }
       });
+
+      // New listeners for generic job status
+      this.socket.on('job_status', (data: any) => {
+        // Example data: { job_name: 'candidate_pool', status: 'started', message: '...' }
+        //              { job_name: 'candidate_pool', status: 'completed', message: '...', data: {...} }
+        //              { job_name: 'candidate_pool', status: 'failed', message: '...' }
+        console.log(`[SchedulerStore] Received job_status for ${data.job_name}:`, data);
+        if (data && data.job_name) {
+          const status = this.taskStatus[data.job_name] || {};
+          status.message = data.message;
+          if (data.status === 'started') {
+            status.progress = 0;
+            status.success = undefined; // Reset success state
+          } else if (data.status === 'completed') {
+            status.progress = 100;
+            status.success = true;
+          } else if (data.status === 'failed') {
+            status.progress = 0;
+            status.success = false;
+          }
+           if (data.data) {
+            status.data = data.data;
+          }
+          this.taskStatus[data.job_name] = status;
+        }
+      });
+
+      this.socket.on('job_progress', (data: any) => {
+        // Example data: { job_name: 'candidate_pool', progress: 10, total: 100, message: '...' }
+        console.log(`[SchedulerStore] Received job_progress for ${data.job_name}:`, data);
+        if (data && data.job_name) {
+          const status = this.taskStatus[data.job_name] || {};
+          if (data.total > 0) {
+            status.progress = Math.round((data.progress / data.total) * 100);
+          }
+          status.message = data.message;
+          this.taskStatus[data.job_name] = status;
+        }
+      });
     },
 
     disconnect() {
