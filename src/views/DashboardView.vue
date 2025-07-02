@@ -205,6 +205,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import 'element-plus/es/components/virtual-list/style/css'
 import { Refresh, Plus } from '@element-plus/icons-vue'
+import { getChangeColor, formatChange } from '@/utils/format'
 import { 
   getMarketSummary,
   getSystemStats,
@@ -364,19 +365,6 @@ const fetchRecommendations = async () => {
   } finally {
     recoLoading.value = false;
   }
-};
-
-// 工具函数
-const getChangeColor = (changeRate?: number) => {
-  if (!changeRate) return 'text-gray-400';
-  return changeRate > 0 ? 'text-red-500' : changeRate < 0 ? 'text-green-500' : 'text-gray-400';
-};
-
-const formatChange = (changeAmount?: number, changeRate?: number) => {
-  if (changeAmount === undefined || changeRate === undefined) return '--';
-  const amountStr = changeAmount > 0 ? `+${changeAmount.toFixed(2)}` : changeAmount.toFixed(2);
-  const rateStr = changeRate > 0 ? `+${changeRate.toFixed(2)}%` : `${changeRate.toFixed(2)}%`;
-  return `${amountStr} (${rateStr})`;
 };
 
 const addToWatchlist = (stock: Recommendation) => {

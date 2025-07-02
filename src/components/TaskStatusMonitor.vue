@@ -56,6 +56,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Connection, Close } from '@element-plus/icons-vue'
 import { io, Socket } from 'socket.io-client'
+import { formatTime } from '@/utils/format'
 
 interface TaskStatus {
   id: string
@@ -221,10 +222,6 @@ const getProgressColor = (progress: number) => {
   if (progress >= 80) return '#67c23a'
   if (progress >= 50) return '#e6a23c'
   return '#409eff'
-}
-
-const formatTime = (timestamp: Date) => {
-  return timestamp.toLocaleTimeString('zh-CN')
 }
 
 onMounted(() => {

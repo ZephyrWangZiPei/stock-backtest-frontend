@@ -241,6 +241,7 @@ import {
   getStocks,
   getBatchSignals
 } from '@/utils/api'
+import { getChangeColor, formatChange, formatVolume, formatAmount, formatTime } from '@/utils/format'
 
 interface Stock {
   code: string;
@@ -550,52 +551,6 @@ const toggleAutoRefresh = (enabled: boolean) => {
       socket.disconnect();
       socket = null;
     }
-  }
-};
-
-// 工具函数
-const getChangeColor = (changeRate?: number) => {
-  if (!changeRate) return 'text-gray-400';
-  return changeRate > 0 ? 'text-red-500' : changeRate < 0 ? 'text-green-500' : 'text-gray-400';
-};
-
-const formatChange = (changeAmount?: number, changeRate?: number) => {
-  if (changeAmount === undefined || changeRate === undefined) return '--';
-  const amountStr = changeAmount > 0 ? `+${changeAmount.toFixed(2)}` : changeAmount.toFixed(2);
-  const rateStr = changeRate > 0 ? `+${changeRate.toFixed(2)}%` : `${changeRate.toFixed(2)}%`;
-  return `${amountStr} (${rateStr})`;
-};
-
-const formatVolume = (volume?: number) => {
-  if (!volume) return '--';
-  if (volume >= 100000000) return `${(volume / 100000000).toFixed(1)}亿`;
-  if (volume >= 10000) return `${(volume / 10000).toFixed(1)}万`;
-  return volume.toString();
-};
-
-const formatAmount = (amount?: number) => {
-  if (!amount) return '--';
-  if (amount >= 100000000) return `${(amount / 100000000).toFixed(1)}亿`;
-  if (amount >= 10000) return `${(amount / 10000).toFixed(1)}万`;
-  return amount.toFixed(0);
-};
-
-const formatTime = (timeStr?: string) => {
-  if (!timeStr) return '--';
-  try {
-    const date = new Date(timeStr);
-    // 格式化为 年/月/日 HH:mm:ss
-    return date.toLocaleString('zh-CN', { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false 
-    }).replace(/\//g, '-'); // 将 YYYY/MM/DD 替换为 YYYY-MM-DD
-  } catch {
-    return '--';
   }
 };
 
