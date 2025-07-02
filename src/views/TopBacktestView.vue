@@ -110,6 +110,7 @@
           <el-option label="最大回撤" value="max_drawdown" />
           <el-option label="置信胜率" value="win_rate_lb" />
           <el-option label="期望收益" value="expectancy" />
+          <el-option label="盈亏比" value="profit_factor" />
           <el-option label="交易次数" value="trade_count" />
         </el-select>
         <el-select
@@ -223,6 +224,19 @@
             <template #default="scope">
               <span :class="getReturnClass(scope.row.expectancy)">
                 {{ formatPercentage(scope.row.expectancy) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column 
+            prop="profit_factor"
+            label="盈亏比"
+            width="120"
+            align="center"
+            sortable="custom"
+          >
+            <template #default="scope">
+              <span :class="getReturnClass(scope.row.profit_factor)">
+                {{ scope.row.profit_factor?.toFixed(2) || '-' }}
               </span>
             </template>
           </el-table-column>
@@ -350,6 +364,13 @@
                   {{ formatPercentage(item.max_drawdown) }}
                 </span>
               </div>
+
+              <div class="metric-item">
+                <span class="metric-label">盈亏比</span>
+                <span class="metric-text" :class="getReturnClass(item.profit_factor)">
+                  {{ item.profit_factor?.toFixed(2) || '-' }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -430,6 +451,13 @@
               {{ formatPercentage(selectedStock.max_drawdown) }}
             </div>
           </div>
+
+          <div class="metric-card">
+            <div class="metric-title">盈亏比</div>
+            <div class="metric-main-value">
+              {{ selectedStock.profit_factor?.toFixed(2) || '-' }}
+            </div>
+          </div>
         </div>
 
         <div class="detail-info">
@@ -487,6 +515,7 @@ interface TopStrategyStock {
   trade_count: number
   win_rate_lb: number
   expectancy: number
+  profit_factor?: number
 }
 
 interface StrategyGroup {
@@ -518,7 +547,7 @@ const sortOrder = ref('desc')
 const viewMode = ref<'table' | 'card'>('table')
 const currentPage = ref(1)
 const pageSize = ref(20)
-const minTradeCount = ref(10)
+const minTradeCount = ref(3)
 
 // 详情弹窗
 const detailDialogVisible = ref(false)
@@ -693,9 +722,9 @@ const getWinRateColor = (winRate: number) => {
   return '#f56c6c'
 }
 
-const getReturnClass = (returnValue: number) => {
-  if (returnValue > 0) return 'positive-return'
-  if (returnValue < 0) return 'negative-return'
+const getReturnClass = (returnValue?: number) => {
+  if (returnValue && returnValue > 0) return 'positive-return'
+  if (returnValue && returnValue < 0) return 'negative-return'
   return 'neutral-return'
 }
 
