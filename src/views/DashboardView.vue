@@ -99,65 +99,8 @@
         </div>
       </el-col>
 
-      <!-- Index Recommendations -->
-      <el-col :span="8">
-        <div class="relative group h-full">
-          <div class="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl opacity-50 group-hover:opacity-75 transition duration-300"></div>
-          <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
-            <template #header>
-              <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                  <span class="font-bold text-xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">指数推荐</span>
-                </div>
-                <el-button text @click="fetchRecommendations" :loading="recoLoading" class="hover:bg-gray-700/50 transition-colors">
-                  <el-icon class="text-purple-400"><Refresh /></el-icon>
-                </el-button>
-              </div>
-            </template>
-
-            <div class="recommendation-content">
-              <div v-if="indexRecommendations.length === 0" class="flex flex-col items-center justify-center h-48 text-gray-400">
-                <span class="text-sm">暂无指数推荐</span>
-              </div>
-              <div v-else class="flex-1 min-h-0">
-                <div class="h-full overflow-y-auto custom-scrollbar space-y-3 pr-2">
-                  <div v-for="reco in paginatedIndexRecommendations" :key="'idx-' + reco.code" class="recommendation-card group">
-                    <div class="flex items-center justify-between p-4 bg-gray-700/30 hover:bg-gray-700/50 rounded-xl border border-gray-600/30 hover:border-purple-500/30 transition-all duration-300">
-                      <div class="flex items-center space-x-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
-                          <div class="w-4 h-4 bg-purple-400 rounded"></div>
-                        </div>
-                        <div>
-                          <div class="font-semibold text-white group-hover:text-purple-300 transition-colors">{{ reco.name }}</div>
-                          <div class="text-sm text-gray-400">{{ reco.code }}</div>
-                        </div>
-                      </div>
-                      <div class="flex items-center space-x-3">
-                        <div class="flex space-x-2">
-                          <el-tag type="success" effect="dark" size="small" class="px-3 py-1 rounded-full font-medium">
-                            买:{{ reco.signals.buy }}
-                          </el-tag>
-                          <el-tag type="danger" effect="dark" size="small" class="px-3 py-1 rounded-full font-medium">
-                            卖:{{ reco.signals.sell }}
-                          </el-tag>
-                        </div>
-                        <el-button size="small" circle @click="addToWatchlist(reco)" class="bg-purple-500/20 hover:bg-purple-500/30 border-purple-500/30 hover:border-purple-400 transition-all duration-200">
-                          <el-icon class="text-purple-400"><Plus /></el-icon>
-                        </el-button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <el-pagination v-if="indexRecommendations.length > pageSize" class="pt-2 flex justify-center" background layout="prev, pager, next" :page-size="pageSize" :current-page="indexPage" :total="indexRecommendations.length" @current-change="handleIndexPageChange" />
-              </div>
-            </div>
-          </el-card>
-        </div>
-      </el-col>
-
       <!-- Stock Recommendations -->
-      <el-col :span="8">
+      <el-col :span="16">
         <div class="relative group h-full">
           <div class="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl opacity-50 group-hover:opacity-75 transition duration-300"></div>
           <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
@@ -326,8 +269,19 @@ const recoLoading = ref(false);
 const pageSize = 10; // 单页数量
 
 const isIndexRecommendation = (reco: Recommendation) => {
-  // 简单规则：名称含"指数" 或代码以 000/399 开头
-  return reco.name.includes('指数') || /^0{3}|^399/.test(reco.code);
+  const name = reco.name || '';
+  const code = (reco.code || '').toLowerCase();
+
+  // 1) 名称中包含"指数"或"等权"关键词
+  if (name.includes('指数') || name.includes('等权')) return true;
+
+  // 2) 典型指数代码前缀：上证 000xxx、深证 399xxx、以及中证 930xxx 等
+  //   - 为避免误将深市 000xxx 的股票当成指数，仅匹配 sh.000xxx 与 sz.399xxx
+  if (/^sh\.000\d{3}$/i.test(code) || /^sz\.399\d{3}$/i.test(code) || /^sh\.930\d{3}$/i.test(code)) {
+    return true;
+  }
+
+  return false;
 };
 
 // 分类结果
