@@ -114,9 +114,16 @@ const SchedulerIcon = defineComponent({
   ])
 });
 
+const TopIcon = defineComponent({
+  render: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor', class: 'w-5 h-5' }, [
+    h('path', { d: 'M12 2l4 8h-8l4-8zm0 9a4 4 0 110 8 4 4 0 010-8z' })
+  ])
+});
+
 const routes = ref([
   { path: '/dashboard', name: '仪表盘', icon: DashboardIcon },
   { path: '/backtest', name: '策略回测', icon: BacktestIcon },
+  { path: '/top-backtest', name: 'Top回测', icon: TopIcon },
   { path: '/watchlist', name: '自选股', icon: WatchlistIcon },
   { path: '/scheduler', name: '任务调度', icon: SchedulerIcon },
 ]);

@@ -39,17 +39,20 @@ export const getStrategies = () => {
 
 /**
  * 获取股票列表
- * @param params 查询参数 { page, per_page, query }
+ * @param params 查询参数 { page, per_page, query, stock_type }
  * @returns 分页的股票列表数据
  */
-export const getStocks = (params: { page?: number; per_page?: number; query?: string }) => {
-    const { query, ...rest } = params;
-    const apiParams: { page?: number; per_page?: number; keyword?: string } = { ...rest };
+export const getStocks = (params: { page?: number; per_page?: number; query?: string; stock_type?: string }) => {
+    const { query, stock_type, ...rest } = params;
+    const apiParams: { page?: number; per_page?: number; keyword?: string; stock_type?: string } = { ...rest };
     if (query) {
         apiParams.keyword = query;
     }
+    // 默认只获取股票类型的数据
+    apiParams.stock_type = stock_type || 'stock';
+
     return service.get('/stocks/', { params: apiParams });
-}
+};
 
 /**
  * 获取指定股票的日线数据
@@ -138,6 +141,49 @@ export const getSystemStats = () => {
  */
 export const getRecommendations = () => {
     return service.get('/signals/recommendations');
+}
+
+/**
+ * 获取潜力股多策略回测 Top 结果
+ */
+export const getTopBacktest = () => {
+    return service.get('/backtests/top');
+}
+
+/**
+ * 获取所有策略的Top股票，按策略分组
+ */
+export const getAllTopStrategyStocks = () => {
+    return service.get('/top-strategy/');
+}
+
+/**
+ * 获取指定策略的Top股票
+ * @param strategyId 策略ID
+ */
+export const getStrategyTopStocks = (strategyId: number) => {
+    return service.get(`/top-strategy/strategy/${strategyId}`);
+}
+
+/**
+ * 获取最新的Top策略股票
+ */
+export const getLatestTopStocks = () => {
+    return service.get('/top-strategy/latest');
+}
+
+/**
+ * 获取Top策略股票的统计信息
+ */
+export const getTopStocksStats = () => {
+    return service.get('/top-strategy/stats');
+}
+
+/**
+ * 手动触发Top策略回测任务
+ */
+export const runTopStrategyBacktestJob = () => {
+    return service.post('/jobs/run/top_strategy_backtest');
 }
 
 /**

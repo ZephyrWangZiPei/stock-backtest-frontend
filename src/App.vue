@@ -16,7 +16,7 @@ body, html, #app {
   width: 100%;
   box-sizing: border-box;
   background-color: #0f172a; /* Enhanced dark background */
-  overflow: hidden; /* Prevent body scrolling */
+  overflow: auto; /* 允许页面滚动 */
 }
 
 /* Global font styles */

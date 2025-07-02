@@ -32,6 +32,12 @@ const router = createRouter({
           name: 'Scheduler',
           component: () => import('@/views/scheduler/Scheduler.vue'),
           meta: { title: '任务调度' }
+        },
+        {
+          path: 'top-backtest',
+          name: 'TopBacktest',
+          component: () => import('@/views/TopBacktestView.vue'),
+          meta: { title: 'Top 回测' }
         }
       ]
     },
