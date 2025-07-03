@@ -57,6 +57,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { Connection, Close } from '@element-plus/icons-vue'
 import { io, Socket } from 'socket.io-client'
 import { formatTime } from '@/utils/format'
+import { setConnectionStatus } from '@/utils/connectionStatus'
 
 interface TaskStatus {
   id: string
@@ -84,11 +85,13 @@ const connectWebSocket = () => {
 
   socket.on('connect', () => {
     isConnected.value = true
+    setConnectionStatus('task_monitor', true)
     console.log('WebSocket connected')
   })
 
   socket.on('disconnect', () => {
     isConnected.value = false
+    setConnectionStatus('task_monitor', false)
     console.log('WebSocket disconnected')
   })
 
@@ -110,6 +113,7 @@ const disconnectWebSocket = () => {
     socket.disconnect()
     socket = null
     isConnected.value = false
+    setConnectionStatus('task_monitor', false)
   }
 }
 

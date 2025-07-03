@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { io, Socket } from 'socket.io-client';
+import { setConnectionStatus } from '@/utils/connectionStatus';
 
 // Define the structure for the scheduler status
 export interface SchedulerStatus {
@@ -14,7 +15,7 @@ export interface SchedulerState {
   isConnected: boolean;
   status: SchedulerStatus;
   taskStatus: Record<string, {
-    progress: number;
+    current_date_progress: number;
     message: string;
     success?: boolean;
     data?: any;
@@ -53,6 +54,7 @@ export const useSchedulerStore = defineStore('scheduler', {
 
       this.socket.on('connect', () => {
         this.isConnected = true;
+        setConnectionStatus('scheduler', true);
         console.log('[SchedulerStore] Socket connected:', this.socket?.id);
         this.requestStatusUpdate(); // Request initial status on connect
       });
@@ -60,11 +62,13 @@ export const useSchedulerStore = defineStore('scheduler', {
       this.socket.on('disconnect', () => {
         this.isConnected = false;
         console.log('[SchedulerStore] Socket disconnected');
+        setConnectionStatus('scheduler', false);
       });
 
       this.socket.on('connect_error', (err) => {
         console.error('[SchedulerStore] Connection error:', err);
         this.isConnected = false;
+        setConnectionStatus('scheduler', false);
       });
       
       this.socket.on('scheduler_status', (data: SchedulerStatus) => {
@@ -100,7 +104,7 @@ export const useSchedulerStore = defineStore('scheduler', {
       this.socket.on('update_error', (data: any) => {
         if (data && data.task) {
            this.taskStatus[data.task] = {
-            progress: 0,
+            current_date_progress: 0,
             message: data.message,
             success: false,
           };
@@ -117,13 +121,13 @@ export const useSchedulerStore = defineStore('scheduler', {
           const status = this.taskStatus[data.job_name] || {};
           status.message = data.message;
           if (data.status === 'started') {
-            status.progress = 0;
+            status.current_date_progress = 0;
             status.success = undefined; // Reset success state
           } else if (data.status === 'completed') {
-            status.progress = 100;
+            status.current_date_progress = 100;
             status.success = true;
           } else if (data.status === 'failed') {
-            status.progress = 0;
+            status.current_date_progress = 0;
             status.success = false;
           }
            if (data.data) {
@@ -139,7 +143,7 @@ export const useSchedulerStore = defineStore('scheduler', {
         if (data && data.job_name) {
           const status = this.taskStatus[data.job_name] || {};
           if (data.total > 0) {
-            status.progress = Math.round((data.progress / data.total) * 100);
+            status.current_date_progress = Math.round((data.progress / data.total) * 100);
           }
           status.message = data.message;
           this.taskStatus[data.job_name] = status;
@@ -149,6 +153,7 @@ export const useSchedulerStore = defineStore('scheduler', {
 
     disconnect() {
       this.socket?.disconnect();
+      setConnectionStatus('scheduler', false);
     },
 
     requestStatusUpdate() {

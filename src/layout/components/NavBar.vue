@@ -22,14 +22,14 @@
             <div 
               class="status-dot"
               :class="{
-                'status-dot-success': store.isConnected && !isInProgress,
-                'status-dot-warning': store.isConnected && isInProgress,
-                'status-dot-error': !store.isConnected
+                'status-dot-success': allConnected && !isInProgress,
+                'status-dot-warning': allConnected && isInProgress,
+                'status-dot-error': !allConnected
               }"
             ></div>
             <div class="status-content">
               <span class="status-label">数据服务</span>
-              <span class="status-value">{{ connectionStatus }}</span>
+              <span class="status-value">{{ connectionStatusText }}</span>
             </div>
           </div>
         </div>
@@ -102,6 +102,7 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useSchedulerStore } from '@/store/scheduler';
+import { connectionStatus } from '@/utils/connectionStatus';
 
 const route = useRoute();
 const store = useSchedulerStore();
@@ -139,7 +140,7 @@ const isInProgress = computed(() => {
 });
 
 const taskProgress = computed(() => {
-  return dailyUpdateTask.value ? dailyUpdateTask.value.progress : 0;
+  return dailyUpdateTask.value ? dailyUpdateTask.value.current_date_progress : 0;
 });
 
 const taskMessage = computed(() => {
@@ -149,8 +150,18 @@ const taskMessage = computed(() => {
   return '数据更新中...';
 });
 
-const connectionStatus = computed(() => {
-  if (!store.isConnected) return '未连接';
+// 多 WebSocket 连接汇总状态
+const allConnected = computed(() => {
+  const values = Object.values(connectionStatus);
+  return values.length > 0 && values.every(v => v);
+});
+
+const hasDisconnected = computed(() => {
+  return Object.values(connectionStatus).some(v => !v);
+});
+
+const connectionStatusText = computed(() => {
+  if (hasDisconnected.value || !allConnected.value) return '未连接';
   if (isInProgress.value) return '更新中';
   return '已连接';
 });

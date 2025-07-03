@@ -106,11 +106,11 @@
                             <div class="progress-bg">
                               <div 
                                 class="progress-fill progress-fill-blue" 
-                                :style="{ width: `${dailyUpdateTask?.progress || 0}%` }"
+                                :style="{ width: `${dailyUpdateTask?.current_date_progress || dailyUpdateTask?.progress || 0}%` }"
                                 :class="dailyUpdateTask?.success === false ? 'progress-fill-error' : ''"
                               ></div>
                             </div>
-                            <span class="progress-text">{{ dailyUpdateTask?.progress || 0 }}%</span>
+                            <span class="progress-text">{{ dailyUpdateTask?.current_date_progress || dailyUpdateTask?.progress || 0 }}%</span>
                           </div>
                         </div>
                         
@@ -422,7 +422,7 @@ const jobStatus = ref({
 
 // --- Computed Properties from Pinia Store ---
 const schedulerStatus = computed<SchedulerStatus>(() => store.status);
-const dailyUpdateTask = computed(() => store.taskStatus['update_daily_data'] || {});
+const dailyUpdateTask = computed<any>(() => store.taskStatus['update_daily_data'] || {});
 const stockListUpdateTask = computed(() => store.taskStatus['update_stock_list'] || {});
 const candidatePoolTask = computed(() => {
   const task = store.taskStatus['candidate_pool'];

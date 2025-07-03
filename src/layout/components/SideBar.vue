@@ -51,8 +51,11 @@
     <div class="sidebar-footer">
       <div class="footer-content">
         <div class="status-indicator">
-          <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          <span class="text-xs text-gray-400">系统正常</span>
+          <div 
+            class="w-2 h-2 rounded-full animate-pulse"
+            :class="allConnected ? 'bg-green-400' : 'bg-red-400'"
+          ></div>
+          <span class="text-xs text-gray-400">{{ allConnected ? '系统正常' : '连接异常' }}</span>
         </div>
       </div>
     </div>
@@ -60,8 +63,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineComponent, h } from 'vue';
+import { ref, defineComponent, h, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { connectionStatus } from '@/utils/connectionStatus';
 
 const currentRoute = useRoute();
 
@@ -121,6 +125,12 @@ const routes = ref([
   { path: '/top-backtest', name: 'Top回测', icon: TopIcon },
   { path: '/scheduler', name: '任务调度', icon: SchedulerIcon },
 ]);
+
+// 全局连接状态
+const allConnected = computed(() => {
+  const values = Object.values(connectionStatus);
+  return values.length > 0 && values.every(v => v);
+});
 </script>
 
 <style scoped>
