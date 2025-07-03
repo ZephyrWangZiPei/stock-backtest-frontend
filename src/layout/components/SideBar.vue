@@ -90,18 +90,6 @@ const BacktestIcon = defineComponent({
   ])
 });
 
-const WatchlistIcon = defineComponent({
-  render: () => h('svg', {
-    viewBox: '0 0 24 24',
-    fill: 'currentColor',
-    class: 'w-5 h-5'
-  }, [
-    h('path', {
-      d: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'
-    })
-  ])
-});
-
 const SchedulerIcon = defineComponent({
   render: () => h('svg', {
     viewBox: '0 0 24 24',
@@ -120,11 +108,17 @@ const TopIcon = defineComponent({
   ])
 });
 
+const HistoryIcon = defineComponent({
+  render: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor', class: 'w-5 h-5' }, [
+    h('path', { d: 'M13 3a9 9 0 100 18 9 9 0 000-18zm0 2v5.268l4.146 2.414-.646 1.118L12 11V5h1z' })
+  ])
+});
+
 const routes = ref([
   { path: '/dashboard', name: '仪表盘', icon: DashboardIcon },
   { path: '/backtest', name: '策略回测', icon: BacktestIcon },
+  { path: '/backtest-history', name: '回测历史', icon: HistoryIcon },
   { path: '/top-backtest', name: 'Top回测', icon: TopIcon },
-  { path: '/watchlist', name: '自选股', icon: WatchlistIcon },
   { path: '/scheduler', name: '任务调度', icon: SchedulerIcon },
 ]);
 </script>

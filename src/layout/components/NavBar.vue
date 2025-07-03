@@ -106,24 +106,26 @@ import { useSchedulerStore } from '@/store/scheduler';
 const route = useRoute();
 const store = useSchedulerStore();
 
+const pageTitles: Record<string, string> = {
+  '/dashboard': '仪表盘',
+  '/backtest': '策略回测',
+  '/scheduler': '任务调度',
+  '/top-backtest': 'Top回测'
+}
+
+const pageDescriptions: Record<string, string> = {
+  '/dashboard': '系统状态监控与数据总览',
+  '/backtest': '历史数据回测与策略验证',
+  '/scheduler': '定时任务管理与监控',
+  '/top-backtest': '筛选结果与潜力股回测分析'
+}
+
 const pageTitle = computed(() => {
-  const titles: Record<string, string> = {
-    '/dashboard': '仪表盘',
-    '/backtest': '策略回测',
-    '/watchlist': '自选股',
-    '/scheduler': '任务调度'
-  };
-  return titles[route.path] || '系统';
+  return pageTitles[route.path] || '系统';
 });
 
 const pageTagline = computed(() => {
-  const taglines: Record<string, string> = {
-    '/dashboard': '欢迎使用股票推荐与回测系统',
-    '/backtest': '量化策略历史回测与性能分析',
-    '/watchlist': '实时监控与策略分析',
-    '/scheduler': '系统自动化任务管理与监控'
-  };
-  return taglines[route.path] || '';
+  return pageDescriptions[route.path] || '';
 });
 
 const breadcrumbLabel = computed(() => {

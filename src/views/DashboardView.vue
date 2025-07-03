@@ -2,51 +2,6 @@
   <div class="dashboard-container">
     <!-- Header moved to NavBar -->
 
-    <!-- Market Overview with enhanced design -->
-    <div class="mb-6">
-      <div class="relative group">
-        <div class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl opacity-50 group-hover:opacity-75 transition duration-300"></div>
-        <el-card class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <div class="flex items-center space-x-3">
-                <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span class="font-bold text-xl bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">市场概况</span>
-              </div>
-              <el-button text @click="refreshMarketData" :loading="marketLoading" class="hover:bg-gray-700/50 transition-colors">
-                <el-icon class="text-blue-400"><Refresh /></el-icon>
-              </el-button>
-            </div>
-          </template>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div v-for="index in marketSummary" :key="index.code" 
-                 class="market-index-card group relative overflow-hidden">
-              <!-- Animated background -->
-              <div class="absolute inset-0 bg-gradient-to-br from-gray-700/30 to-gray-800/50 rounded-xl"></div>
-              <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              
-              <div class="relative p-6 rounded-xl border border-gray-600/30 group-hover:border-blue-500/30 transition-all duration-300">
-                <div class="text-sm text-gray-400 mb-2 font-medium">{{ index.name }}</div>
-                <div class="text-3xl font-bold mb-3 text-white group-hover:text-blue-300 transition-colors">
-                  {{ index.current_price?.toFixed(2) || '--' }}
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span :class="getChangeColor(index.change_rate)" class="font-semibold text-lg">
-                    {{ formatChange(index.change_amount, index.change_rate) }}
-                  </span>
-                  <div :class="getChangeColor(index.change_rate)" class="w-2 h-2 rounded-full animate-pulse"></div>
-                </div>
-                
-                <!-- Decorative element -->
-                <div class="absolute top-4 right-4 w-8 h-8 rounded-full bg-gradient-to-br from-blue-400/20 to-purple-400/20 group-hover:scale-110 transition-transform duration-300"></div>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </div>
-    </div>
-
     <el-row :gutter="24" class="dashboard-row">
       <!-- System Statistics -->
       <el-col :span="8">
@@ -86,13 +41,6 @@
                 </div>
                 <div class="text-3xl font-bold text-purple-400 mb-1">{{ systemStats.totalStrategies }}</div>
                 <div class="text-sm text-gray-300 font-medium">策略数量</div>
-              </div>
-              <div class="stats-card stats-card-orange">
-                <div class="stats-icon bg-orange-500/20">
-                  <div class="w-6 h-6 bg-orange-400 rounded-lg"></div>
-                </div>
-                <div class="text-3xl font-bold text-orange-400 mb-1">{{ systemStats.watchlistCount }}</div>
-                <div class="text-sm text-gray-300 font-medium">自选股数</div>
               </div>
             </div>
           </el-card>
@@ -142,9 +90,6 @@
                             卖:{{ reco.signals.sell }}
                           </el-tag>
                         </div>
-                        <el-button size="small" circle @click="addToWatchlist(reco)" class="bg-purple-500/20 hover:bg-purple-500/30 border-purple-500/30 hover:border-purple-400 transition-all duration-200">
-                          <el-icon class="text-purple-400"><Plus /></el-icon>
-                        </el-button>
                       </div>
                     </div>
                   </div>
@@ -207,24 +152,14 @@ import 'element-plus/es/components/virtual-list/style/css'
 import { Refresh, Plus } from '@element-plus/icons-vue'
 import { getChangeColor, formatChange } from '@/utils/format'
 import { 
-  getMarketSummary,
   getSystemStats,
   getRecommendations,
 } from '@/utils/api'
-
-interface MarketIndex {
-  name: string;
-  code: string;
-  current_price?: number;
-  change_amount?: number;
-  change_rate?: number;
-}
 
 interface SystemStats {
   totalStocks: number;
   totalBacktests: number;
   totalStrategies: number;
-  watchlistCount: number;
 }
 
 interface SignalSummary {
@@ -251,18 +186,15 @@ interface Activity {
 const router = useRouter();
 
 // 状态管理
-const marketSummary = ref<MarketIndex[]>([]);
 const systemStats = ref<SystemStats>({
   totalStocks: 0,
   totalBacktests: 0,
   totalStrategies: 0,
-  watchlistCount: 0
 });
 const recommendations = ref<Recommendation[]>([]);
 const recentActivities = ref<Activity[]>([]);
 
 // 加载状态
-const marketLoading = ref(false);
 const systemLoading = ref(false);
 const recoLoading = ref(false);
 
@@ -306,22 +238,6 @@ const paginatedStockRecommendations = computed(() => {
 const handleIndexPageChange = (page: number) => { indexPage.value = page; };
 const handleStockPageChange = (page: number) => { stockPage.value = page; };
 
-// 刷新市场数据
-const refreshMarketData = async () => {
-  marketLoading.value = true;
-  try {
-    const response = await getMarketSummary() as unknown as { success: boolean; data: { indices: MarketIndex[] } };
-    if (response.success && response.data) {
-      marketSummary.value = response.data.indices;
-    }
-  } catch (error) {
-    console.error('刷新市场数据失败:', error);
-    ElMessage.error('刷新市场数据失败');
-  } finally {
-    marketLoading.value = false;
-  }
-};
-
 // 刷新系统数据
 const refreshSystemData = async () => {
   systemLoading.value = true;
@@ -331,13 +247,6 @@ const refreshSystemData = async () => {
       systemStats.value.totalStocks = response.data.total_stocks || 0;
       systemStats.value.totalBacktests = response.data.total_backtests || 0;
       systemStats.value.totalStrategies = response.data.total_strategies || 0;
-    }
-
-    try {
-      const watchlist = localStorage.getItem('watchlist');
-      systemStats.value.watchlistCount = watchlist ? JSON.parse(watchlist).length : 0;
-    } catch {
-      systemStats.value.watchlistCount = 0;
     }
 
   } catch (error) {
@@ -364,25 +273,6 @@ const fetchRecommendations = async () => {
     ElMessage.error('获取推荐列表失败');
   } finally {
     recoLoading.value = false;
-  }
-};
-
-const addToWatchlist = (stock: Recommendation) => {
-  try {
-    let watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    const exists = watchlist.some((item: { code: string }) => item.code === stock.code);
-    if (!exists) {
-      watchlist.push({ code: stock.code, name: stock.name });
-      localStorage.setItem('watchlist', JSON.stringify(watchlist));
-      ElMessage.success(`${stock.name} (${stock.code}) 已添加到自选`);
-      // 可选：刷新系统统计中的自选股数量
-      refreshSystemData();
-    } else {
-      ElMessage.warning(`${stock.name} (${stock.code}) 已在自选中`);
-    }
-  } catch (error) {
-    console.error('添加到自选失败:', error);
-    ElMessage.error('添加到自选失败');
   }
 };
 
@@ -415,7 +305,6 @@ const initRecentActivities = () => {
 
 // 生命周期
 onMounted(() => {
-  refreshMarketData();
   refreshSystemData();
   fetchRecommendations();
   initRecentActivities();
@@ -508,7 +397,6 @@ onUnmounted(() => {
 .stats-card-blue:hover { border-color: rgba(59, 130, 246, 0.5); }
 .stats-card-green:hover { border-color: rgba(34, 197, 94, 0.5); }
 .stats-card-purple:hover { border-color: rgba(168, 85, 247, 0.5); }
-.stats-card-orange:hover { border-color: rgba(249, 115, 22, 0.5); }
 
 .stats-icon {
   @apply w-12 h-12 rounded-xl flex items-center justify-center mb-4;

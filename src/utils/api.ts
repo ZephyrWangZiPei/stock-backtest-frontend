@@ -91,33 +91,6 @@ export const deleteJob = (jobId: string) => {
 };
 
 /**
- * 获取指定股票的实时数据
- * @param code 股票代码
- * @returns 实时股价数据
- */
-export const getRealtimeData = (code: string) => {
-    return service.get(`/realtime/${code}`);
-}
-
-/**
- * 批量获取多只股票的实时数据
- * @param codes 股票代码数组
- * @returns 批量实时股价数据
- */
-export const getBatchRealtimeData = (codes: string[]) => {
-    const codesParam = codes.join(',');
-    return service.get('/realtime/batch', { params: { codes: codesParam } });
-}
-
-/**
- * 获取市场概况数据
- * @returns 主要指数的实时数据
- */
-export const getMarketSummary = () => {
-    return service.get('/realtime/market/summary');
-}
-
-/**
  * 批量获取多只股票的策略信号
  * @param codes 股票代码数组
  * @returns 批量策略信号汇总
@@ -193,4 +166,22 @@ export const runTopStrategyBacktestJob = () => {
  */
 export const runJob = (jobName: string) => {
     return service.post(`/jobs/run/${jobName}`);
+}
+
+// --- Backtest History ---
+
+/**
+ * 获取回测历史列表
+ * @param params 查询参数 { stock_code?: string; page?: number; size?: number }
+ */
+export const getBacktestHistory = (params: { stock_code?: string; page?: number; size?: number }) => {
+    return service.get('/backtests/history', { params });
+}
+
+/**
+ * 清除回测历史
+ * @param stock_code 可选，指定股票代码只删除相关回测
+ */
+export const clearBacktestHistory = (stock_code?: string) => {
+    return service.delete('/backtests/clear', { params: stock_code ? { stock_code } : {} });
 } 

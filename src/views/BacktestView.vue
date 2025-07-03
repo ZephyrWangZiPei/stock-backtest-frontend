@@ -255,6 +255,7 @@ import { runBacktest, getStrategies, getStocks, getBacktestResult, getDailyData,
 import { ElMessage, ElEmpty } from 'element-plus'
 import { createChart, IChartApi, ISeriesApi, CrosshairMode } from 'lightweight-charts';
 import { QuestionFilled } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
 
 interface Strategy {
   id: number;
@@ -273,6 +274,9 @@ interface ParameterDefinition {
     default: any;
     description?: string;
 }
+
+const route = useRoute();
+const router = useRouter();
 
 const form = reactive({
   strategy_id: null as number | null,
@@ -372,6 +376,28 @@ const getStockName = (code: string) => {
     return stock ? `${stock.name} (${stock.code})` : code;
 };
 
+const loadResultById = async (id: number) => {
+  try {
+    const res = await getBacktestResult(id);
+    const resultData = res.data; // API wrapper -> data
+    if (!resultData) {
+      throw new Error('无效的回测结果');
+    }
+    backtestResult.value = {
+      id,
+      status: resultData.status || 'completed',
+      data: resultData,
+    };
+    if (resultData?.selected_stocks?.length) {
+      const list: any[] = resultData.selected_stocks;
+      form.stock_codes = list.map((item: any) => typeof item === 'string' ? item : item.code);
+      chartStock.value = form.stock_codes[0];
+    }
+  } catch (e: any) {
+    ElMessage.error(e.message || '获取回测结果失败');
+  }
+}
+
 onMounted(async () => {
   try {
     const response = await getStrategies();
@@ -384,6 +410,14 @@ onMounted(async () => {
   } catch (error) {
     ElMessage.error('获取策略列表失败');
     console.error(error);
+  }
+
+  // 如果通过 /backtest?id=xx 进入，直接加载结果
+  if (route.query.id) {
+    const idNum = Number(route.query.id);
+    if (!isNaN(idNum)) {
+      await loadResultById(idNum);
+    }
   }
 });
 

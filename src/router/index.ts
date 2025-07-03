@@ -22,12 +22,6 @@ const router = createRouter({
           meta: { title: '策略回测' }
         },
         {
-          path: 'watchlist',
-          name: 'Watchlist',
-          component: () => import('@/views/WatchlistView.vue'),
-          meta: { title: '自选股' }
-        },
-        {
           path: 'scheduler',
           name: 'Scheduler',
           component: () => import('@/views/scheduler/Scheduler.vue'),
@@ -38,6 +32,12 @@ const router = createRouter({
           name: 'TopBacktest',
           component: () => import('@/views/TopBacktestView.vue'),
           meta: { title: 'Top 回测' }
+        },
+        {
+          path: 'backtest-history',
+          name: 'BacktestHistory',
+          component: () => import('@/views/BacktestHistoryView.vue'),
+          meta: { title: '回测历史' }
         }
       ]
     },
