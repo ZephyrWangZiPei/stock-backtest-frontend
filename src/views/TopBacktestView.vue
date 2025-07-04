@@ -24,11 +24,47 @@
             :loading="runningJob" 
             @click="runBacktestJob"
             class="run-job-btn"
+            :disabled="runningJob"
           >
-            执行回测
+            {{ runningJob ? '执行中...' : '执行回测' }}
           </el-button>
         </div>
       </header>
+
+      <!-- Global Progress Indicator -->
+      <div v-if="jobProgress.visible" class="global-progress-section">
+        <div class="progress-card">
+          <div class="progress-header">
+            <div class="progress-title">
+              <el-icon class="progress-icon"><VideoPlay /></el-icon>
+              {{ jobProgress.taskName }}
+            </div>
+            <div class="progress-status">
+              <el-tag :type="jobProgress.status === 'running' ? 'warning' : 'success'" size="small">
+                {{ jobProgress.status === 'running' ? '执行中' : '完成' }}
+              </el-tag>
+            </div>
+          </div>
+          <div class="progress-body">
+            <div class="progress-info">
+              <span class="progress-percentage">{{ Math.round(jobProgress.progress) }}%</span>
+              <span class="progress-detail" v-if="jobProgress.detail">{{ jobProgress.detail }}</span>
+            </div>
+            <el-progress
+              :percentage="Math.round(jobProgress.progress)"
+              :color="getProgressColor(jobProgress.progress)"
+              :show-text="false"
+              :stroke-width="8"
+            />
+            <div class="progress-message" v-if="jobProgress.message">
+              {{ jobProgress.message }}
+            </div>
+            <div class="progress-stats" v-if="jobProgress.detail">
+              <span class="stats-text">{{ jobProgress.detail }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Stats and Monitor Section -->
       <section v-if="stats" class="stats-monitor-section">
@@ -149,6 +185,7 @@
               class="data-table"
               @sort-change="handleSortChange"
               default-sort="win_rate"
+              height="calc(100vh - 700px)"
             >
               <el-table-column prop="strategy_name" label="策略" width="150" fixed />
               <el-table-column prop="stock_code" label="股票代码" width="120" />
@@ -590,7 +627,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Refresh,
@@ -609,6 +646,9 @@ import {
 } from '@/utils/api'
 import TopStrategyChart from '@/components/TopStrategyChart.vue'
 import TaskStatusMonitor from '@/components/TaskStatusMonitor.vue'
+import { io, Socket } from 'socket.io-client'
+
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000'
 
 // 数据类型定义
 interface TopStrategyStock {
@@ -674,6 +714,20 @@ const minTradeCount = ref(3)
 // 详情弹窗
 const detailDialogVisible = ref(false)
 const selectedStock = ref<TopStrategyStock | null>(null)
+
+// WebSocket 相关
+let socket: Socket | null = null
+const isSocketConnected = ref(false)
+
+// 全局进度指示器
+const jobProgress = ref({
+  visible: false,
+  taskName: 'Top策略回测',
+  status: 'running',
+  progress: 0,
+  message: '',
+  detail: ''
+})
 
 // 计算属性
 const allStocks = computed(() => {
@@ -746,6 +800,105 @@ const lastUpdateTime = computed(() => {
   return latestUpdate ? formatDate(latestUpdate) : '-'
 })
 
+// WebSocket 连接管理
+const connectWebSocket = () => {
+  if (socket) {
+    socket.disconnect()
+  }
+
+  socket = io(`${VITE_API_BASE_URL}/scheduler`, {
+    path: '/socket.io/',
+    transports: ['websocket', 'polling'],
+    reconnectionAttempts: 5,
+    autoConnect: true
+  })
+
+  socket.on('connect', () => {
+    isSocketConnected.value = true
+    console.log('TopBacktestView WebSocket connected')
+  })
+
+  socket.on('disconnect', () => {
+    isSocketConnected.value = false
+    console.log('TopBacktestView WebSocket disconnected')
+  })
+
+  // 监听Top回测任务状态
+  socket.on('job_status', (data: any) => {
+    console.log('TopBacktestView received job_status:', data)
+    if (data.job_name === 'top_strategy_backtest') {
+      handleJobStatus(data)
+    }
+  })
+
+  // 监听Top回测任务进度
+  socket.on('job_progress', (data: any) => {
+    console.log('TopBacktestView received job_progress:', data)
+    if (data.job_name === 'top_strategy_backtest') {
+      handleJobProgress(data)
+    }
+  })
+}
+
+const disconnectWebSocket = () => {
+  if (socket) {
+    socket.disconnect()
+    socket = null
+    isSocketConnected.value = false
+  }
+}
+
+// WebSocket 事件处理
+const handleJobStatus = (data: any) => {
+  if (data.status === 'started') {
+    runningJob.value = true
+    jobProgress.value.visible = true
+    jobProgress.value.status = 'running'
+    jobProgress.value.progress = 0
+    jobProgress.value.message = '正在启动回测任务...'
+    jobProgress.value.detail = ''
+    ElMessage.success('Top回测任务已启动，正在执行中...')
+  } else if (data.status === 'completed') {
+    runningJob.value = false
+    jobProgress.value.status = 'completed'
+    jobProgress.value.progress = 100
+    jobProgress.value.message = '回测任务已完成！'
+    ElMessage.success('Top回测任务已完成！')
+    // 任务完成后自动刷新数据
+    setTimeout(() => {
+      refreshData()
+      // 延迟隐藏进度指示器
+      setTimeout(() => {
+        jobProgress.value.visible = false
+      }, 3000)
+    }, 1000)
+  } else if (data.status === 'failed') {
+    runningJob.value = false
+    jobProgress.value.status = 'failed'
+    jobProgress.value.message = `任务失败: ${data.message || '未知错误'}`
+    ElMessage.error(`Top回测任务失败: ${data.message || '未知错误'}`)
+    // 失败后也要隐藏进度指示器
+    setTimeout(() => {
+      jobProgress.value.visible = false
+    }, 5000)
+  } else if (data.status === 'rejected') {
+    runningJob.value = false
+    jobProgress.value.visible = false
+    ElMessage.warning(`Top回测任务被拒绝: ${data.message || '任务已在运行中'}`)
+  }
+}
+
+const handleJobProgress = (data: any) => {
+  // 更新全局进度指示器
+  if (jobProgress.value.visible) {
+    const progressPercentage = data.total > 0 ? (data.progress / data.total) * 100 : 0
+    jobProgress.value.progress = progressPercentage
+    jobProgress.value.message = data.message || '正在执行回测...'
+    jobProgress.value.detail = data.total > 0 ? `已完成 ${data.progress}/${data.total} 个回测任务` : ''
+  }
+  console.log('Top回测进度:', data)
+}
+
 // 方法
 const refreshData = async () => {
   loading.value = true
@@ -773,9 +926,15 @@ const refreshData = async () => {
 }
 
 const runBacktestJob = async () => {
+  // 如果任务正在运行，则提示用户
+  if (runningJob.value) {
+    ElMessage.warning('回测任务正在运行中，请稍后再试')
+    return
+  }
+
   try {
     await ElMessageBox.confirm(
-      '执行回测任务可能需要较长时间，确定要继续吗？',
+      '执行回测任务可能需要较长时间（通常需要几分钟），确定要继续吗？',
       '确认执行',
       {
         confirmButtonText: '确定',
@@ -788,21 +947,18 @@ const runBacktestJob = async () => {
     const response = await runTopStrategyBacktestJob()
     
     if ((response as any).success) {
-      ElMessage.success('回测任务已启动，请稍后查看结果')
-      // 延迟刷新数据
-      setTimeout(() => {
-        refreshData()
-      }, 2000)
+      ElMessage.success('回测任务已提交，请关注任务状态监控')
+      // 不需要在这里设置延迟刷新，因为WebSocket会处理任务完成通知
     } else {
+      runningJob.value = false
       ElMessage.error((response as any).message || '启动任务失败')
     }
   } catch (error) {
+    runningJob.value = false
     if (error !== 'cancel') {
       console.error('启动任务失败:', error)
       ElMessage.error('启动任务失败')
     }
-  } finally {
-    runningJob.value = false
   }
 }
 
@@ -881,6 +1037,12 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
 
+const getProgressColor = (progress: number) => {
+  if (progress >= 80) return '#67c23a'
+  if (progress >= 50) return '#e6a23c'
+  return '#409eff'
+}
+
 // 监听搜索和筛选变化，重置分页
 watch([searchQuery, selectedStrategy], () => {
   currentPage.value = 1
@@ -889,6 +1051,12 @@ watch([searchQuery, selectedStrategy], () => {
 // 初始化
 onMounted(() => {
   refreshData()
+  connectWebSocket()
+})
+
+// 清理
+onUnmounted(() => {
+  disconnectWebSocket()
 })
 </script>
 
@@ -937,6 +1105,59 @@ onMounted(() => {
 
 .monitor-area {
   @apply lg:col-span-1;
+}
+
+/* Global Progress Indicator */
+.global-progress-section {
+  @apply mb-6;
+}
+
+.progress-card {
+  @apply bg-gradient-to-r from-blue-900/50 to-purple-900/50 border border-blue-700/50 rounded-lg p-6 shadow-lg backdrop-blur-sm;
+}
+
+.progress-header {
+  @apply flex justify-between items-center mb-4;
+}
+
+.progress-title {
+  @apply flex items-center gap-2 text-white font-semibold text-lg;
+}
+
+.progress-icon {
+  @apply text-blue-400;
+}
+
+.progress-status {
+  @apply flex items-center;
+}
+
+.progress-body {
+  @apply space-y-3;
+}
+
+.progress-info {
+  @apply flex justify-between items-center;
+}
+
+.progress-percentage {
+  @apply text-2xl font-bold text-white;
+}
+
+.progress-detail {
+  @apply text-gray-300 text-sm font-medium;
+}
+
+.progress-message {
+  @apply text-gray-300 text-sm mt-2;
+}
+
+.progress-stats {
+  @apply text-blue-300 text-sm mt-2 font-medium;
+}
+
+.stats-text {
+  @apply bg-blue-900/30 px-2 py-1 rounded text-blue-200;
 }
 
 .stat-card {

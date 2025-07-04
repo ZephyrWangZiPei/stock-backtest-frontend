@@ -39,14 +39,17 @@
       <div class="task-progress">
         <div class="progress-header">
           <span class="progress-title">{{ currentTask.name }}</span>
-          <span class="progress-percentage">{{ currentTask.progress }}%</span>
+          <span class="progress-percentage">{{ Math.round(currentTask.progress || 0) }}%</span>
         </div>
         <el-progress
-          :percentage="currentTask.progress || 0"
+          :percentage="Math.round(currentTask.progress || 0)"
           :color="getProgressColor(currentTask.progress || 0)"
           :show-text="false"
         />
         <div class="progress-message">{{ currentTask.message }}</div>
+        <div v-if="currentTask.progress_detail" class="progress-detail">
+          {{ currentTask.progress_detail }}
+        </div>
       </div>
     </div>
   </div>
@@ -62,11 +65,14 @@ import { setConnectionStatus } from '@/utils/connectionStatus'
 interface TaskStatus {
   id: string
   name: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'started' | 'rejected'
   timestamp: Date
   progress?: number
   message?: string
+  progress_detail?: string
 }
+
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000'
 
 const isConnected = ref(false)
 const tasks = ref<TaskStatus[]>([])
@@ -78,32 +84,40 @@ const connectWebSocket = () => {
     socket.disconnect()
   }
 
-  socket = io('http://localhost:5000', {
-    transports: ['websocket'],
+  socket = io(`${VITE_API_BASE_URL}/scheduler`, {
+    path: '/socket.io/',
+    transports: ['websocket', 'polling'],
+    reconnectionAttempts: 5,
     autoConnect: true
   })
 
   socket.on('connect', () => {
     isConnected.value = true
     setConnectionStatus('task_monitor', true)
-    console.log('WebSocket connected')
+    console.log('TaskStatusMonitor WebSocket connected')
   })
 
   socket.on('disconnect', () => {
     isConnected.value = false
     setConnectionStatus('task_monitor', false)
-    console.log('WebSocket disconnected')
+    console.log('TaskStatusMonitor WebSocket disconnected')
   })
 
-  socket.on('task_status', (data: any) => {
-    handleTaskStatus(data)
+  // 监听后端推送的job_status事件
+  socket.on('job_status', (data: any) => {
+    console.log('Received job_status:', data)
+    handleJobStatus(data)
   })
 
-  socket.on('top_strategy_backtest_progress', (data: any) => {
-    handleTaskProgress(data)
+  // 监听后端推送的job_progress事件
+  socket.on('job_progress', (data: any) => {
+    console.log('Received job_progress:', data)
+    handleJobProgress(data)
   })
 
-  socket.on('scheduler_update', (data: any) => {
+  // 监听调度器状态更新
+  socket.on('scheduler_status', (data: any) => {
+    console.log('Received scheduler_status:', data)
     handleSchedulerUpdate(data)
   })
 }
@@ -125,10 +139,20 @@ const toggleConnection = () => {
   }
 }
 
-const handleTaskStatus = (data: any) => {
+const getTaskDisplayName = (jobName: string) => {
+  const nameMap: { [key: string]: string } = {
+    'top_strategy_backtest': 'Top策略回测',
+    'candidate_pool_update': '候选池更新',
+    'data_collection': '数据采集',
+    'stock_screening': '股票筛选'
+  }
+  return nameMap[jobName] || jobName
+}
+
+const handleJobStatus = (data: any) => {
   const task: TaskStatus = {
-    id: data.task_id || Date.now().toString(),
-    name: data.task_name || 'Top策略回测',
+    id: data.job_name || Date.now().toString(),
+    name: getTaskDisplayName(data.job_name || '未知任务'),
     status: data.status,
     timestamp: new Date(),
     message: data.message
@@ -148,26 +172,35 @@ const handleTaskStatus = (data: any) => {
   }
 
   // 更新当前任务
-  if (task.status === 'running') {
+  if (task.status === 'running' || task.status === 'started') {
     currentTask.value = task
-  } else if (task.status === 'completed' || task.status === 'failed') {
-    currentTask.value = null
+  } else if (task.status === 'completed' || task.status === 'failed' || task.status === 'rejected') {
+    // 如果当前任务就是这个任务，则清除
+    if (currentTask.value && currentTask.value.id === task.id) {
+      currentTask.value = null
+    }
   }
 }
 
-const handleTaskProgress = (data: any) => {
-  if (currentTask.value) {
-    currentTask.value.progress = data.progress || 0
+const handleJobProgress = (data: any) => {
+  const taskName = getTaskDisplayName(data.job_name || 'top_strategy_backtest')
+  const progressPercentage = data.total > 0 ? (data.progress / data.total) * 100 : 0
+  
+  if (currentTask.value && currentTask.value.id === data.job_name) {
+    // 更新现有任务的进度
+    currentTask.value.progress = progressPercentage
     currentTask.value.message = data.message || ''
+    currentTask.value.progress_detail = data.total > 0 ? `${data.progress}/${data.total}` : ''
   } else {
     // 创建新的进度任务
     currentTask.value = {
-      id: 'top_strategy_backtest',
-      name: 'Top策略回测',
+      id: data.job_name || 'top_strategy_backtest',
+      name: taskName,
       status: 'running',
       timestamp: new Date(),
-      progress: data.progress || 0,
-      message: data.message || ''
+      progress: progressPercentage,
+      message: data.message || '',
+      progress_detail: data.total > 0 ? `${data.progress}/${data.total}` : ''
     }
   }
 }
@@ -182,11 +215,14 @@ const getTaskStatusClass = (status: string) => {
     case 'pending':
       return 'task-pending'
     case 'running':
+    case 'started':
       return 'task-running'
     case 'completed':
       return 'task-completed'
     case 'failed':
       return 'task-failed'
+    case 'rejected':
+      return 'task-rejected'
     default:
       return ''
   }
@@ -197,11 +233,14 @@ const getTaskTagType = (status: string) => {
     case 'pending':
       return 'info'
     case 'running':
+    case 'started':
       return 'warning'
     case 'completed':
       return 'success'
     case 'failed':
       return 'danger'
+    case 'rejected':
+      return 'warning'
     default:
       return 'info'
   }
@@ -213,10 +252,14 @@ const getTaskStatusText = (status: string) => {
       return '等待中'
     case 'running':
       return '执行中'
+    case 'started':
+      return '已启动'
     case 'completed':
       return '已完成'
     case 'failed':
       return '失败'
+    case 'rejected':
+      return '已拒绝'
     default:
       return '未知'
   }
@@ -274,6 +317,10 @@ onUnmounted(() => {
   @apply bg-red-900/20 border-red-700/30;
 }
 
+.task-item.task-rejected {
+  @apply bg-orange-900/20 border-orange-700/30;
+}
+
 .task-info {
   @apply flex flex-col;
 }
@@ -308,6 +355,10 @@ onUnmounted(() => {
 
 .progress-message {
   @apply text-gray-400 text-sm;
+}
+
+.progress-detail {
+  @apply text-gray-500 text-xs;
 }
 
 /* 滚动条样式 */

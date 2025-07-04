@@ -666,6 +666,7 @@ const handleJobProgress = (data: any) => {
   @apply h-full flex flex-col overflow-hidden;
   padding: 1.5rem;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  overflow-y: auto
 }
 
 .scheduler-content {
