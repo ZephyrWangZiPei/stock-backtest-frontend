@@ -2,7 +2,7 @@
 
 > 现代化股票推荐与回测系统前端应用
 
-基于 Vue 3 + TypeScript + Vite 构建的现代化股票分析前端应用，提供策略回测、实时行情、自选股管理等功能的可视化界面。
+基于 Vue 3 + TypeScript + Vite 构建的现代化股票分析前端应用，提供策略回测、实时行情、Ai分析等功能的可视化界面。
 ![image](https://github.com/user-attachments/assets/8b89ddff-295e-4fbd-bde1-b5750b4489a4)
 ![image](https://github.com/user-attachments/assets/df33ba6b-f4d7-4098-a8d2-562ebf9144e1)
 ![image](https://github.com/user-attachments/assets/b6b04fa5-6f67-4e44-826e-8c8becf4bc6a)
