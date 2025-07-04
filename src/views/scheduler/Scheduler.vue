@@ -507,7 +507,7 @@ const handleManualUpdate = (
   }
   loading[loadingKey] = true;
   // Reset previous task status
-  store.taskStatus[`update_${taskName}`] = { current_date_progress: 0, message: '请求已发送...', success: undefined };
+  store.taskStatus[`update_${taskName}`] = { progress: 0, current_date_progress: 0, message: '请求已发送...', success: undefined };
   store.socket.emit(taskEvent, {});
   ElMessage.info(`已发送 ${taskName === 'daily_data' ? '当日数据' : '股票列表'} 更新请求`);
   
