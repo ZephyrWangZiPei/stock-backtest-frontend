@@ -226,26 +226,22 @@
               <el-table-column
                 prop="recommendation_reason"
                 label="AI推荐理由"
-                width="200"
-                show-overflow-tooltip
+                width="400"
               />
               <el-table-column
                 prop="buy_point"
                 label="AI建议买入"
                 width="150"
-                show-overflow-tooltip
               />
               <el-table-column
                 prop="sell_point"
                 label="AI建议卖出"
                 width="150"
-                show-overflow-tooltip
               />
               <el-table-column
                 prop="risks"
                 label="AI风险提示"
                 width="200"
-                show-overflow-tooltip
               />
               <el-table-column
                 prop="rank"
@@ -648,8 +644,6 @@ import TopStrategyChart from '@/components/TopStrategyChart.vue'
 import TaskStatusMonitor from '@/components/TaskStatusMonitor.vue'
 import { io, Socket } from 'socket.io-client'
 
-const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000'
-
 // 数据类型定义
 interface TopStrategyStock {
   id: number
@@ -769,13 +763,32 @@ const filteredData = computed(() => {
 
   // 排序
   filtered.sort((a, b) => {
-    const aValue = a[sortBy.value as keyof TopStrategyStock] as number
-    const bValue = b[sortBy.value as keyof TopStrategyStock] as number
+    const aValue = a[sortBy.value as keyof TopStrategyStock]
+    const bValue = b[sortBy.value as keyof TopStrategyStock]
+
+    // 特殊处理 potential_rating 字符串排序
+    if (sortBy.value === 'potential_rating') {
+      const ratingOrder: { [key: string]: number } = {
+        '高': 3,
+        '中': 2,
+        '低': 1,
+        '-': 0, // 处理没有评级的情况
+        undefined: 0, // 处理 undefined
+        null: 0 // 处理 null
+      }
+      const aRating = ratingOrder[aValue as string] || 0
+      const bRating = ratingOrder[bValue as string] || 0
+      return sortOrder.value === 'desc' ? bRating - aRating : aRating - bRating
+    }
+    
+    // 其他数值类型属性的排序
+    const numA = (aValue as number) || 0
+    const numB = (bValue as number) || 0
     
     if (sortOrder.value === 'desc') {
-      return (bValue || 0) - (aValue || 0)
+      return numB - numA
     } else {
-      return (aValue || 0) - (bValue || 0)
+      return numA - numB
     }
   })
 
@@ -806,10 +819,8 @@ const connectWebSocket = () => {
     socket.disconnect()
   }
 
-  socket = io(`${VITE_API_BASE_URL}/scheduler`, {
-    path: '/socket.io/',
-    transports: ['websocket', 'polling'],
-    reconnectionAttempts: 5,
+  socket = io('http://localhost:5000', {
+    transports: ['websocket'],
     autoConnect: true
   })
 
@@ -1070,7 +1081,7 @@ onUnmounted(() => {
 
 /* Wrapper for main content to apply max-width and center */
 .content-wrapper {
-  @apply w-full max-w-7xl mx-auto flex flex-col gap-8;
+  @apply w-full flex flex-col gap-8;
 }
 
 /* Page Header */
