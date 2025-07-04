@@ -304,7 +304,7 @@ onUnmounted(() => {
 
 <style scoped>
 .chart-container {
-  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6;
+  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-md p-4;
 }
 
 .chart-header {
@@ -324,23 +324,23 @@ onUnmounted(() => {
 }
 
 .charts-grid {
-  @apply grid grid-cols-1 lg:grid-cols-3 gap-6;
+  @apply grid grid-cols-1 lg:grid-cols-3 gap-4;
 }
 
 .main-chart {
-  @apply lg:col-span-2;
+  @apply lg:col-span-2 bg-gray-900/50 rounded-md overflow-hidden;
 }
 
 .chart-canvas {
-  @apply w-full h-80 bg-gray-900/50 rounded-lg;
+  @apply w-full h-80 bg-gray-900/50 rounded-md;
 }
 
 .stats-panel {
-  @apply space-y-4;
+  @apply bg-gray-800/50 border border-gray-700/50 rounded-md p-4 grid grid-cols-2 gap-4;
 }
 
 .stat-item {
-  @apply bg-gray-700/50 rounded-lg p-4 text-center;
+  @apply text-center p-3 rounded-sm bg-gray-700/30;
 }
 
 .stat-title {

@@ -3,8 +3,8 @@
     <!-- Scheduler status header (controls) -->
     <div class="scheduler-controls mb-6">
       <div class="relative">
-        <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 rounded-2xl blur-xl"></div>
-        <div class="relative bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl px-6 py-4 flex justify-between items-center">
+        <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 rounded-lg blur-xl"></div>
+        <div class="relative bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-lg px-6 py-4 flex justify-between items-center">
           <el-tag 
             :type="schedulerStatus.is_running ? 'success' : 'info'" 
             size="large" 
@@ -12,7 +12,7 @@
             :class="schedulerStatus.is_running ? 'animate-pulse' : ''"
           >
             <div class="flex items-center space-x-2">
-              <div :class="schedulerStatus.is_running ? 'w-2 h-2 bg-green-400 rounded-full animate-pulse' : 'w-2 h-2 bg-gray-400 rounded-full'"></div>
+              <div :class="schedulerStatus.is_running ? 'w-2 h-2 bg-green-400 rounded-md animate-pulse' : 'w-2 h-2 bg-gray-400 rounded-md'"></div>
               <span>{{ schedulerStatus.is_running ? '运行中' : '已停止' }}</span>
             </div>
           </el-tag>
@@ -27,12 +27,12 @@
           <div class="flex flex-col h-full space-y-4">
             <!-- Merged Control & Status Card -->
             <div class="relative group flex-1">
-              <div class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-              <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+              <div class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+              <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
                 <template #header>
                   <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-3">
-                      <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                      <div class="w-2 h-2 bg-blue-400 rounded-md animate-pulse"></div>
                       <span class="font-bold text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">控制与状态</span>
                     </div>
                   </div>
@@ -42,7 +42,7 @@
                   <!-- Quick Actions Section -->
                   <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-4 text-gray-200 flex items-center">
-                      <div class="w-1 h-6 bg-gradient-to-b from-blue-400 to-purple-400 rounded-full mr-3"></div>
+                      <div class="w-1 h-6 bg-gradient-to-b from-blue-400 to-purple-400 rounded-md mr-3"></div>
                       快捷操作
                     </h3>
                     <div class="grid grid-cols-1 gap-3">
@@ -52,14 +52,14 @@
                         class="action-button action-button-primary group"
                       >
                         <div class="flex items-center justify-center space-x-3">
-                          <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
-                            <div class="w-5 h-5 bg-blue-400 rounded"></div>
+                          <div class="w-10 h-10 bg-blue-500/20 rounded-sm flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                            <div class="w-5 h-5 bg-blue-400 rounded-xs"></div>
                           </div>
                           <span class="font-medium">
                             {{ loading.dailyData ? '更新中...' : '更新当日数据' }}
                           </span>
                         </div>
-                        <div v-if="loading.dailyData" class="absolute inset-0 bg-blue-500/10 rounded-xl animate-pulse"></div>
+                        <div v-if="loading.dailyData" class="absolute inset-0 bg-blue-500/10 rounded-md animate-pulse"></div>
                       </button>
                       
                       <button 
@@ -68,14 +68,14 @@
                         class="action-button action-button-success group"
                       >
                         <div class="flex items-center justify-center space-x-3">
-                          <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
-                            <div class="w-5 h-5 bg-green-400 rounded"></div>
+                          <div class="w-10 h-10 bg-green-500/20 rounded-sm flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                            <div class="w-5 h-5 bg-green-400 rounded-xs"></div>
                           </div>
                           <span class="font-medium">
                             {{ loading.stockList ? '更新中...' : '更新股票列表' }}
                           </span>
                         </div>
-                        <div v-if="loading.stockList" class="absolute inset-0 bg-green-500/10 rounded-xl animate-pulse"></div>
+                        <div v-if="loading.stockList" class="absolute inset-0 bg-green-500/10 rounded-md animate-pulse"></div>
                       </button>
                     </div>
                   </div>
@@ -85,7 +85,7 @@
                     <div class="pt-6 h-full">
                       <!-- Update Progress Section -->
                       <h3 class="text-lg font-semibold mb-4 text-gray-200 flex items-center">
-                        <div class="w-1 h-6 bg-gradient-to-b from-green-400 to-teal-400 rounded-full mr-3"></div>
+                        <div class="w-1 h-6 bg-gradient-to-b from-green-400 to-teal-400 rounded-md mr-3"></div>
                         更新进度
                       </h3>
                       <div class="space-y-4 overflow-y-auto max-h-64 custom-scrollbar">
@@ -98,7 +98,7 @@
                                 上次更新: {{ formatDateTime(lastUpdateTimes.daily_data) }}
                               </div>
                             </div>
-                            <span class="text-xs text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">
+                            <span class="text-xs text-gray-400 bg-gray-700/50 px-3 py-1 rounded-md">
                               {{ dailyUpdateTask?.message || '等待任务' }}
                             </span>
                           </div>
@@ -106,11 +106,11 @@
                             <div class="progress-bg">
                               <div 
                                 class="progress-fill progress-fill-blue" 
-                                :style="{ width: `${dailyUpdateTask?.current_date_progress || dailyUpdateTask?.progress || 0}%` }"
+                                :style="{ width: `${dailyUpdateTask?.current_date_progress || 0}%` }"
                                 :class="dailyUpdateTask?.success === false ? 'progress-fill-error' : ''"
                               ></div>
                             </div>
-                            <span class="progress-text">{{ dailyUpdateTask?.current_date_progress || dailyUpdateTask?.progress || 0 }}%</span>
+                            <span class="progress-text">{{ dailyUpdateTask?.current_date_progress || 0 }}%</span>
                           </div>
                         </div>
                         
@@ -123,7 +123,7 @@
                                 上次更新: {{ formatDateTime(lastUpdateTimes.stock_list) }}
                               </div>
                             </div>
-                            <span class="text-xs text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">
+                            <span class="text-xs text-gray-400 bg-gray-700/50 px-3 py-1 rounded-md">
                               {{ stockListUpdateTask?.message || '等待任务' }}
                             </span>
                           </div>
@@ -147,12 +147,12 @@
 
             <!-- Enhanced Sea Selection Card -->
             <div class="relative group">
-              <div class="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-              <el-card class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
+              <div class="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+              <el-card class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
                 <template #header>
                   <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-3">
-                      <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                      <div class="w-2 h-2 bg-purple-400 rounded-md animate-pulse"></div>
                       <span class="font-bold text-xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">潜力股票海选</span>
                     </div>
                   </div>
@@ -161,8 +161,8 @@
                 <div class="job-runner">
                   <div class="mb-4">
                     <div class="flex items-start space-x-3">
-                      <div class="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                        <div class="w-6 h-6 bg-purple-400 rounded-lg"></div>
+                      <div class="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-sm flex items-center justify-center flex-shrink-0 mt-1">
+                        <div class="w-6 h-6 bg-purple-400 rounded-sm"></div>
                       </div>
                       <div>
                         <p class="text-gray-300 leading-relaxed text-sm">
@@ -178,14 +178,14 @@
                     class="action-button action-button-purple w-full group mb-4"
                   >
                     <div class="flex items-center justify-center space-x-3">
-                      <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
-                        <div class="w-5 h-5 bg-purple-400 rounded" :class="candidatePoolTask.isRunning ? 'animate-spin' : ''"></div>
+                      <div class="w-10 h-10 bg-purple-500/20 rounded-sm flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                        <div class="w-5 h-5 bg-purple-400 rounded-xs" :class="candidatePoolTask.isRunning ? 'animate-spin' : ''"></div>
                       </div>
                       <span class="font-medium">
                         {{ candidatePoolTask.isRunning ? '正在执行...' : '手动执行海选' }}
                       </span>
                     </div>
-                    <div v-if="candidatePoolTask.isRunning" class="absolute inset-0 bg-purple-500/10 rounded-xl animate-pulse"></div>
+                    <div v-if="candidatePoolTask.isRunning" class="absolute inset-0 bg-purple-500/10 rounded-md animate-pulse"></div>
                   </button>
                   
                   <div v-if="candidatePoolTask.message" class="job-progress">
@@ -193,13 +193,13 @@
                       <div class="progress-bg">
                         <div 
                           class="progress-fill progress-fill-purple" 
-                          :style="{ width: `${candidatePoolTask.progress}%` }"
+                          :style="{ width: `${candidatePoolTask.current_date_progress}%` }"
                           :class="candidatePoolTask.success === false ? 'progress-fill-error' : (candidatePoolTask.success === true ? 'progress-fill-success' : '')"
                         ></div>
                       </div>
-                      <span class="progress-text">{{ candidatePoolTask.progress }}%</span>
+                      <span class="progress-text">{{ candidatePoolTask.current_date_progress }}%</span>
                     </div>
-                    <p class="text-center text-sm text-gray-300 bg-gray-700/30 px-4 py-2 rounded-lg">
+                    <p class="text-center text-sm text-gray-300 bg-gray-700/30 px-4 py-2 rounded-sm">
                       {{ candidatePoolTask.message }}
                     </p>
                   </div>
@@ -212,12 +212,12 @@
         <!-- Right Column - Enhanced Task List -->
         <el-col :span="16" class="h-full">
           <div class="relative group">
-            <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-            <el-card class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+            <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+            <el-card class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
               <template #header>
                 <div class="flex justify-between items-center">
                   <div class="flex items-center space-x-3">
-                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+                    <div class="w-2 h-2 bg-indigo-400 rounded-md animate-pulse"></div>
                     <span class="font-bold text-xl bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">任务列表</span>
                   </div>
                   <div class="flex items-center space-x-3">
@@ -226,7 +226,7 @@
                       class="text-button text-button-primary"
                     >
                       <div class="flex items-center space-x-2">
-                        <div class="w-4 h-4 bg-indigo-400 rounded-sm"></div>
+                        <div class="w-4 h-4 bg-indigo-400 rounded-xs"></div>
                         <span>刷新状态</span>
                       </div>
                     </button>
@@ -236,7 +236,7 @@
                       class="text-button text-button-danger"
                     >
                       <div class="flex items-center space-x-2">
-                        <div class="w-4 h-4 bg-red-400 rounded-sm" :class="loading.reset ? 'animate-spin' : ''"></div>
+                        <div class="w-4 h-4 bg-red-400 rounded-xs" :class="loading.reset ? 'animate-spin' : ''"></div>
                         <span>{{ loading.reset ? '重置中...' : '重置所有任务' }}</span>
                       </div>
                     </button>
@@ -254,8 +254,8 @@
                 >
                   <template #empty>
                     <div class="empty-state">
-                      <div class="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mb-4">
-                        <div class="w-8 h-8 border-2 border-gray-600 rounded-full"></div>
+                      <div class="w-16 h-16 bg-gray-700/50 rounded-md flex items-center justify-center mb-4">
+                        <div class="w-8 h-8 border-2 border-gray-600 rounded-md"></div>
                       </div>
                       <p class="text-lg font-medium text-gray-300 mb-2">暂无任务</p>
                       <p class="text-sm text-gray-400 mb-1">如果系统刚启动，请稍等片刻或点击右上角刷新状态。</p>
@@ -266,8 +266,8 @@
                   <el-table-column prop="name" label="任务名称" min-width="200">
                     <template #default="{ row }">
                       <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 rounded-lg flex items-center justify-center">
-                          <div class="w-3 h-3 bg-indigo-400 rounded"></div>
+                        <div class="w-8 h-8 bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 rounded-sm flex items-center justify-center">
+                          <div class="w-3 h-3 bg-indigo-400 rounded-xs"></div>
                         </div>
                         <span class="font-medium text-white">{{ row.name }}</span>
                       </div>
@@ -276,7 +276,7 @@
                   
                   <el-table-column prop="next_run_time" label="下次运行时间" width="200">
                     <template #default="{ row }">
-                      <div class="text-gray-300 bg-gray-700/30 px-3 py-1 rounded-lg text-sm">
+                      <div class="text-gray-300 bg-gray-700/30 px-3 py-1 rounded-md text-sm">
                         {{ formatDateTime(row.next_run_time) }}
                       </div>
                     </template>
@@ -284,7 +284,7 @@
                   
                   <el-table-column prop="trigger" label="触发器" min-width="150">
                     <template #default="{ row }">
-                      <span class="text-gray-300 bg-gray-700/30 px-3 py-1 rounded-full text-sm">
+                      <span class="text-gray-300 bg-gray-700/30 px-3 py-1 rounded-md text-sm">
                         {{ row.trigger }}
                       </span>
                     </template>
@@ -422,18 +422,36 @@ const jobStatus = ref({
 
 // --- Computed Properties from Pinia Store ---
 const schedulerStatus = computed<SchedulerStatus>(() => store.status);
-const dailyUpdateTask = computed<any>(() => store.taskStatus['update_daily_data'] || {});
-const stockListUpdateTask = computed(() => store.taskStatus['update_stock_list'] || {});
+const dailyUpdateTask = computed<any>(() => {
+  const task = store.taskStatus['update_daily_data'];
+  if (!task) return { isRunning: false, current_date_progress: 0, message: '等待任务启动...', success: undefined };
+  return {
+    isRunning: task.success === undefined,
+    current_date_progress: task.current_date_progress || 0,
+    message: task.message || (task.success === undefined ? '正在执行...' : '已完成'),
+    success: task.success
+  };
+});
+const stockListUpdateTask = computed(() => {
+  const task = store.taskStatus['update_stock_list'];
+  if (!task) return { isRunning: false, progress: 0, message: '等待任务启动...', success: undefined };
+  return {
+    isRunning: task.success === undefined,
+    progress: task.progress || 0,
+    message: task.message || (task.success === undefined ? '正在执行...' : '已完成'),
+    success: task.success
+  };
+});
 const candidatePoolTask = computed(() => {
   const task = store.taskStatus['candidate_pool'];
-  if (!task) return { isRunning: false, progress: 0, message: '等待任务启动...', success: undefined };
+  if (!task) return { isRunning: false, current_date_progress: 0, message: '等待任务启动...', success: undefined };
   
   // 'success' being undefined means it's running. True/false means completed/failed.
   const isRunning = task.success === undefined; 
   
   return {
     isRunning,
-    progress: task.progress || 0,
+    current_date_progress: task.current_date_progress || 0,
     message: task.message || (isRunning ? '正在执行...' : '已完成'),
     success: task.success
   };
@@ -489,7 +507,7 @@ const handleManualUpdate = (
   }
   loading[loadingKey] = true;
   // Reset previous task status
-  store.taskStatus[`update_${taskName}`] = { progress: 0, message: '请求已发送...', success: undefined };
+  store.taskStatus[`update_${taskName}`] = { current_date_progress: 0, message: '请求已发送...', success: undefined };
   store.socket.emit(taskEvent, {});
   ElMessage.info(`已发送 ${taskName === 'daily_data' ? '当日数据' : '股票列表'} 更新请求`);
   
@@ -702,7 +720,7 @@ const handleJobProgress = (data: any) => {
 
 /* Text Buttons */
 .text-button {
-  @apply px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium border border-transparent;
+  @apply px-4 py-2 rounded-md transition-all duration-200 text-sm font-medium border border-transparent;
 }
 
 .text-button-primary {
@@ -725,11 +743,11 @@ const handleJobProgress = (data: any) => {
 }
 
 .progress-bg {
-  @apply flex-1 h-3 bg-gray-700/50 rounded-full overflow-hidden mr-3;
+  @apply flex-1 h-3 bg-gray-700/50 rounded-lg overflow-hidden mr-3;
 }
 
 .progress-fill {
-  @apply h-full rounded-full transition-all duration-500 ease-out;
+  @apply h-full rounded-lg transition-all duration-500 ease-out;
   background: linear-gradient(90deg, rgba(59, 130, 246, 0.8) 0%, rgba(99, 102, 241, 0.8) 100%);
 }
 
@@ -769,7 +787,7 @@ const handleJobProgress = (data: any) => {
 }
 
 .table-action-btn {
-  @apply px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 border;
+  @apply px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 border;
 }
 
 .table-action-edit {
@@ -786,7 +804,7 @@ const handleJobProgress = (data: any) => {
 
 /* Dialog Styling */
 .dialog-button {
-  @apply px-6 py-2 rounded-lg font-medium transition-all duration-200 border;
+  @apply px-6 py-2 rounded-md font-medium transition-all duration-200 border;
 }
 
 .dialog-button-cancel {

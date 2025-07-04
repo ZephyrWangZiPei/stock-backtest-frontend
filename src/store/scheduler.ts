@@ -15,6 +15,7 @@ export interface SchedulerState {
   isConnected: boolean;
   status: SchedulerStatus;
   taskStatus: Record<string, {
+    progress: number;
     current_date_progress: number;
     message: string;
     success?: boolean;

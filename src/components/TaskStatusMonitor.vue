@@ -239,7 +239,7 @@ onUnmounted(() => {
 
 <style scoped>
 .task-monitor {
-  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4;
+  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-md p-4;
 }
 
 .monitor-header {
@@ -255,7 +255,7 @@ onUnmounted(() => {
 }
 
 .task-item {
-  @apply flex justify-between items-center p-3 rounded-lg border;
+  @apply flex justify-between items-center p-3 rounded-md border;
 }
 
 .task-item.task-pending {

@@ -7,11 +7,11 @@
         <!-- Left Panel: Configuration -->
         <el-col :span="10" class="h-full">
           <div class="relative group h-full">
-            <div class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-            <el-card shadow="never" class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+            <div class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+            <el-card shadow="never" class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
               <template #header>
                 <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <div class="w-2 h-2 bg-blue-400 rounded-md animate-pulse"></div>
                   <span class="font-bold text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">回测设置</span>
                 </div>
               </template>
@@ -107,14 +107,14 @@
                   <el-form-item class="mt-6">
                     <button @click="onSubmit" :disabled="loading" class="action-btn action-btn-primary w-full">
                       <div class="flex items-center justify-center space-x-3">
-                        <div class="w-6 h-6 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                          <div class="w-3 h-3 bg-purple-400 rounded" :class="loading ? 'animate-spin' : ''"></div>
+                        <div class="w-6 h-6 bg-purple-500/20 rounded-sm flex items-center justify-center">
+                          <div class="w-3 h-3 bg-purple-400 rounded-xs" :class="loading ? 'animate-spin' : ''"></div>
                         </div>
                         <span class="font-medium text-lg">
                           {{ loading ? '正在回测...' : '开始回测' }}
                         </span>
                       </div>
-                      <div v-if="loading" class="absolute inset-0 bg-purple-500/10 rounded-xl animate-pulse"></div>
+                      <div v-if="loading" class="absolute inset-0 bg-purple-500/10 rounded-md animate-pulse"></div>
                     </button>
                   </el-form-item>
                 </el-form>
@@ -126,12 +126,12 @@
         <!-- Right Panel: Results -->
         <el-col :span="14" class="h-full">
           <div class="relative group h-full">
-            <div class="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-            <el-card v-if="backtestResult" class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
+            <div class="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+            <el-card v-if="backtestResult" class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
                 <template #header>
                   <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-3">
-                      <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <div class="w-2 h-2 bg-green-400 rounded-md animate-pulse"></div>
                       <span class="font-bold text-xl bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
                         回测结果 (ID: {{ backtestResult.id }})
                       </span>
@@ -148,48 +148,48 @@
                   </div>
                   <div v-else-if="backtestResult.status === 'completed' && backtestResult.data">
                       
-                      <div class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center p-6 rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/30 mb-6">
-                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                      <div class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center p-6 rounded-md bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/30 mb-6">
+                        <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                           <div class="text-sm text-gray-400 mb-2">初始资产</div>
                           <div class="text-xl font-semibold text-white">{{ new Intl.NumberFormat('en-US').format(backtestResult.data.initial_capital) }}</div>
                         </div>
-                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                        <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                           <div class="text-sm text-gray-400 mb-2">最终资产</div>
                           <div class="text-xl font-semibold text-white">{{ new Intl.NumberFormat('en-US').format(backtestResult.data.final_capital) }}</div>
                         </div>
-                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                        <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                           <div class="text-sm text-gray-400 mb-2">总回报率</div>
                           <div :class="['text-xl font-semibold', performanceMetrics.totalReturn >= 0 ? 'text-red-500' : 'text-green-500']">
                             {{ (performanceMetrics.totalReturn * 100).toFixed(2) }}%
                           </div>
                         </div>
-                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                        <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                           <div class="text-sm text-gray-400 mb-2">年化回报率</div>
                           <div :class="['text-xl font-semibold', performanceMetrics.annualReturn >= 0 ? 'text-red-500' : 'text-green-500']">
                             {{ (performanceMetrics.annualReturn * 100).toFixed(2) }}%
                           </div>
                         </div>
-                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                        <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                           <div class="text-sm text-gray-400 mb-2">最大回撤</div>
                           <div class="text-xl font-semibold text-green-500">
                             {{ (performanceMetrics.maxDrawdown * 100).toFixed(2) }}%
                           </div>
                         </div>
-                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                        <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                             <div class="text-sm text-gray-400 mb-2">夏普比率</div>
                             <div class="text-xl font-semibold text-white">{{ performanceMetrics.sharpeRatio.toFixed(2) }}</div>
                         </div>
-                        <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                        <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                           <div class="text-sm text-gray-400 mb-2">总交易次数</div>
                           <div class="text-xl font-semibold text-white">{{ performanceMetrics.totalTrades }}</div>
                         </div>
-                         <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                         <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                           <div class="text-sm text-gray-400 mb-2">胜率</div>
                           <div class="text-xl font-semibold text-white">
                             {{ (performanceMetrics.winRate * 100).toFixed(2) }}%
                           </div>
                         </div>
-                         <div class="kpi-item p-4 rounded-lg transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
+                         <div class="kpi-item p-4 rounded-sm transition-all duration-300 hover:bg-gray-700/30 hover:scale-105">
                           <div class="text-sm text-gray-400 mb-2">盈亏比</div>
                           <div class="text-xl font-semibold text-white">{{ performanceMetrics.profitFactor.toFixed(2) }}</div>
                         </div>
@@ -204,7 +204,7 @@
 
                       <el-tabs v-model="activeTab" class="custom-tabs">
                         <el-tab-pane label="业绩图表" name="chart">
-                          <div ref="chartRef" style="width: 100%; height: 500px;" class="mt-5 rounded-xl border border-gray-700/30"></div>
+                          <div ref="chartRef" style="width: 100%; height: 500px;" class="mt-5 rounded-md border border-gray-700/30"></div>
                         </el-tab-pane>
                         <el-tab-pane label="交易日志" name="trades">
                           <el-table :data="filteredTrades" class="custom-table">
@@ -231,11 +231,11 @@
                 </div>
             </el-card>
             <div v-else class="relative h-full">
-              <div class="absolute -inset-1 bg-gradient-to-r from-gray-500/20 to-gray-600/20 rounded-2xl blur opacity-50"></div>
-              <div class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl flex items-center justify-center">
+              <div class="absolute -inset-1 bg-gradient-to-r from-gray-500/20 to-gray-600/20 rounded-lg blur opacity-50"></div>
+              <div class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl flex items-center justify-center">
                 <div class="text-center">
-                  <div class="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mb-4 mx-auto">
-                    <div class="w-8 h-8 border-2 border-gray-600 rounded-full"></div>
+                  <div class="w-16 h-16 bg-gray-700/50 rounded-md flex items-center justify-center mb-4 mx-auto">
+                    <div class="w-8 h-8 border-2 border-gray-600 rounded-md"></div>
                   </div>
                   <p class="text-lg font-medium text-gray-300 mb-2">开始您的策略回测</p>
                   <p class="text-sm text-gray-400">配置参数后点击"开始回测"查看结果</p>
@@ -726,7 +726,7 @@ const renderChart = async (resultData: any, stockCode: string) => {
 
 /* Action Buttons */
 .action-btn {
-  @apply relative px-6 py-4 rounded-xl font-semibold transition-all duration-300 border backdrop-blur-sm overflow-hidden;
+  @apply relative px-6 py-4 rounded-md font-semibold transition-all duration-300 border backdrop-blur-sm overflow-hidden;
   background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.8) 100%);
   border-color: rgba(75, 85, 99, 0.3);
 }

@@ -805,11 +805,11 @@ onMounted(() => {
 }
 
 .stat-card {
-  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 flex items-center gap-4;
+  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-md p-6 flex items-center gap-4;
 }
 
 .stat-icon {
-  @apply w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-xl;
+  @apply w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-sm flex items-center justify-center text-white text-xl;
 }
 
 .stat-content {
@@ -826,7 +826,7 @@ onMounted(() => {
 
 /* 控制面板 */
 .control-panel {
-  @apply flex justify-between items-center mb-6 p-4 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl;
+  @apply flex justify-between items-center mb-6 p-4 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-md;
 }
 
 .control-left {
@@ -937,7 +937,7 @@ onMounted(() => {
 }
 
 .stock-card {
-  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:bg-gray-700/50 hover:border-gray-600/50 hover:scale-105;
+  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-md p-4 cursor-pointer transition-all duration-300 hover:bg-gray-700/50 hover:border-gray-600/50 hover:scale-105;
 }
 
 .card-header {
@@ -1017,7 +1017,7 @@ onMounted(() => {
 }
 
 .metric-card {
-  @apply bg-gray-800/50 rounded-lg p-4 text-center;
+  @apply bg-gray-800/50 rounded-sm p-4 text-center;
 }
 
 .metric-title {

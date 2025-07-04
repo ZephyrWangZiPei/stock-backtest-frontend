@@ -136,7 +136,7 @@ const breadcrumbLabel = computed(() => {
 const dailyUpdateTask = computed(() => store.taskStatus['update_daily_data'] || null);
 
 const isInProgress = computed(() => {
-  return dailyUpdateTask.value && dailyUpdateTask.value.progress < 100 && dailyUpdateTask.value.success === undefined;
+  return dailyUpdateTask.value && dailyUpdateTask.value.current_date_progress < 100 && dailyUpdateTask.value.success === undefined;
 });
 
 const taskProgress = computed(() => {
@@ -224,7 +224,7 @@ const connectionStatusText = computed(() => {
 }
 
 .status-dot {
-  @apply w-3 h-3 rounded-full transition-all duration-300;
+  @apply w-3 h-3 rounded-md transition-all duration-300;
 }
 
 .status-dot-success {
@@ -272,7 +272,7 @@ const connectionStatusText = computed(() => {
 }
 
 .progress-bar {
-  @apply w-32 h-2 bg-gray-700 rounded-full overflow-hidden;
+  @apply w-32 h-2 bg-gray-700 rounded-md overflow-hidden;
 }
 
 .progress-fill {
@@ -304,7 +304,7 @@ const connectionStatusText = computed(() => {
 }
 
 .avatar-content {
-  @apply w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center;
+  @apply w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center;
 }
 
 .avatar-text {
@@ -312,7 +312,7 @@ const connectionStatusText = computed(() => {
 }
 
 .avatar-status {
-  @apply absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-800;
+  @apply absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-md border-2 border-gray-800;
 }
 
 .user-details {
@@ -332,7 +332,7 @@ const connectionStatusText = computed(() => {
 }
 
 .menu-button {
-  @apply p-1 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-all duration-200;
+  @apply p-1 rounded-sm text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-all duration-200;
 }
 
 /* Quick Actions */
@@ -341,7 +341,7 @@ const connectionStatusText = computed(() => {
 }
 
 .action-btn {
-  @apply relative p-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-all duration-200;
+  @apply relative p-2 rounded-sm text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-all duration-200;
 }
 
 .action-btn:hover {
@@ -349,7 +349,7 @@ const connectionStatusText = computed(() => {
 }
 
 .notification-badge {
-  @apply absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium;
+  @apply absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-md flex items-center justify-center font-medium;
   animation: bounce 2s infinite;
 }
 

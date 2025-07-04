@@ -1,130 +1,117 @@
 <template>
-  <div class="sidebar">
+  <div class="sidebar-container" :class="{ 'is-collapsed': isCollapse }">
     <!-- Logo Section -->
     <div class="logo-section">
       <div class="logo-container">
-        <div class="logo-icon">
-          <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-            <div class="w-4 h-4 bg-white rounded-sm"></div>
-          </div>
-        </div>
-        <div class="logo-text">
-          <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-            Stock Scan
-          </h1>
-          <p class="text-xs text-gray-400 mt-1">智能分析系统</p>
-        </div>
+        <img src="/favicon.svg" alt="Logo" class="w-8 h-8 mr-2" />
+        <h1 v-if="!isCollapse" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+          Stock Scan
+        </h1>
       </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="navigation">
-      <div class="nav-header">
-        <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">主要功能</span>
-      </div>
-      
-      <div class="nav-items">
-        <router-link
-          v-for="route in routes"
-          :key="route.path"
-          :to="route.path"
-          class="nav-item group"
-          :class="{ 'nav-item-active': currentRoute.path === route.path }"
-        >
-          <div class="nav-item-content">
-            <div class="nav-icon">
-              <component :is="route.icon" class="w-5 h-5" />
-            </div>
-            <span class="nav-text">{{ route.name }}</span>
-          </div>
-          
-          <!-- Active indicator -->
-          <div class="nav-indicator" v-if="currentRoute.path === route.path"></div>
-          
-          <!-- Hover background -->
-          <div class="nav-hover-bg"></div>
-        </router-link>
-      </div>
-    </nav>
+    <!-- Menu -->
+    <el-menu
+      :default-active="currentRoute.path"
+      :collapse="isCollapse"
+      :router="true"
+      class="el-menu-vertical-demo"
+    >
+      <el-menu-item
+        v-for="route in menuRoutes"
+        :key="route.path"
+        :index="route.path"
+      >
+        <el-icon>
+          <component :is="route.meta.icon" />
+        </el-icon>
+        <template #title>{{ route.meta.title }}</template>
+      </el-menu-item>
+    </el-menu>
+
+    <!-- Collapse Button -->
+    <div class="collapse-button-container">
+      <el-button @click="toggleCollapse" link>
+        <el-icon :size="20">
+          <component :is="isCollapse ? ArrowRightBold : ArrowLeftBold" />
+        </el-icon>
+      </el-button>
+    </div>
 
     <!-- Footer Section -->
     <div class="sidebar-footer">
-      <div class="footer-content">
-        <div class="status-indicator">
-          <div 
-            class="w-2 h-2 rounded-full animate-pulse"
-            :class="allConnected ? 'bg-green-400' : 'bg-red-400'"
-          ></div>
-          <span class="text-xs text-gray-400">{{ allConnected ? '系统正常' : '连接异常' }}</span>
-        </div>
+      <div class="status-indicator">
+        <div 
+          class="w-2 h-2 rounded-full animate-pulse"
+          :class="allConnected ? 'bg-green-400' : 'bg-red-400'"
+        ></div>
+        <span v-if="!isCollapse" class="text-xs text-gray-400">{{ allConnected ? '系统正常' : '连接异常' }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, defineComponent, h, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { connectionStatus } from '@/utils/connectionStatus';
+import {
+  ElMenu,
+  ElMenuItem,
+  ElIcon,
+  ElButton,
+} from 'element-plus';
+import {
+  Odometer,
+  TrendCharts,
+  Histogram,
+  DataAnalysis,
+  Refresh,
+  ArrowLeftBold,
+  ArrowRightBold,
+} from '@element-plus/icons-vue';
 
 const currentRoute = useRoute();
+const isCollapse = ref(false);
 
-// 简单的图标组件
-const DashboardIcon = defineComponent({
-  render: () => h('svg', {
-    viewBox: '0 0 24 24',
-    fill: 'currentColor',
-    class: 'w-5 h-5'
-  }, [
-    h('path', {
-      d: 'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z'
-    })
-  ])
+const toggleCollapse = () => {
+  isCollapse.value = !isCollapse.value;
+};
+
+// 模拟的路由列表，实际项目中应从 Vue Router 实例中获取并筛选
+// 假设路由配置中包含 meta: { title: '菜单标题', icon: 'ElementPlusIconName', showInSidebar: true }
+const allAppRoutes = [
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    meta: { title: '仪表盘', icon: Odometer, showInSidebar: true },
+  },
+  {
+    path: '/backtest',
+    name: 'Backtest',
+    meta: { title: '策略回测', icon: TrendCharts, showInSidebar: true },
+  },
+  {
+    path: '/backtest-history',
+    name: 'BacktestHistory',
+    meta: { title: '回测历史', icon: Histogram, showInSidebar: true },
+  },
+  {
+    path: '/top-backtest',
+    name: 'TopBacktest',
+    meta: { title: 'Top回测', icon: DataAnalysis, showInSidebar: true },
+  },
+  {
+    path: '/scheduler',
+    name: 'Scheduler',
+    meta: { title: '任务调度', icon: Refresh, showInSidebar: true },
+  },
+  // 您可以在这里添加更多路由，只要有 showInSidebar: true 就会自动显示
+];
+
+const menuRoutes = computed(() => {
+  return allAppRoutes.filter(route => route.meta && route.meta.showInSidebar);
 });
-
-const BacktestIcon = defineComponent({
-  render: () => h('svg', {
-    viewBox: '0 0 24 24',
-    fill: 'currentColor',
-    class: 'w-5 h-5'
-  }, [
-    h('path', {
-      d: 'M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z'
-    })
-  ])
-});
-
-const SchedulerIcon = defineComponent({
-  render: () => h('svg', {
-    viewBox: '0 0 24 24',
-    fill: 'currentColor',
-    class: 'w-5 h-5'
-  }, [
-    h('path', {
-      d: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'
-    })
-  ])
-});
-
-const TopIcon = defineComponent({
-  render: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor', class: 'w-5 h-5' }, [
-    h('path', { d: 'M12 2l4 8h-8l4-8zm0 9a4 4 0 110 8 4 4 0 010-8z' })
-  ])
-});
-
-const HistoryIcon = defineComponent({
-  render: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor', class: 'w-5 h-5' }, [
-    h('path', { d: 'M13 3a9 9 0 100 18 9 9 0 000-18zm0 2v5.268l4.146 2.414-.646 1.118L12 11V5h1z' })
-  ])
-});
-
-const routes = ref([
-  { path: '/dashboard', name: '仪表盘', icon: DashboardIcon },
-  { path: '/backtest', name: '策略回测', icon: BacktestIcon },
-  { path: '/backtest-history', name: '回测历史', icon: HistoryIcon },
-  { path: '/top-backtest', name: 'Top回测', icon: TopIcon },
-  { path: '/scheduler', name: '任务调度', icon: SchedulerIcon },
-]);
 
 // 全局连接状态
 const allConnected = computed(() => {
@@ -133,176 +120,106 @@ const allConnected = computed(() => {
 });
 </script>
 
+<style>
+/* Global Element Plus overrides (not scoped) */
+.el-menu {
+  border-right: none !important;
+  background-color: transparent !important;
+}
+
+.el-menu-item {
+  /* Tailwind applies some base styles */
+  @apply transition-all duration-300;
+}
+
+.el-menu-item.is-active {
+  background-color: rgba(60, 100, 200, 0.2) !important; /* A light blue/purple for active */
+}
+
+.el-menu-item:hover {
+  background-color: rgba(60, 100, 200, 0.1) !important;
+}
+
+.el-menu-item .el-icon {
+  color: #9ca3af; /* Default icon color */
+}
+
+.el-menu-item.is-active .el-icon {
+  color: #e9d5ff; /* Active icon color */
+}
+
+.el-menu-item:hover .el-icon {
+  color: #e2e8f0; /* Hover icon color */
+}
+
+.el-menu-item .el-menu-item__title {
+  color: #9ca3af; /* Default text color */
+}
+
+.el-menu-item.is-active .el-menu-item__title {
+  color: #e9d5ff; /* Active text color */
+}
+
+.el-menu-item:hover .el-menu-item__title {
+  color: #e2e8f0; /* Hover text color */
+}
+</style>
+
 <style scoped>
-.sidebar {
-  @apply w-64 h-full flex flex-col;
+.sidebar-container {
+  @apply h-full flex flex-col;
   background: linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%);
   backdrop-filter: blur(10px);
   border-right: 1px solid rgba(75, 85, 99, 0.3);
+  transition: width 0.3s ease; /* For collapse transition */
+  width: 256px; /* Default width (w-64) */
 }
 
-/* Logo Section */
+.sidebar-container.is-collapsed {
+  width: 64px; /* Collapsed width (w-16) */
+}
+
 .logo-section {
-  @apply p-6 border-b border-gray-700/30;
+  @apply p-4 border-b border-gray-700/30;
 }
 
 .logo-container {
-  @apply flex items-center space-x-3;
+  @apply flex items-center justify-center space-x-2;
 }
 
-.logo-icon {
-  @apply relative;
+/* Ensure logo text hides/shows with collapse */
+.logo-section h1 {
+  transition: opacity 0.3s ease, width 0.3s ease;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.logo-icon::after {
-  content: '';
-  @apply absolute -inset-1 bg-gradient-to-r from-blue-500/30 to-purple-500/30 rounded-xl blur opacity-0;
-  transition: opacity 0.3s ease;
+.sidebar-container.is-collapsed .logo-section h1 {
+  opacity: 0;
+  width: 0;
+  padding: 0;
+  margin: 0;
 }
 
-.logo-container:hover .logo-icon::after {
-  @apply opacity-100;
+.el-menu-vertical-demo {
+  flex-grow: 1;
+  padding: 1rem 0;
 }
 
-.logo-text h1 {
-  transition: all 0.3s ease;
+.collapse-button-container {
+  @apply flex justify-end p-2 border-t border-gray-700/30;
 }
 
-.logo-container:hover .logo-text h1 {
-  transform: scale(1.05);
-}
-
-/* Navigation */
-.navigation {
-  @apply flex-1 px-4 py-6;
-}
-
-.nav-header {
-  @apply mb-4 px-3;
-}
-
-.nav-items {
-  @apply space-y-2;
-}
-
-.nav-item {
-  @apply relative block px-3 py-3 rounded-xl transition-all duration-300;
-  text-decoration: none;
-}
-
-.nav-item-content {
-  @apply flex items-center space-x-3 relative z-10;
-}
-
-.nav-icon {
-  @apply w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-300;
-  background: rgba(55, 65, 81, 0.5);
-}
-
-.nav-text {
-  @apply font-medium text-gray-300 transition-colors duration-300;
-}
-
-/* Hover background */
-.nav-hover-bg {
-  @apply absolute inset-0 rounded-xl opacity-0 transition-all duration-300;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-}
-
-.nav-item:hover .nav-hover-bg {
-  @apply opacity-100;
-}
-
-.nav-item:hover .nav-icon {
-  @apply bg-blue-500/20 text-blue-400;
-  transform: scale(1.1);
-}
-
-.nav-item:hover .nav-text {
-  @apply text-white;
-}
-
-/* Active state */
-.nav-item-active {
-  @apply bg-gradient-to-r from-blue-500/20 to-purple-500/20;
-}
-
-.nav-item-active .nav-icon {
-  @apply bg-blue-500/30 text-blue-400;
-}
-
-.nav-item-active .nav-text {
-  @apply text-white font-semibold;
-}
-
-/* Active indicator */
-.nav-indicator {
-  @apply absolute left-0 top-1/2 w-1 h-8 bg-gradient-to-b from-blue-400 to-purple-400 rounded-r-full;
-  transform: translateY(-50%);
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) translateX(-100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
-}
-
-/* Footer */
 .sidebar-footer {
   @apply p-4 border-t border-gray-700/30;
-}
-
-.footer-content {
-  @apply px-3;
 }
 
 .status-indicator {
   @apply flex items-center space-x-2;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar {
-    @apply w-16;
-  }
-  
-  .logo-text,
-  .nav-text,
-  .nav-header {
-    @apply hidden;
-  }
-  
-  .logo-container {
-    @apply justify-center;
-  }
-  
-  .nav-item-content {
-    @apply justify-center;
-  }
-}
-
-/* Animation delays for nav items */
-.nav-item:nth-child(1) { animation-delay: 0.1s; }
-.nav-item:nth-child(2) { animation-delay: 0.2s; }
-.nav-item:nth-child(3) { animation-delay: 0.3s; }
-.nav-item:nth-child(4) { animation-delay: 0.4s; }
-
-.nav-item {
-  animation: fadeInLeft 0.6s ease-out forwards;
-  opacity: 0;
-  transform: translateX(-20px);
-}
-
-@keyframes fadeInLeft {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* Hide status text when collapsed */
+.sidebar-container.is-collapsed .status-indicator span {
+  display: none;
 }
 </style> 

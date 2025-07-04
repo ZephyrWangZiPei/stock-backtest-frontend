@@ -6,12 +6,12 @@
       <!-- System Statistics -->
       <el-col :span="8">
         <div class="relative group h-full">
-          <div class="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-2xl opacity-50 group-hover:opacity-75 transition duration-300"></div>
-          <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
+          <div class="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-lg opacity-50 group-hover:opacity-75 transition duration-300"></div>
+          <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
             <template #header>
               <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <div class="w-2 h-2 bg-green-400 rounded-md animate-pulse"></div>
                   <span class="font-bold text-xl bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">系统统计</span>
                 </div>
                 <el-button text @click="refreshSystemData" :loading="systemLoading" class="hover:bg-gray-700/50 transition-colors">
@@ -23,21 +23,21 @@
             <div class="grid grid-cols-2 gap-6">
               <div class="stats-card stats-card-blue">
                 <div class="stats-icon bg-blue-500/20">
-                  <div class="w-6 h-6 bg-blue-400 rounded-lg"></div>
+                  <div class="w-6 h-6 bg-blue-400 rounded-sm"></div>
                 </div>
                 <div class="text-3xl font-bold text-blue-400 mb-1">{{ systemStats.totalStocks }}</div>
                 <div class="text-sm text-gray-300 font-medium">股票总数</div>
               </div>
               <div class="stats-card stats-card-green">
                 <div class="stats-icon bg-green-500/20">
-                  <div class="w-6 h-6 bg-green-400 rounded-lg"></div>
+                  <div class="w-6 h-6 bg-green-400 rounded-sm"></div>
                 </div>
                 <div class="text-3xl font-bold text-green-400 mb-1">{{ systemStats.totalBacktests }}</div>
                 <div class="text-sm text-gray-300 font-medium">回测次数</div>
               </div>
               <div class="stats-card stats-card-purple">
                 <div class="stats-icon bg-purple-500/20">
-                  <div class="w-6 h-6 bg-purple-400 rounded-lg"></div>
+                  <div class="w-6 h-6 bg-purple-400 rounded-sm"></div>
                 </div>
                 <div class="text-3xl font-bold text-purple-400 mb-1">{{ systemStats.totalStrategies }}</div>
                 <div class="text-sm text-gray-300 font-medium">策略数量</div>
@@ -50,12 +50,12 @@
       <!-- Stock Recommendations -->
       <el-col :span="16">
         <div class="relative group h-full">
-          <div class="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl opacity-50 group-hover:opacity-75 transition duration-300"></div>
-          <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
+          <div class="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg opacity-50 group-hover:opacity-75 transition duration-300"></div>
+          <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
             <template #header>
               <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                  <div class="w-2 h-2 bg-purple-400 rounded-md animate-pulse"></div>
                   <span class="font-bold text-xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">股票推荐</span>
                 </div>
                 <el-button text @click="fetchRecommendations" :loading="recoLoading" class="hover:bg-gray-700/50 transition-colors">
@@ -71,10 +71,10 @@
               <div v-else class="flex-1 min-h-0">
                 <div class="h-full overflow-y-auto custom-scrollbar space-y-3 pr-2">
                   <div v-for="reco in paginatedStockRecommendations" :key="'stk-' + reco.code" class="recommendation-card group">
-                    <div class="flex items-center justify-between p-4 bg-gray-700/30 hover:bg-gray-700/50 rounded-xl border border-gray-600/30 hover:border-purple-500/30 transition-all duration-300">
+                    <div class="flex items-center justify-between p-4 bg-gray-700/30 hover:bg-gray-700/50 rounded-md border border-gray-600/30 hover:border-purple-500/30 transition-all duration-300">
                       <div class="flex items-center space-x-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
-                          <div class="w-4 h-4 bg-purple-400 rounded"></div>
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-sm flex items-center justify-center">
+                          <div class="w-4 h-4 bg-purple-400 rounded-xs"></div>
                         </div>
                         <div>
                           <div class="font-semibold text-white group-hover:text-purple-300 transition-colors">{{ reco.name }}</div>
@@ -83,10 +83,10 @@
                       </div>
                       <div class="flex items-center space-x-3">
                         <div class="flex space-x-2">
-                          <el-tag type="success" effect="dark" size="small" class="px-3 py-1 rounded-full font-medium">
+                          <el-tag type="success" effect="dark" size="small" class="px-3 py-1 rounded-md font-medium">
                             买:{{ reco.signals.buy }}
                           </el-tag>
-                          <el-tag type="danger" effect="dark" size="small" class="px-3 py-1 rounded-full font-medium">
+                          <el-tag type="danger" effect="dark" size="small" class="px-3 py-1 rounded-md font-medium">
                             卖:{{ reco.signals.sell }}
                           </el-tag>
                         </div>
@@ -105,20 +105,20 @@
     <!-- Recent Activities -->
     <div class="mt-6">
       <div class="relative group">
-        <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-2xl opacity-50 group-hover:opacity-75 transition duration-300"></div>
-        <el-card class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+        <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-lg opacity-50 group-hover:opacity-75 transition duration-300"></div>
+        <el-card class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
           <template #header>
             <div class="flex justify-between items-center">
               <div class="flex items-center space-x-3">
-                <div class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+                <div class="w-2 h-2 bg-indigo-400 rounded-md animate-pulse"></div>
                 <span class="font-bold text-xl bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">最近活动</span>
               </div>
             </div>
           </template>
           
           <div v-if="recentActivities.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-400">
-            <div class="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mb-4">
-              <div class="w-8 h-8 border-2 border-gray-600 rounded-full"></div>
+            <div class="w-16 h-16 bg-gray-700/50 rounded-md flex items-center justify-center mb-4">
+              <div class="w-8 h-8 border-2 border-gray-600 rounded-md"></div>
             </div>
             <p class="text-lg font-medium">暂无最近活动</p>
           </div>
@@ -132,7 +132,7 @@
               class="timeline-item"
               :style="{ animationDelay: `${index * 150}ms` }"
             >
-              <div class="bg-gray-700/30 hover:bg-gray-700/50 rounded-xl p-4 border border-gray-600/30 hover:border-indigo-500/30 transition-all duration-300">
+              <div class="bg-gray-700/30 hover:bg-gray-700/50 rounded-md p-4 border border-gray-600/30 hover:border-indigo-500/30 transition-all duration-300">
                 <div class="text-white font-medium mb-1">{{ activity.title }}</div>
                 <div class="text-sm text-gray-300">{{ activity.description }}</div>
               </div>
@@ -376,7 +376,7 @@ onUnmounted(() => {
 
 /* Stats Cards */
 .stats-card {
-  @apply relative p-6 rounded-xl border transition-all duration-300 cursor-pointer;
+  @apply relative p-6 rounded-md border transition-all duration-300 cursor-pointer;
   background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.8) 100%);
   border-color: rgba(75, 85, 99, 0.3);
   animation: fadeInUp 0.6s ease-out forwards;
@@ -399,7 +399,7 @@ onUnmounted(() => {
 .stats-card-purple:hover { border-color: rgba(168, 85, 247, 0.5); }
 
 .stats-icon {
-  @apply w-12 h-12 rounded-xl flex items-center justify-center mb-4;
+  @apply w-12 h-12 rounded-md flex items-center justify-center mb-4;
   transition: all 0.3s ease;
 }
 
