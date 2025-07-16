@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
-import { io, Socket } from 'socket.io-client';
-import { setConnectionStatus } from '@/utils/connectionStatus';
+import { Socket } from 'socket.io-client';
+import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager';
 
 // Define the structure for the scheduler status
 export interface SchedulerStatus {
@@ -12,10 +12,11 @@ export interface SchedulerStatus {
 
 export interface SchedulerState {
   socket: Socket | null;
+  wsManager: WebSocketManager | null;
   isConnected: boolean;
   status: SchedulerStatus;
   taskStatus: Record<string, {
-    progress: number;
+    progress?: number;
     current_date_progress: number;
     message: string;
     success?: boolean;
@@ -32,6 +33,7 @@ const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1
 export const useSchedulerStore = defineStore('scheduler', {
   state: (): SchedulerState => ({
     socket: null,
+    wsManager: null as WebSocketManager | null,
     isConnected: false,
     status: {
       is_running: false,
@@ -45,39 +47,38 @@ export const useSchedulerStore = defineStore('scheduler', {
   
   actions: {
     connect() {
-      if (this.socket?.connected) return;
+      if (this.wsManager?.isConnected) return;
 
-      this.socket = io(`${VITE_API_BASE_URL}/scheduler`, {
+      this.wsManager = createWebSocketManager({
+        url: `${VITE_API_BASE_URL}/scheduler`,
         path: '/socket.io/',
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 5,
+        connectionName: 'scheduler',
+        onConnect: (socket) => {
+          this.socket = socket;
+          this.isConnected = true;
+          console.log('[SchedulerStore] Socket connected:', socket.id);
+          this.requestStatusUpdate(); // Request initial status on connect
+        },
+        onDisconnect: () => {
+          this.isConnected = false;
+          console.log('[SchedulerStore] Socket disconnected');
+        },
+        onConnectError: (err) => {
+          console.error('[SchedulerStore] Connection error:', err);
+          this.isConnected = false;
+        }
       });
 
-      this.socket.on('connect', () => {
-        this.isConnected = true;
-        setConnectionStatus('scheduler', true);
-        console.log('[SchedulerStore] Socket connected:', this.socket?.id);
-        this.requestStatusUpdate(); // Request initial status on connect
-      });
+      const socket = this.wsManager.connect();
 
-      this.socket.on('disconnect', () => {
-        this.isConnected = false;
-        console.log('[SchedulerStore] Socket disconnected');
-        setConnectionStatus('scheduler', false);
-      });
-
-      this.socket.on('connect_error', (err) => {
-        console.error('[SchedulerStore] Connection error:', err);
-        this.isConnected = false;
-        setConnectionStatus('scheduler', false);
-      });
-      
-      this.socket.on('scheduler_status', (data: SchedulerStatus) => {
+      socket.on('scheduler_status', (data: SchedulerStatus) => {
         console.log('[SchedulerStore] Received status update:', data);
         this.status = data;
       });
 
-      this.socket.on('update_logs', (data: { logs: any[] }) => {
+      socket.on('update_logs', (data: { logs: any[] }) => {
         console.log('[SchedulerStore] Received logs:', data);
         if (data && data.logs) {
           data.logs.forEach(log => {
@@ -90,19 +91,19 @@ export const useSchedulerStore = defineStore('scheduler', {
         }
       });
 
-      this.socket.on('update_progress', (data: any) => {
+      socket.on('update_progress', (data: any) => {
         if (data && data.task) {
           this.taskStatus[data.task] = { ...this.taskStatus[data.task], ...data };
         }
       });
 
-      this.socket.on('update_complete', (data: any) => {
+      socket.on('update_complete', (data: any) => {
         if (data && data.task) {
           this.taskStatus[data.task] = { ...this.taskStatus[data.task], ...data };
         }
       });
       
-      this.socket.on('update_error', (data: any) => {
+      socket.on('update_error', (data: any) => {
         if (data && data.task) {
            this.taskStatus[data.task] = {
             current_date_progress: 0,
@@ -113,7 +114,7 @@ export const useSchedulerStore = defineStore('scheduler', {
       });
 
       // New listeners for generic job status
-      this.socket.on('job_status', (data: any) => {
+      socket.on('job_status', (data: any) => {
         // Example data: { job_name: 'candidate_pool', status: 'started', message: '...' }
         //              { job_name: 'candidate_pool', status: 'completed', message: '...', data: {...} }
         //              { job_name: 'candidate_pool', status: 'failed', message: '...' }
@@ -138,7 +139,7 @@ export const useSchedulerStore = defineStore('scheduler', {
         }
       });
 
-      this.socket.on('job_progress', (data: any) => {
+      socket.on('job_progress', (data: any) => {
         // Example data: { job_name: 'candidate_pool', progress: 10, total: 100, message: '...' }
         console.log(`[SchedulerStore] Received job_progress for ${data.job_name}:`, data);
         if (data && data.job_name) {
@@ -153,8 +154,7 @@ export const useSchedulerStore = defineStore('scheduler', {
     },
 
     disconnect() {
-      this.socket?.disconnect();
-      setConnectionStatus('scheduler', false);
+      this.wsManager?.disconnect();
     },
 
     requestStatusUpdate() {

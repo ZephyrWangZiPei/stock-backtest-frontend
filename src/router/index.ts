@@ -38,6 +38,12 @@ const router = createRouter({
           name: 'BacktestHistory',
           component: () => import('@/views/BacktestHistoryView.vue'),
           meta: { title: '回测历史' }
+        },
+        {
+          path: 'websocket-test',
+          name: 'WebSocketTest',
+          component: () => import('@/views/WebSocketTestView.vue'),
+          meta: { title: 'WebSocket测试' }
         }
       ]
     },

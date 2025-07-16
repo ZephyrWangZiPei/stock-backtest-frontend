@@ -23,6 +23,9 @@ import App from './App.vue'
 import router from './router'
 import { useSchedulerStore } from './store/scheduler'
 
+// 初始化全局WebSocket连接
+import { initGlobalWebSockets } from './utils/globalWebSocketManager'
+
 const app = createApp(App)
 
 app.use(createPinia())
@@ -30,7 +33,10 @@ app.use(router)
 app.use(ElementPlus)
 app.use(VMdEditor)
 
-// Connect to WebSocket
+// 初始化全局WebSocket连接
+initGlobalWebSockets()
+
+// Connect to WebSocket (保持向后兼容)
 const schedulerStore = useSchedulerStore()
 schedulerStore.connect()
 

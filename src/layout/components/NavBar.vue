@@ -11,15 +11,15 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Right side: Status & User Info -->
     <div class="navbar-right">
       <!-- System Status -->
       <div class="status-section">
         <!-- Connection Status -->
         <div class="status-item">
-          <div class="status-indicator">
-            <div 
+          <div class="status-indicator connection-tooltip-container">
+            <div
               class="status-dot"
               :class="{
                 'status-dot-success': allConnected && !isInProgress,
@@ -30,20 +30,54 @@
             <div class="status-content">
               <span class="status-label">数据服务</span>
               <span class="status-value">{{ connectionStatusText }}</span>
+              <span class="status-detail">{{ connectionStats.connected }}/{{ connectionStats.total }} ({{
+                connectionStats.rate }}%)</span>
+            </div>
+
+            <!-- Hover Tooltip -->
+            <div
+              class="connection-tooltip"
+              @click="goToWebSocketTest"
+            >
+              <div class="tooltip-header">
+                <span class="tooltip-title">WebSocket 连接状态</span>
+                <span class="tooltip-summary">{{ connectionStats.connected }}/{{ connectionStats.total }} 已连接</span>
+              </div>
+              <div class="tooltip-content">
+                <div
+                  v-for="(isConnected, name) in connectionStatus"
+                  :key="name"
+                  class="connection-item"
+                  :class="{ 'connected': isConnected, 'disconnected': !isConnected }"
+                >
+                  <div
+                    class="connection-dot"
+                    :class="{ 'connected': isConnected, 'disconnected': !isConnected }"
+                  ></div>
+                  <span class="connection-name">{{ getConnectionDisplayName(name) }}</span>
+                  <span class="connection-status">{{ isConnected ? '已连接' : '未连接' }}</span>
+                </div>
+              </div>
+              <div class="tooltip-footer">
+                <span class="tooltip-tip">点击查看详细测试页面</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Task Progress -->
-        <div v-if="isInProgress" class="status-item">
+        <div
+          v-if="isInProgress"
+          class="status-item"
+        >
           <div class="progress-container">
             <div class="progress-info">
               <span class="progress-label">{{ taskMessage }}</span>
               <span class="progress-percentage">{{ taskProgress }}%</span>
             </div>
             <div class="progress-bar">
-              <div 
-                class="progress-fill" 
+              <div
+                class="progress-fill"
                 :style="{ width: taskProgress + '%' }"
               ></div>
             </div>
@@ -53,7 +87,7 @@
 
       <!-- Divider -->
       <div class="navbar-divider"></div>
-      
+
       <!-- User Section -->
       <div class="user-section">
         <div class="user-info">
@@ -68,12 +102,20 @@
             <span class="user-role">系统管理员</span>
           </div>
         </div>
-        
+
         <!-- User Menu -->
         <div class="user-menu">
           <button class="menu-button">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            <svg
+              class="w-4 h-4"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clip-rule="evenodd"
+              ></path>
             </svg>
           </button>
         </div>
@@ -81,16 +123,36 @@
 
       <!-- Quick Actions -->
       <div class="quick-actions">
-        <button class="action-btn" title="通知">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+        <button
+          class="action-btn"
+          title="通知"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
+            ></path>
           </svg>
           <span class="notification-badge">3</span>
         </button>
-        
-        <button class="action-btn" title="设置">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+
+        <button
+          class="action-btn"
+          title="设置"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+              clip-rule="evenodd"
+            ></path>
           </svg>
         </button>
       </div>
@@ -99,12 +161,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useSchedulerStore } from '@/store/scheduler';
 import { connectionStatus } from '@/utils/connectionStatus';
 
 const route = useRoute();
+const router = useRouter();
 const store = useSchedulerStore();
 
 const pageTitles: Record<string, string> = {
@@ -164,6 +227,60 @@ const connectionStatusText = computed(() => {
   if (hasDisconnected.value || !allConnected.value) return '未连接';
   if (isInProgress.value) return '更新中';
   return '已连接';
+});
+
+// 计算连接率
+const connectionRate = computed(() => {
+  const values = Object.values(connectionStatus);
+  if (values.length === 0) return 0;
+  const connectedCount = values.filter(v => v).length;
+  return Math.round((connectedCount / values.length) * 100);
+});
+
+// 计算连接统计
+const connectionStats = computed(() => {
+  const values = Object.values(connectionStatus);
+  const totalConnections = values.length;
+  const connectedCount = values.filter(v => v).length;
+  return {
+    total: totalConnections,
+    connected: connectedCount,
+    rate: connectionRate.value
+  };
+});
+
+// 获取连接显示名称
+const getConnectionDisplayName = (name: string): string => {
+  const nameMap: Record<string, string> = {
+    'scheduler': '调度器',
+    'task_monitor': '任务监控',
+    'top_backtest': 'Top回测',
+    'ai_analysis': 'AI分析'
+  };
+  return nameMap[name] || name;
+};
+
+// 跳转到WebSocket测试页面
+const goToWebSocketTest = () => {
+  router.push('/websocket-test');
+};
+
+// 定时更新连接状态
+let statusInterval: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  // 每500ms更新一次连接状态
+  statusInterval = setInterval(() => {
+    // 触发响应式更新
+    const _ = connectionStatus;
+  }, 500);
+});
+
+onUnmounted(() => {
+  if (statusInterval) {
+    clearInterval(statusInterval);
+    statusInterval = null;
+  }
 });
 </script>
 
@@ -254,6 +371,80 @@ const connectionStatusText = computed(() => {
   @apply text-sm text-gray-200;
 }
 
+.status-detail {
+  @apply text-xs text-gray-500;
+}
+
+/* Connection Tooltip */
+.connection-tooltip-container {
+  @apply relative;
+}
+
+.connection-tooltip {
+  @apply absolute top-full left-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl opacity-0 invisible transition-all duration-200 z-50 cursor-pointer;
+  transform: translateY(-10px);
+}
+
+.connection-tooltip-container:hover .connection-tooltip {
+  @apply opacity-100 visible;
+  transform: translateY(0);
+}
+
+.tooltip-header {
+  @apply p-3 border-b border-gray-600;
+}
+
+.tooltip-title {
+  @apply text-sm font-semibold text-white block;
+}
+
+.tooltip-summary {
+  @apply text-xs text-gray-400 block mt-1;
+}
+
+.tooltip-content {
+  @apply p-3 space-y-2 max-h-48 overflow-y-auto;
+}
+
+.connection-item {
+  @apply flex items-center justify-between py-1;
+}
+
+.connection-dot {
+  @apply w-2 h-2 rounded-full mr-2;
+}
+
+.connection-dot.connected {
+  @apply bg-green-400;
+}
+
+.connection-dot.disconnected {
+  @apply bg-red-400;
+}
+
+.connection-name {
+  @apply text-sm text-gray-200 flex-1;
+}
+
+.connection-status {
+  @apply text-xs px-2 py-1 rounded;
+}
+
+.connection-item.connected .connection-status {
+  @apply bg-green-500/20 text-green-400;
+}
+
+.connection-item.disconnected .connection-status {
+  @apply bg-red-500/20 text-red-400;
+}
+
+.tooltip-footer {
+  @apply p-3 border-t border-gray-600 bg-gray-700/50;
+}
+
+.tooltip-tip {
+  @apply text-xs text-gray-400;
+}
 /* Progress */
 .progress-container {
   @apply space-y-2;

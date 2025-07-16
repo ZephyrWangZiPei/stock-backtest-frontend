@@ -594,7 +594,9 @@ import { ElMessage, ElEmpty } from 'element-plus'
 import { createChart, IChartApi, ISeriesApi, CrosshairMode } from 'lightweight-charts';
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
-import { io, Socket } from 'socket.io-client'
+import { Socket } from 'socket.io-client'
+import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager'
+import { usePageWebSocket } from '@/utils/pageWebSocketManager'
 import VMdEditor from '@kangc/v-md-editor'
 
 interface Strategy {
@@ -649,6 +651,9 @@ const aiAnalysisLoading = ref<boolean>(false);
 const aiAnalysisCompleted = ref<boolean>(false);
 const aiAnalysisError = ref<string>('');
 const showAiAnalysis = ref<boolean>(false);
+
+// 页面WebSocket连接管理
+const { pageManager, checkAndReconnect } = usePageWebSocket()
 
 // 打字机效果相关变量
 const displayedAnalysisContent = ref<string>('');
@@ -1142,20 +1147,37 @@ const startAiAnalysis = async () => {
     }
 
     // 建立WebSocket连接
-    const socket = io(WS_SERVER_URL + '/ai_analysis', {
+    const wsManager = createWebSocketManager({
+      url: WS_SERVER_URL + '/ai_analysis',
       path: '/socket.io',
-      transports: ['websocket']
+      transports: ['websocket'],
+      connectionName: 'ai_analysis',
+      onConnect: (socket) => {
+        console.log('AI分析WebSocket连接成功');
+        // 发送开始分析请求
+        socket.emit('start_ai_analysis', { backtest_id: backtestResult.value!.id });
+        startTypingEffect(); // 连接成功后开始打字效果
+      },
+      onDisconnect: (socket) => {
+        console.log('AI分析WebSocket连接断开');
+        // 如果不是因为完成或错误而断开，也停止打字效果
+        if (!aiAnalysisCompleted.value && !aiAnalysisError.value) {
+          stopTypingEffect();
+          ElMessage.warning('AI分析连接断开');
+        }
+      },
+      onConnectError: (error) => {
+        console.error('WebSocket连接错误:', error);
+        stopTypingEffect(); // 停止打字效果
+        aiAnalysisLoading.value = false;
+        aiAnalysisError.value = 'WebSocket连接失败';
+        displayedAnalysisContent.value = '无法连接到AI分析服务。请检查后端服务是否运行。'; // 显示连接错误信息
+        ElMessage.error('无法连接到AI分析服务');
+      }
     });
 
+    const socket = wsManager.connect();
     aiAnalysisSocket.value = socket;
-
-    // 连接成功
-    socket.on('connect', () => {
-      console.log('AI分析WebSocket连接成功');
-      // 发送开始分析请求
-      socket.emit('start_ai_analysis', { backtest_id: backtestResult.value!.id });
-      startTypingEffect(); // 连接成功后开始打字效果
-    });
 
     // 接收分析内容块
     socket.on('ai_analysis_chunk', (data: { content: string }) => {
@@ -1199,26 +1221,6 @@ const startAiAnalysis = async () => {
       ElMessage.error(`AI分析失败: ${data.message}`);
       socket.disconnect();
       aiAnalysisSocket.value = null;
-    });
-
-    // 连接错误
-    socket.on('connect_error', (error: any) => {
-      console.error('WebSocket连接错误:', error);
-      stopTypingEffect(); // 停止打字效果
-      aiAnalysisLoading.value = false;
-      aiAnalysisError.value = 'WebSocket连接失败';
-      displayedAnalysisContent.value = '无法连接到AI分析服务。请检查后端服务是否运行。'; // 显示连接错误信息
-      ElMessage.error('无法连接到AI分析服务');
-    });
-
-    // 连接断开
-    socket.on('disconnect', (reason: string) => {
-      console.log('WebSocket连接断开:', reason);
-      // 如果不是因为完成或错误而断开，也停止打字效果
-      if (!aiAnalysisCompleted.value && !aiAnalysisError.value) {
-        stopTypingEffect();
-        ElMessage.warning(`AI分析连接断开: ${reason}`);
-      }
     });
 
   } catch (error: any) {

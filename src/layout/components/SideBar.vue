@@ -1,10 +1,20 @@
 <template>
-  <div class="sidebar-container" :class="{ 'is-collapsed': isCollapse }">
+  <div
+    class="sidebar-container"
+    :class="{ 'is-collapsed': isCollapse }"
+  >
     <!-- Logo Section -->
     <div class="logo-section">
       <div class="logo-container">
-        <img src="/favicon.svg" alt="Logo" class="w-8 h-8 mr-2" />
-        <h1 v-if="!isCollapse" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+        <img
+          src="/favicon.svg"
+          alt="Logo"
+          class="w-8 h-8 mr-2"
+        />
+        <h1
+          v-if="!isCollapse"
+          class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400"
+        >
           Stock Scan
         </h1>
       </div>
@@ -31,7 +41,10 @@
 
     <!-- Collapse Button -->
     <div class="collapse-button-container">
-      <el-button @click="toggleCollapse" link>
+      <el-button
+        @click="toggleCollapse"
+        link
+      >
         <el-icon :size="20">
           <component :is="isCollapse ? ArrowRightBold : ArrowLeftBold" />
         </el-icon>
@@ -40,20 +53,55 @@
 
     <!-- Footer Section -->
     <div class="sidebar-footer">
-      <div class="status-indicator">
-        <div 
+      <div class="status-indicator connection-tooltip-container">
+        <div
           class="w-2 h-2 rounded-full animate-pulse"
           :class="allConnected ? 'bg-green-400' : 'bg-red-400'"
         ></div>
-        <span v-if="!isCollapse" class="text-xs text-gray-400">{{ allConnected ? '系统正常' : '连接异常' }}</span>
+        <span
+          v-if="!isCollapse"
+          class="text-xs text-gray-400"
+        >
+          {{ allConnected ? '系统正常' : '连接异常' }}
+          <span class="text-gray-500">({{ connectionStats.connected }}/{{ connectionStats.total }})</span>
+        </span>
+
+        <!-- Hover Tooltip -->
+        <div
+          class="sidebar-connection-tooltip"
+          @click="goToWebSocketTest"
+        >
+          <div class="tooltip-header">
+            <span class="tooltip-title">WebSocket 连接详情</span>
+            <span class="tooltip-summary">{{ connectionStats.connected }}/{{ connectionStats.total }} 已连接</span>
+          </div>
+          <div class="tooltip-content">
+            <div
+              v-for="(isConnected, name) in connectionStatus"
+              :key="name"
+              class="connection-item"
+              :class="{ 'connected': isConnected, 'disconnected': !isConnected }"
+            >
+              <div
+                class="connection-dot"
+                :class="{ 'connected': isConnected, 'disconnected': !isConnected }"
+              ></div>
+              <span class="connection-name">{{ getConnectionDisplayName(name) }}</span>
+              <span class="connection-status">{{ isConnected ? '已连接' : '未连接' }}</span>
+            </div>
+          </div>
+          <div class="tooltip-footer">
+            <span class="tooltip-tip">点击查看详细测试页面</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { connectionStatus } from '@/utils/connectionStatus';
 import {
   ElMenu,
@@ -69,9 +117,11 @@ import {
   Refresh,
   ArrowLeftBold,
   ArrowRightBold,
+  Connection,
 } from '@element-plus/icons-vue';
 
 const currentRoute = useRoute();
+const router = useRouter();
 const isCollapse = ref(false);
 
 const toggleCollapse = () => {
@@ -106,6 +156,11 @@ const allAppRoutes = [
     name: 'Scheduler',
     meta: { title: '任务调度', icon: Refresh, showInSidebar: true },
   },
+  {
+    path: '/websocket-test',
+    name: 'WebSocketTest',
+    meta: { title: 'WebSocket测试', icon: Connection, showInSidebar: true },
+  },
   // 您可以在这里添加更多路由，只要有 showInSidebar: true 就会自动显示
 ];
 
@@ -117,6 +172,51 @@ const menuRoutes = computed(() => {
 const allConnected = computed(() => {
   const values = Object.values(connectionStatus);
   return values.length > 0 && values.every(v => v);
+});
+
+// 计算连接统计
+const connectionStats = computed(() => {
+  const values = Object.values(connectionStatus);
+  const totalConnections = values.length;
+  const connectedCount = values.filter(v => v).length;
+  return {
+    total: totalConnections,
+    connected: connectedCount
+  };
+});
+
+// 获取连接显示名称
+const getConnectionDisplayName = (name: string): string => {
+  const nameMap: Record<string, string> = {
+    'scheduler': '调度器',
+    'task_monitor': '任务监控',
+    'top_backtest': 'Top回测',
+    'ai_analysis': 'AI分析'
+  };
+  return nameMap[name] || name;
+};
+
+// 跳转到WebSocket测试页面
+const goToWebSocketTest = () => {
+  router.push('/websocket-test');
+};
+
+// 定时更新连接状态
+let statusInterval: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  // 每500ms更新一次连接状态
+  statusInterval = setInterval(() => {
+    // 触发响应式更新
+    const _ = connectionStatus;
+  }, 500);
+});
+
+onUnmounted(() => {
+  if (statusInterval) {
+    clearInterval(statusInterval);
+    statusInterval = null;
+  }
 });
 </script>
 
@@ -221,5 +321,75 @@ const allConnected = computed(() => {
 /* Hide status text when collapsed */
 .sidebar-container.is-collapsed .status-indicator span {
   display: none;
+}
+/* Sidebar Connection Tooltip */
+.connection-tooltip-container {
+  @apply relative;
+}
+
+.sidebar-connection-tooltip {
+  @apply absolute bottom-full left-0 mb-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl opacity-0 invisible transition-all duration-200 z-50 cursor-pointer;
+  transform: translateY(10px);
+}
+
+.connection-tooltip-container:hover .sidebar-connection-tooltip {
+  @apply opacity-100 visible;
+  transform: translateY(0);
+}
+
+.tooltip-header {
+  @apply p-3 border-b border-gray-600;
+}
+
+.tooltip-title {
+  @apply text-sm font-semibold text-white block;
+}
+
+.tooltip-summary {
+  @apply text-xs text-gray-400 block mt-1;
+}
+
+.tooltip-content {
+  @apply p-3 space-y-2 max-h-48 overflow-y-auto;
+}
+
+.connection-item {
+  @apply flex items-center justify-between py-1;
+}
+
+.connection-dot {
+  @apply w-2 h-2 rounded-full mr-2;
+}
+
+.connection-dot.connected {
+  @apply bg-green-400;
+}
+
+.connection-dot.disconnected {
+  @apply bg-red-400;
+}
+
+.connection-name {
+  @apply text-sm text-gray-200 flex-1;
+}
+
+.connection-status {
+  @apply text-xs px-2 py-1 rounded;
+}
+
+.connection-item.connected .connection-status {
+  @apply bg-green-500/20 text-green-400;
+}
+
+.connection-item.disconnected .connection-status {
+  @apply bg-red-500/20 text-red-400;
+}
+
+.tooltip-footer {
+  @apply p-3 border-t border-gray-600 bg-gray-700/50;
+}
+
+.tooltip-tip {
+  @apply text-xs text-gray-400;
 }
 </style> 

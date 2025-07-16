@@ -53,8 +53,12 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBacktestHistory, clearBacktestHistory } from '@/utils/api';
 import { ElMessage, ElMessageBox, ElTag } from 'element-plus';
+import { usePageWebSocket } from '@/utils/pageWebSocketManager';
 
 const router = useRouter();
+
+// 页面WebSocket连接管理
+const { pageManager, checkAndReconnect } = usePageWebSocket()
 
 const filters = reactive<{ stock_code?: string }>({ stock_code: undefined });
 const history = ref<any[]>([]);

@@ -369,6 +369,7 @@ import {
   deleteJob,
   runJob,
 } from '@/utils/api';
+import { usePageWebSocket } from '@/utils/pageWebSocketManager';
 
 // --- Type Definition ---
 interface SchedulerStatus {
@@ -379,6 +380,9 @@ interface SchedulerStatus {
 }
 
 const store = useSchedulerStore();
+
+// 页面WebSocket连接管理
+const { pageManager, checkAndReconnect } = usePageWebSocket()
 
 // --- Formatting ---
 const formatDateTime = (isoString: string | null | undefined) => {

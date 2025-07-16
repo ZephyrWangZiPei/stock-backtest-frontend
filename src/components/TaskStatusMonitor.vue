@@ -58,9 +58,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Connection, Close } from '@element-plus/icons-vue'
-import { io, Socket } from 'socket.io-client'
+import { Socket } from 'socket.io-client'
 import { formatTime } from '@/utils/format'
-import { setConnectionStatus } from '@/utils/connectionStatus'
+import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager'
+import { usePageWebSocket } from '@/utils/pageWebSocketManager'
 
 interface TaskStatus {
   id: string
@@ -77,31 +78,33 @@ const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1
 const isConnected = ref(false)
 const tasks = ref<TaskStatus[]>([])
 const currentTask = ref<TaskStatus | null>(null)
-let socket: Socket | null = null
+let wsManager: WebSocketManager | null = null
+
+// 页面WebSocket连接管理
+const { pageManager, checkAndReconnect } = usePageWebSocket()
 
 const connectWebSocket = () => {
-  if (socket) {
-    socket.disconnect()
+  if (wsManager) {
+    wsManager.disconnect()
   }
 
-  socket = io(`${VITE_API_BASE_URL}/scheduler`, {
+  wsManager = createWebSocketManager({
+    url: `${VITE_API_BASE_URL}/scheduler`,
     path: '/socket.io/',
     transports: ['websocket', 'polling'],
     reconnectionAttempts: 5,
-    autoConnect: true
+    connectionName: 'task_monitor',
+    onConnect: (socket) => {
+      isConnected.value = true
+      console.log('TaskStatusMonitor WebSocket connected')
+    },
+    onDisconnect: () => {
+      isConnected.value = false
+      console.log('TaskStatusMonitor WebSocket disconnected')
+    }
   })
 
-  socket.on('connect', () => {
-    isConnected.value = true
-    setConnectionStatus('task_monitor', true)
-    console.log('TaskStatusMonitor WebSocket connected')
-  })
-
-  socket.on('disconnect', () => {
-    isConnected.value = false
-    setConnectionStatus('task_monitor', false)
-    console.log('TaskStatusMonitor WebSocket disconnected')
-  })
+  const socket = wsManager.connect()
 
   // 监听后端推送的job_status事件
   socket.on('job_status', (data: any) => {
@@ -123,11 +126,10 @@ const connectWebSocket = () => {
 }
 
 const disconnectWebSocket = () => {
-  if (socket) {
-    socket.disconnect()
-    socket = null
+  if (wsManager) {
+    wsManager.disconnect()
+    wsManager = null
     isConnected.value = false
-    setConnectionStatus('task_monitor', false)
   }
 }
 

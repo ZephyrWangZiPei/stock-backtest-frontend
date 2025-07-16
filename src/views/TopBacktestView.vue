@@ -642,7 +642,9 @@ import {
 } from '@/utils/api'
 import TopStrategyChart from '@/components/TopStrategyChart.vue'
 import TaskStatusMonitor from '@/components/TaskStatusMonitor.vue'
-import { io, Socket } from 'socket.io-client'
+import { Socket } from 'socket.io-client'
+import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager'
+import { usePageWebSocket } from '@/utils/pageWebSocketManager'
 
 // 数据类型定义
 interface TopStrategyStock {
@@ -710,8 +712,11 @@ const detailDialogVisible = ref(false)
 const selectedStock = ref<TopStrategyStock | null>(null)
 
 // WebSocket 相关
-let socket: Socket | null = null
+let wsManager: WebSocketManager | null = null
 const isSocketConnected = ref(false)
+
+// 页面WebSocket连接管理
+const { pageManager, checkAndReconnect } = usePageWebSocket()
 
 // 全局进度指示器
 const jobProgress = ref({
@@ -815,24 +820,25 @@ const lastUpdateTime = computed(() => {
 
 // WebSocket 连接管理
 const connectWebSocket = () => {
-  if (socket) {
-    socket.disconnect()
+  if (wsManager) {
+    wsManager.disconnect()
   }
 
-  socket = io('http://localhost:5000', {
+  wsManager = createWebSocketManager({
+    url: 'http://localhost:5000',
     transports: ['websocket'],
-    autoConnect: true
+    connectionName: 'top_backtest',
+    onConnect: (socket) => {
+      isSocketConnected.value = true
+      console.log('TopBacktestView WebSocket connected')
+    },
+    onDisconnect: () => {
+      isSocketConnected.value = false
+      console.log('TopBacktestView WebSocket disconnected')
+    }
   })
 
-  socket.on('connect', () => {
-    isSocketConnected.value = true
-    console.log('TopBacktestView WebSocket connected')
-  })
-
-  socket.on('disconnect', () => {
-    isSocketConnected.value = false
-    console.log('TopBacktestView WebSocket disconnected')
-  })
+  const socket = wsManager.connect()
 
   // 监听Top回测任务状态
   socket.on('job_status', (data: any) => {
@@ -852,9 +858,9 @@ const connectWebSocket = () => {
 }
 
 const disconnectWebSocket = () => {
-  if (socket) {
-    socket.disconnect()
-    socket = null
+  if (wsManager) {
+    wsManager.disconnect()
+    wsManager = null
     isSocketConnected.value = false
   }
 }

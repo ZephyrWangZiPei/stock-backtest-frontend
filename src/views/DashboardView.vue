@@ -155,6 +155,7 @@ import {
   getSystemStats,
   getRecommendations,
 } from '@/utils/api'
+import { usePageWebSocket } from '@/utils/pageWebSocketManager'
 
 interface SystemStats {
   totalStocks: number;
@@ -184,6 +185,9 @@ interface Activity {
 }
 
 const router = useRouter();
+
+// WebSocket连接管理
+const { pageManager, checkAndReconnect } = usePageWebSocket()
 
 // 状态管理
 const systemStats = ref<SystemStats>({
