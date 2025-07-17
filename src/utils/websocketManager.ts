@@ -158,21 +158,36 @@ export class WebSocketManager {
   // 手动断开连接
   disconnect() {
     console.log(`[WebSocketManager] ${this.config.connectionName} 手动断开连接`)
-    
+
     this.isManualDisconnect = true
-    
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
 
     if (this.socket) {
+      // 移除所有事件监听器防止内存泄漏
+      this.socket.removeAllListeners()
       this.socket.disconnect()
       this.socket = null
     }
 
     // 更新连接状态
     connectionStatus[this.config.connectionName] = false
+  }
+
+  // 销毁连接管理器
+  destroy() {
+    console.log(`[WebSocketManager] ${this.config.connectionName} 销毁连接管理器`)
+
+    this.disconnect()
+
+    // 清理所有定时器
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
   }
 
   // 强制重连

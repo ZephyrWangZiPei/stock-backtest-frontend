@@ -141,6 +141,27 @@ class GlobalWebSocketManager {
       rate
     }
   }
+
+  // 销毁所有连接
+  destroy() {
+    console.log('[GlobalWebSocketManager] 销毁所有全局WebSocket连接')
+
+    this.managers.forEach((manager, name) => {
+      console.log(`[GlobalWebSocketManager] 销毁连接 ${name}`)
+      // 使用destroy方法而不是disconnect，确保完全清理
+      if (typeof manager.destroy === 'function') {
+        manager.destroy()
+      } else {
+        manager.disconnect()
+      }
+    })
+
+    this.managers.clear()
+    this.isInitialized = false
+
+    // 停止定期检查
+    this.stopPeriodicCheck()
+  }
 }
 
 // 创建全局WebSocket管理器实例
@@ -149,5 +170,6 @@ export const globalWebSocketManager = new GlobalWebSocketManager()
 // 导出便捷方法
 export const initGlobalWebSockets = () => globalWebSocketManager.init()
 export const disconnectGlobalWebSockets = () => globalWebSocketManager.disconnect()
+export const destroyGlobalWebSockets = () => globalWebSocketManager.destroy()
 export const getGlobalWebSocketManager = (name: string) => globalWebSocketManager.getManager(name)
-export const getGlobalConnectionStats = () => globalWebSocketManager.getConnectionStats() 
+export const getGlobalConnectionStats = () => globalWebSocketManager.getConnectionStats()

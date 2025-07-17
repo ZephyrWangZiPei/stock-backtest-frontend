@@ -1,30 +1,25 @@
-import { defineStore } from 'pinia';
-import { Socket } from 'socket.io-client';
-import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager';
+import { defineStore } from 'pinia'
+import { Socket } from 'socket.io-client'
+import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager'
+import type { SchedulerJob, TaskStatus } from '@/types/api'
 
 // Define the structure for the scheduler status
 export interface SchedulerStatus {
-  is_running: boolean;
-  jobs_count: number;
-  jobs: any[];
-  current_time: string;
+  is_running: boolean
+  jobs_count: number
+  jobs: SchedulerJob[]
+  current_time: string
 }
 
 export interface SchedulerState {
-  socket: Socket | null;
-  wsManager: WebSocketManager | null;
-  isConnected: boolean;
-  status: SchedulerStatus;
-  taskStatus: Record<string, {
-    progress?: number;
-    current_date_progress: number;
-    message: string;
-    success?: boolean;
-    data?: any;
-  }>;
+  socket: Socket | null
+  wsManager: WebSocketManager | null
+  isConnected: boolean
+  status: SchedulerStatus
+  taskStatus: Record<string, TaskStatus>
   last_update_times: {
-    daily_data?: string;
-    stock_list?: string;
+    daily_data?: string
+    stock_list?: string
   }
 }
 
