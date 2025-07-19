@@ -27,8 +27,9 @@ const PAGE_WEBSOCKET_CONFIGS = {
   '/top-backtest': [
     {
       name: 'top_backtest',
-      url: 'http://127.0.0.1:5000',
-      transports: ['websocket'],
+      url: 'http://127.0.0.1:5000/scheduler',
+      path: '/socket.io/',
+      transports: ['websocket', 'polling'],
       description: 'Top回测连接'
     }
   ],

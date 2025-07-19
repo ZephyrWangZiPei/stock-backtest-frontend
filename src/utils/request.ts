@@ -59,7 +59,7 @@ service.interceptors.response.use(
     const startTime = response.config.metadata?.startTime
     if (startTime) {
       const duration = endTime.getTime() - startTime.getTime()
-      console.log(`API ${response.config.method?.toUpperCase()} ${response.config.url} took ${duration}ms`)
+      // API请求耗时日志
     }
 
     // 检查业务状态码

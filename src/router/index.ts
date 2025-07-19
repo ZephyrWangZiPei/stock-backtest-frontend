@@ -84,7 +84,7 @@ router.beforeEach((to, from, next) => {
 // 全局后置钩子
 router.afterEach((to, from) => {
   // 页面切换后的处理
-  console.log(`Navigated from ${from.path} to ${to.path}`)
+      // 路由导航日志
 })
 
 // 路由错误处理

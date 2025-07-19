@@ -1,195 +1,306 @@
 <template>
   <div class="top-backtest-container">
-    <!-- Main content wrapper for consistent spacing and max-width -->
-    <div class="content-wrapper">
-      <!-- Header Section -->
-      <header class="page-header">
-        <div class="header-left">
-          <h1 class="page-title">Top策略回测</h1>
-          <p class="page-subtitle">多策略回测胜率排行榜</p>
-        </div>
-        <div class="header-right">
-          <el-button 
-            type="primary" 
-            :icon="Refresh" 
-            :loading="loading" 
-            @click="refreshData"
-            class="refresh-btn"
-          >
-            刷新数据
-          </el-button>
-          <el-button 
-            type="success" 
-            :icon="VideoPlay" 
-            :loading="runningJob" 
-            @click="runBacktestJob"
-            class="run-job-btn"
-            :disabled="runningJob"
-          >
-            {{ runningJob ? '执行中...' : '执行回测' }}
-          </el-button>
-        </div>
-      </header>
-
-      <!-- Global Progress Indicator -->
-      <div v-if="jobProgress.visible" class="global-progress-section">
-        <div class="progress-card">
-          <div class="progress-header">
-            <div class="progress-title">
-              <el-icon class="progress-icon"><VideoPlay /></el-icon>
-              {{ jobProgress.taskName }}
-            </div>
-            <div class="progress-status">
-              <el-tag :type="jobProgress.status === 'running' ? 'warning' : 'success'" size="small">
-                {{ jobProgress.status === 'running' ? '执行中' : '完成' }}
-              </el-tag>
-            </div>
-          </div>
-          <div class="progress-body">
-            <div class="progress-info">
-              <span class="progress-percentage">{{ Math.round(jobProgress.progress) }}%</span>
-              <span class="progress-detail" v-if="jobProgress.detail">{{ jobProgress.detail }}</span>
-            </div>
-            <el-progress
-              :percentage="Math.round(jobProgress.progress)"
-              :color="getProgressColor(jobProgress.progress)"
-              :show-text="false"
-              :stroke-width="8"
-            />
-            <div class="progress-message" v-if="jobProgress.message">
-              {{ jobProgress.message }}
-            </div>
-            <div class="progress-stats" v-if="jobProgress.detail">
-              <span class="stats-text">{{ jobProgress.detail }}</span>
-            </div>
-          </div>
-        </div>
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">Top策略回测</h1>
+        <p class="page-subtitle">多策略回测胜率排行榜</p>
       </div>
+      <div class="header-right">
+        <el-button
+          type="primary"
+          :icon="Refresh"
+          @click="refreshData"
+          :loading="loading"
+          class="refresh-btn"
+        >
+          刷新数据
+        </el-button>
+        <el-button
+          type="success"
+          :icon="VideoPlay"
+          @click="runBacktestJob"
+          :loading="runningJob"
+          class="run-job-btn"
+        >
+          {{ runningJob ? '执行中...' : '执行回测' }}
+        </el-button>
+      </div>
+    </div>
 
-      <!-- Stats and Monitor Section -->
-      <section v-if="stats" class="stats-monitor-section">
-        <div class="stats-cards-grid">
-          <div class="stat-card">
+    <!-- Stats Cards -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card group">
+          <div class="stat-content">
             <div class="stat-icon">
-              <el-icon><TrendCharts /></el-icon>
+              <el-icon>
+                <TrendCharts />
+              </el-icon>
             </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ stats.total_strategies }}</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats?.summary?.total_strategies || 0 }}</div>
               <div class="stat-label">活跃策略</div>
             </div>
           </div>
-          <div class="stat-card">
+        </div>
+
+        <div class="stat-card group">
+          <div class="stat-content">
             <div class="stat-icon">
-              <el-icon><Star /></el-icon>
+              <el-icon>
+                <Star />
+              </el-icon>
             </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ stats.total_top_stocks }}</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats?.summary?.total_stocks || 0 }}</div>
               <div class="stat-label">Top股票</div>
             </div>
           </div>
-          <div class="stat-card">
+        </div>
+
+        <div class="stat-card group">
+          <div class="stat-content">
             <div class="stat-icon">
-              <el-icon><Timer /></el-icon>
+              <el-icon>
+                <Timer />
+              </el-icon>
             </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ lastUpdateTime }}</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ formatLastUpdateTime(stats?.summary?.latest_update) }}</div>
               <div class="stat-label">最后更新</div>
             </div>
           </div>
         </div>
-        
-        <!-- Task Status Monitor -->
-        <div class="monitor-area">
-          <TaskStatusMonitor />
-        </div>
-      </section>
 
-      <!-- Control Panel -->
-      <section class="control-panel">
-        <div class="control-group-left">
-          <el-input
-            v-model="searchQuery"
-            placeholder="搜索股票代码或名称"
-            :prefix-icon="Search"
-            clearable
-            class="search-input"
-          />
-          <el-select
-            v-model="selectedStrategy"
-            placeholder="选择策略"
-            clearable
-            class="strategy-select"
-          >
-            <el-option
-              v-for="strategy in availableStrategies"
-              :key="strategy.strategy_id"
-              :label="strategy.strategy_name"
-              :value="strategy.strategy_id"
+        <div class="stat-card group">
+          <div class="stat-content">
+            <div class="stat-icon">
+              <el-icon>
+                <Connection />
+              </el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">
+                <el-tag
+                  type="success"
+                  size="small"
+                >
+                  <el-icon>
+                    <Check />
+                  </el-icon>
+                  已连接
+                </el-tag>
+              </div>
+              <div class="stat-label">连接状态</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Section (only show when running) -->
+    <div
+      v-if="runningJob"
+      class="progress-section"
+    >
+      <div class="progress-card group">
+        <div class="progress-content">
+          <div class="progress-header">
+            <div class="progress-title">
+              <el-icon class="progress-icon">
+                <VideoPlay />
+              </el-icon>
+              <span>执行进度</span>
+            </div>
+            <div class="progress-percentage">{{ Math.round(jobProgress.progress) }}%</div>
+          </div>
+          <div class="progress-body">
+            <el-progress
+              :percentage="Math.round(jobProgress.progress)"
+              :color="getProgressColor(jobProgress.progress)"
+              :stroke-width="8"
+              :show-text="false"
             />
-          </el-select>
-          <el-input-number
-            v-model="minTradeCount"
-            :min="0"
-            :step="5"
-            controls-position="right"
-            class="trade-count-input"
-            placeholder="最小交易次数"
-          />
+            <div class="progress-detail">{{ jobProgress.detail }}</div>
+          </div>
         </div>
-        <div class="control-group-right">
-          <el-select
-            v-model="sortBy"
-            placeholder="排序方式"
-            class="sort-select"
-          >
-            <el-option label="胜率排序" value="win_rate" />
-            <el-option label="年化收益" value="annual_return" />
-            <el-option label="夏普比率" value="sharpe_ratio" />
-            <el-option label="最大回撤" value="max_drawdown" />
-            <el-option label="置信胜率" value="win_rate_lb" />
-            <el-option label="期望收益" value="expectancy" />
-            <el-option label="盈亏比" value="profit_factor" />
-            <el-option label="交易次数" value="trade_count" />
-          </el-select>
-          <el-select
-            v-model="sortOrder"
-            class="sort-order-select"
-          >
-            <el-option label="降序" value="desc" />
-            <el-option label="升序" value="asc" />
-          </el-select>
-          <el-button
-            :icon="viewMode === 'table' ? Grid : List"
-            @click="toggleViewMode"
-            class="view-toggle-btn"
-          >
-            {{ viewMode === 'table' ? '卡片视图' : '表格视图' }}
-          </el-button>
-        </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- Main Data Display Area -->
-      <main class="data-display-area">
-        <!-- Loading State -->
-        <div v-if="loading" class="loading-state">
-          <el-skeleton :rows="8" animated />
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <div class="filter-card group">
+        <div class="filter-content">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label class="filter-label">搜索股票</label>
+              <el-input
+                v-model="searchQuery"
+                placeholder="搜索股票代码或名称"
+                :prefix-icon="Search"
+                clearable
+                class="filter-input"
+              />
+            </div>
+            <div class="filter-item">
+              <label class="filter-label">选择策略</label>
+              <el-select
+                v-model="selectedStrategy"
+                placeholder="选择策略"
+                clearable
+                class="filter-input"
+              >
+                <el-option
+                  v-for="strategy in availableStrategies"
+                  :key="strategy.strategy_id"
+                  :label="strategy.strategy_name"
+                  :value="strategy.strategy_id"
+                />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label class="filter-label">最小交易次数</label>
+              <el-input-number
+                v-model="minTradeCount"
+                :min="0"
+                :step="5"
+                controls-position="right"
+                class="filter-input"
+                placeholder="最小交易次数"
+              />
+            </div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-item">
+              <label class="filter-label">排序方式</label>
+              <el-select
+                v-model="sortBy"
+                placeholder="排序方式"
+                class="filter-input"
+              >
+                <el-option
+                  label="胜率排序"
+                  value="win_rate"
+                />
+                <el-option
+                  label="年化收益"
+                  value="annual_return"
+                />
+                <el-option
+                  label="夏普比率"
+                  value="sharpe_ratio"
+                />
+                <el-option
+                  label="最大回撤"
+                  value="max_drawdown"
+                />
+                <el-option
+                  label="置信胜率"
+                  value="win_rate_lb"
+                />
+                <el-option
+                  label="期望收益"
+                  value="expectancy"
+                />
+                <el-option
+                  label="盈亏比"
+                  value="profit_factor"
+                />
+                <el-option
+                  label="交易次数"
+                  value="trade_count"
+                />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label class="filter-label">排序顺序</label>
+              <el-select
+                v-model="sortOrder"
+                class="filter-input"
+              >
+                <el-option
+                  label="降序"
+                  value="desc"
+                />
+                <el-option
+                  label="升序"
+                  value="asc"
+                />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label class="filter-label">视图模式</label>
+              <el-button-group class="view-toggle">
+                <el-button
+                  :type="viewMode === 'table' ? 'primary' : 'default'"
+                  :icon="List"
+                  @click="viewMode = 'table'"
+                >
+                  表格视图
+                </el-button>
+                <el-button
+                  :type="viewMode === 'card' ? 'primary' : 'default'"
+                  :icon="Grid"
+                  @click="viewMode = 'card'"
+                >
+                  卡片视图
+                </el-button>
+              </el-button-group>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Data Content -->
-        <div v-else-if="filteredData.length > 0" class="data-content-wrapper">
-          <!-- Table View -->
-          <div v-if="viewMode === 'table'" class="table-view-container">
+    <!-- Data Display Section -->
+    <div class="data-section">
+      <!-- Loading State -->
+      <div
+        v-if="loading"
+        class="loading-state"
+      >
+        <el-skeleton
+          :rows="8"
+          animated
+        />
+      </div>
+
+      <!-- Data Content -->
+      <div
+        v-else-if="filteredData.length > 0"
+        class="data-content"
+      >
+        <!-- Table View -->
+        <div
+          v-if="viewMode === 'table'"
+          class="table-container group"
+        >
+          <div class="table-content">
             <el-table
               :data="paginatedData"
               stripe
               class="data-table"
               @sort-change="handleSortChange"
               default-sort="win_rate"
-              height="calc(100vh - 700px)"
+              height="calc(100vh - 800px)"
             >
-              <el-table-column prop="strategy_name" label="策略" width="150" fixed />
-              <el-table-column prop="stock_code" label="股票代码" width="120" />
-              <el-table-column prop="stock_name" label="股票名称" width="150" />
+              <el-table-column
+                prop="strategy_name"
+                label="策略"
+                width="150"
+                fixed
+              />
+              <el-table-column
+                prop="stock_code"
+                label="股票代码"
+                width="120"
+              />
+              <el-table-column
+                prop="stock_name"
+                label="股票名称"
+                width="150"
+              />
               <el-table-column
                 prop="potential_rating"
                 label="AI潜力"
@@ -368,7 +479,12 @@
                 width="100"
                 align="center"
               />
-              <el-table-column label="操作" width="120" align="center" fixed="right">
+              <el-table-column
+                label="操作"
+                width="120"
+                align="center"
+                fixed="right"
+              >
                 <template #default="scope">
                   <el-button
                     type="primary"
@@ -381,16 +497,21 @@
               </el-table-column>
             </el-table>
           </div>
+        </div>
 
-          <!-- Card View -->
-          <div v-else class="card-view-container">
-            <div class="cards-grid">
-              <div
-                v-for="item in paginatedData"
-                :key="`${item.strategy_id}-${item.stock_code}`"
-                class="stock-card"
-                @click="viewDetail(item)"
-              >
+        <!-- Card View -->
+        <div
+          v-else
+          class="cards-container"
+        >
+          <div class="cards-grid">
+            <div
+              v-for="item in paginatedData"
+              :key="`${item.strategy_id}-${item.stock_code}`"
+              class="stock-card group"
+              @click="viewDetail(item)"
+            >
+              <div class="card-content">
                 <div class="card-header">
                   <div class="card-title">
                     <span class="stock-code">{{ item.stock_code }}</span>
@@ -404,9 +525,12 @@
                     #{{ item.rank }}
                   </el-tag>
                 </div>
-                
+
                 <div class="card-strategy">
-                  <el-tag type="info" size="small">{{ item.strategy_name }}</el-tag>
+                  <el-tag
+                    type="info"
+                    size="small"
+                  >{{ item.strategy_name }}</el-tag>
                 </div>
 
                 <div class="card-metrics">
@@ -422,31 +546,31 @@
                       <span class="metric-text">{{ (item.win_rate * 100).toFixed(2) }}%</span>
                     </div>
                   </div>
-                  
+
                   <div class="metric-item">
                     <span class="metric-label">置信胜率</span>
                     <span class="metric-text">{{ formatPercentage(item.win_rate_lb) }}</span>
                   </div>
-                  
+
                   <div class="metric-item">
                     <span class="metric-label">交易次数</span>
                     <span class="metric-text">{{ item.trade_count }}</span>
                   </div>
-                  
+
                   <div class="metric-item">
                     <span class="metric-label">年化收益</span>
                     <span :class="['metric-text', getReturnClass(item.annual_return)]">
                       {{ formatPercentage(item.annual_return) }}
                     </span>
                   </div>
-                  
+
                   <div class="metric-item">
                     <span class="metric-label">夏普比率</span>
                     <span :class="['metric-text', getSharpeClass(item.sharpe_ratio)]">
                       {{ item.sharpe_ratio?.toFixed(3) || '-' }}
                     </span>
                   </div>
-                  
+
                   <div class="metric-item">
                     <span class="metric-label">最大回撤</span>
                     <span class="metric-text drawdown-text">
@@ -456,13 +580,19 @@
 
                   <div class="metric-item">
                     <span class="metric-label">盈亏比</span>
-                    <span class="metric-text" :class="getReturnClass(item.profit_factor)">
+                    <span
+                      class="metric-text"
+                      :class="getReturnClass(item.profit_factor)"
+                    >
                       {{ item.profit_factor?.toFixed(2) || '-' }}
                     </span>
                   </div>
 
-                  <!-- AI分析结果 - 潜力评级 -->
-                  <div class="metric-item" v-if="item.potential_rating">
+                  <!-- AI Analysis Results -->
+                  <div
+                    v-if="item.potential_rating"
+                    class="metric-item"
+                  >
                     <span class="metric-label">AI潜力</span>
                     <el-tag
                       :type="getPotentialRatingTagType(item.potential_rating)"
@@ -473,49 +603,69 @@
                     </el-tag>
                   </div>
 
-                  <!-- AI分析结果 - 置信率 -->
-                  <div class="metric-item" v-if="item.confidence_score !== undefined && item.confidence_score !== null">
+                  <div
+                    v-if="item.confidence_score !== undefined && item.confidence_score !== null"
+                    class="metric-item"
+                  >
                     <span class="metric-label">AI置信</span>
-                    <span class="metric-text">
-                      {{ item.confidence_score.toFixed(2) }}%
-                    </span>
+                    <span class="metric-text">{{ item.confidence_score.toFixed(2) }}%</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Pagination -->
-          <div class="pagination-section">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :total="filteredData.length"
-              layout="total, sizes, prev, pager, next, jumper"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
+        <!-- Pagination -->
+        <div class="pagination-section">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="filteredData.length"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
+      </div>
+
+      <!-- Empty Data State -->
+      <div
+        v-else
+        class="empty-state"
+      >
+        <el-empty description="暂无数据">
+          <div
+            class="debug-info"
+            style="margin-bottom: 20px; text-align: center; color: #999;"
+          >
+            <p>调试信息:</p>
+            <p>原始数据长度: {{ topStrategyStocks.length }}</p>
+            <p>过滤后数据长度: {{ filteredData.length }}</p>
+            <p>搜索条件: "{{ searchQuery }}"</p>
+            <p>策略过滤: {{ selectedStrategy }}</p>
+            <p>最小交易次数: {{ minTradeCount }}</p>
           </div>
-        </div>
-
-        <!-- Empty Data State -->
-        <div v-else class="empty-state">
-          <el-empty description="暂无数据">
-            <el-button type="primary" @click="runBacktestJob">执行回测任务</el-button>
-          </el-empty>
-        </div>
-      </main>
+          <el-button
+            type="primary"
+            @click="runBacktestJob"
+          >执行回测任务</el-button>
+        </el-empty>
+      </div>
     </div>
 
-    <!-- Detail Dialog (outside main content flow to ensure proper z-index) -->
+    <!-- Detail Dialog -->
     <el-dialog
       v-model="detailDialogVisible"
       title="股票详情"
       width="800px"
       class="detail-dialog"
     >
-      <div v-if="selectedStock" class="detail-content">
+      <div
+        v-if="selectedStock"
+        class="detail-content"
+      >
         <div class="detail-header">
           <div class="stock-info">
             <h3>{{ selectedStock.stock_code }} - {{ selectedStock.stock_name }}</h3>
@@ -542,77 +692,92 @@
               :show-text="false"
             />
           </div>
-          
+
           <div class="metric-card">
             <div class="metric-title">年化收益率</div>
             <div :class="['metric-main-value', getReturnClass(selectedStock.annual_return)]">
               {{ formatPercentage(selectedStock.annual_return) }}
             </div>
           </div>
-          
+
           <div class="metric-card">
             <div class="metric-title">夏普比率</div>
             <div :class="['metric-main-value', getSharpeClass(selectedStock.sharpe_ratio)]">
               {{ selectedStock.sharpe_ratio?.toFixed(3) || '-' }}
             </div>
           </div>
-          
+
           <div class="metric-card">
             <div class="metric-title">最大回撤</div>
             <div class="metric-main-value drawdown-text">
               {{ formatPercentage(selectedStock.max_drawdown) }}
             </div>
           </div>
+        </div>
 
-          <div class="metric-card">
-            <div class="metric-title">盈亏比</div>
-            <div class="metric-main-value">
+        <div class="detail-info">
+          <el-descriptions
+            :column="2"
+            border
+          >
+            <el-descriptions-item label="置信胜率">
+              {{ formatPercentage(selectedStock.win_rate_lb) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="交易次数">
+              {{ selectedStock.trade_count }}
+            </el-descriptions-item>
+            <el-descriptions-item label="期望收益">
+              {{ formatPercentage(selectedStock.expectancy) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="盈亏比">
               {{ selectedStock.profit_factor?.toFixed(2) || '-' }}
-            </div>
-          </div>
-
-          <!-- AI Analysis Results - Core Metrics -->
-          <div class="metric-card" v-if="selectedStock.potential_rating">
-            <div class="metric-title">AI潜力评级</div>
-            <div class="metric-main-value">
+            </el-descriptions-item>
+            <el-descriptions-item label="回测天数">
+              {{ selectedStock.backtest_period_days }}
+            </el-descriptions-item>
+            <el-descriptions-item
+              label="AI潜力"
+              v-if="selectedStock.potential_rating"
+            >
               <el-tag
                 :type="getPotentialRatingTagType(selectedStock.potential_rating)"
-                size="large"
-                round
+                size="small"
               >
                 {{ selectedStock.potential_rating }}
               </el-tag>
-            </div>
-          </div>
-
-          <div class="metric-card" v-if="selectedStock.confidence_score !== undefined && selectedStock.confidence_score !== null">
-            <div class="metric-title">AI置信率</div>
-            <div class="metric-main-value">
+            </el-descriptions-item>
+            <el-descriptions-item
+              label="AI置信"
+              v-if="selectedStock.confidence_score !== undefined && selectedStock.confidence_score !== null"
+            >
               {{ selectedStock.confidence_score.toFixed(2) }}%
-            </div>
-          </div>
-        </div>
-
-        <!-- Detailed Information -->
-        <div class="detail-info">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="回测周期">{{ selectedStock.backtest_period_days }} 天</el-descriptions-item>
-            <el-descriptions-item label="初始资金">¥{{ formatNumber(selectedStock.initial_capital) }}</el-descriptions-item>
-            <el-descriptions-item label="总收益率">{{ formatPercentage(selectedStock.total_return) }}</el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ formatDate(selectedStock.created_at) }}</el-descriptions-item>
-            <el-descriptions-item label="更新时间">{{ formatDate(selectedStock.updated_at) }}</el-descriptions-item>
-
-            <!-- AI analysis details -->
-            <el-descriptions-item label="AI推荐理由" :span="2" v-if="selectedStock.recommendation_reason">
+            </el-descriptions-item>
+            <el-descriptions-item
+              label="AI推荐理由"
+              :span="2"
+              v-if="selectedStock.recommendation_reason"
+            >
               {{ selectedStock.recommendation_reason }}
             </el-descriptions-item>
-            <el-descriptions-item label="AI建议买入" :span="1" v-if="selectedStock.buy_point">
+            <el-descriptions-item
+              label="AI建议买入"
+              :span="2"
+              v-if="selectedStock.buy_point"
+            >
               {{ selectedStock.buy_point }}
             </el-descriptions-item>
-            <el-descriptions-item label="AI建议卖出" :span="1" v-if="selectedStock.sell_point">
+            <el-descriptions-item
+              label="AI建议卖出"
+              :span="2"
+              v-if="selectedStock.sell_point"
+            >
               {{ selectedStock.sell_point }}
             </el-descriptions-item>
-            <el-descriptions-item label="AI风险提示" :span="2" v-if="selectedStock.risks">
+            <el-descriptions-item
+              label="AI风险提示"
+              :span="2"
+              v-if="selectedStock.risks"
+            >
               {{ selectedStock.risks }}
             </el-descriptions-item>
           </el-descriptions>
@@ -626,332 +791,163 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Refresh,
-  VideoPlay,
-  Search,
   TrendCharts,
   Star,
   Timer,
+  Connection,
+  Check,
+  VideoPlay,
+  Search,
+  Refresh,
   Grid,
   List
 } from '@element-plus/icons-vue'
-import {
-  getAllTopStrategyStocks,
-  getTopStocksStats,
-  runTopStrategyBacktestJob
-} from '@/utils/api'
-import TopStrategyChart from '@/components/TopStrategyChart.vue'
-import TaskStatusMonitor from '@/components/TaskStatusMonitor.vue'
-import { Socket } from 'socket.io-client'
-import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager'
+import { getTopStrategyStocks, getTopStocksStats, runTopStrategyBacktestJob, getStrategies } from '@/utils/api'
 import { usePageWebSocket } from '@/utils/pageWebSocketManager'
 
-// 数据类型定义
-interface TopStrategyStock {
-  id: number
-  strategy_id: number
-  strategy_name: string
-  stock_code: string
-  stock_name: string
-  win_rate: number
-  total_return: number
-  annual_return: number
-  max_drawdown: number
-  sharpe_ratio: number
-  rank: number
-  backtest_period_days: number
-  initial_capital: number
-  created_at: string
-  updated_at: string
-  trade_count: number
-  win_rate_lb: number
-  expectancy: number
-  profit_factor?: number
-  // DeepSeek AI 分析结果字段
-  potential_rating?: string
-  confidence_score?: number
-  recommendation_reason?: string
-  buy_point?: string
-  sell_point?: string
-  risks?: string
-}
-
-interface StrategyGroup {
-  strategy_id: number
-  strategy_name: string
-  top_stocks: TopStrategyStock[]
-}
-
-interface StatsData {
-  total_strategies: number
-  total_top_stocks: number
-  strategy_details: Array<{
-    strategy_name: string
-    stock_count: number
-    avg_win_rate: number
-    last_update: string
-  }>
-}
+// WebSocket连接管理
+const { pageManager, checkAndReconnect } = usePageWebSocket()
 
 // 响应式数据
 const loading = ref(false)
 const runningJob = ref(false)
-const rawData = ref<StrategyGroup[]>([])
-const stats = ref<StatsData | null>(null)
+const stats = ref<any>({
+  summary: {
+    total_strategies: 0,
+    total_stocks: 0,
+    latest_update: null
+  }
+})
+const topStrategyStocks = ref<any[]>([])
+const availableStrategies = ref<any[]>([])
+
+// 过滤和排序
 const searchQuery = ref('')
-const selectedStrategy = ref<number | null>(null)
+const selectedStrategy = ref('')
+const minTradeCount = ref(3)
 const sortBy = ref('win_rate')
 const sortOrder = ref('desc')
 const viewMode = ref<'table' | 'card'>('table')
+
+// 分页
 const currentPage = ref(1)
 const pageSize = ref(20)
-const minTradeCount = ref(3)
 
-// 详情弹窗
+// 详情对话框
 const detailDialogVisible = ref(false)
-const selectedStock = ref<TopStrategyStock | null>(null)
+const selectedStock = ref<any>(null)
 
-// WebSocket 相关
-let wsManager: WebSocketManager | null = null
-const isSocketConnected = ref(false)
-
-// 页面WebSocket连接管理
-const { pageManager, checkAndReconnect } = usePageWebSocket()
-
-// 全局进度指示器
+// 执行进度
 const jobProgress = ref({
-  visible: false,
-  taskName: 'Top策略回测',
-  status: 'running',
   progress: 0,
-  message: '',
-  detail: ''
+  detail: '',
+  taskName: '',
+  status: 'idle' as 'idle' | 'running' | 'completed' | 'failed'
 })
 
 // 计算属性
-const allStocks = computed(() => {
-  const stocks: TopStrategyStock[] = []
-  rawData.value.forEach(group => {
-    stocks.push(...group.top_stocks)
-  })
-  return stocks
-})
-
-const availableStrategies = computed(() => {
-  return rawData.value.map(group => ({
-    strategy_id: group.strategy_id,
-    strategy_name: group.strategy_name
-  }))
-})
-
 const filteredData = computed(() => {
-  let filtered = allStocks.value
+  let data = topStrategyStocks.value
+  console.log('filteredData 计算 - 原始数据长度:', data.length)
 
   // 搜索过滤
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(stock =>
-      stock.stock_code.toLowerCase().includes(query) ||
-      stock.stock_name.toLowerCase().includes(query)
+    data = data.filter(item =>
+      item.stock_code.toLowerCase().includes(query) ||
+      item.stock_name.toLowerCase().includes(query)
     )
   }
 
   // 策略过滤
   if (selectedStrategy.value) {
-    filtered = filtered.filter(stock => stock.strategy_id === selectedStrategy.value)
+    data = data.filter(item => item.strategy_id == selectedStrategy.value)
   }
 
-  // 最小交易次数过滤
-  if (minTradeCount.value) {
-    filtered = filtered.filter(stock => (stock.trade_count || 0) >= minTradeCount.value)
+  // 交易次数过滤
+  if (minTradeCount.value > 0) {
+    data = data.filter(item => item.trade_count >= minTradeCount.value)
   }
+  return data
+})
 
-  // 排序
-  filtered.sort((a, b) => {
-    const aValue = a[sortBy.value as keyof TopStrategyStock]
-    const bValue = b[sortBy.value as keyof TopStrategyStock]
+const sortedData = computed(() => {
+  const data = [...filteredData.value]
 
-    // 特殊处理 potential_rating 字符串排序
-    if (sortBy.value === 'potential_rating') {
-      const ratingOrder: { [key: string]: number } = {
-        '高': 3,
-        '中': 2,
-        '低': 1,
-        '-': 0, // 处理没有评级的情况
-        undefined: 0, // 处理 undefined
-        null: 0 // 处理 null
+  if (sortBy.value) {
+    data.sort((a, b) => {
+      let aVal = a[sortBy.value]
+      let bVal = b[sortBy.value]
+
+      // 处理null/undefined值
+      if (aVal == null) aVal = sortOrder.value === 'desc' ? -Infinity : Infinity
+      if (bVal == null) bVal = sortOrder.value === 'desc' ? -Infinity : Infinity
+
+      if (sortOrder.value === 'desc') {
+        return bVal - aVal
+      } else {
+        return aVal - bVal
       }
-      const aRating = ratingOrder[aValue as string] || 0
-      const bRating = ratingOrder[bValue as string] || 0
-      return sortOrder.value === 'desc' ? bRating - aRating : aRating - bRating
-    }
-    
-    // 其他数值类型属性的排序
-    const numA = (aValue as number) || 0
-    const numB = (bValue as number) || 0
-    
-    if (sortOrder.value === 'desc') {
-      return numB - numA
-    } else {
-      return numA - numB
-    }
-  })
+    })
+  }
 
-  return filtered
+  return data
 })
 
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return filteredData.value.slice(start, end)
+  return sortedData.value.slice(start, end)
 })
-
-const lastUpdateTime = computed(() => {
-  if (!stats.value?.strategy_details?.length) return '-'
-  
-  const latestUpdate = stats.value.strategy_details
-    .map(s => s.last_update)
-    .filter(Boolean)
-    .sort()
-    .pop()
-  
-  return latestUpdate ? formatDate(latestUpdate) : '-'
-})
-
-// WebSocket 连接管理
-const connectWebSocket = () => {
-  if (wsManager) {
-    wsManager.disconnect()
-  }
-
-  wsManager = createWebSocketManager({
-    url: 'http://localhost:5000',
-    transports: ['websocket'],
-    connectionName: 'top_backtest',
-    onConnect: (socket) => {
-      isSocketConnected.value = true
-      console.log('TopBacktestView WebSocket connected')
-    },
-    onDisconnect: () => {
-      isSocketConnected.value = false
-      console.log('TopBacktestView WebSocket disconnected')
-    }
-  })
-
-  const socket = wsManager.connect()
-
-  // 监听Top回测任务状态
-  socket.on('job_status', (data: any) => {
-    console.log('TopBacktestView received job_status:', data)
-    if (data.job_name === 'top_strategy_backtest') {
-      handleJobStatus(data)
-    }
-  })
-
-  // 监听Top回测任务进度
-  socket.on('job_progress', (data: any) => {
-    console.log('TopBacktestView received job_progress:', data)
-    if (data.job_name === 'top_strategy_backtest') {
-      handleJobProgress(data)
-    }
-  })
-}
-
-const disconnectWebSocket = () => {
-  if (wsManager) {
-    wsManager.disconnect()
-    wsManager = null
-    isSocketConnected.value = false
-  }
-}
-
-// WebSocket 事件处理
-const handleJobStatus = (data: any) => {
-  if (data.status === 'started') {
-    runningJob.value = true
-    jobProgress.value.visible = true
-    jobProgress.value.status = 'running'
-    jobProgress.value.progress = 0
-    jobProgress.value.message = '正在启动回测任务...'
-    jobProgress.value.detail = ''
-    ElMessage.success('Top回测任务已启动，正在执行中...')
-  } else if (data.status === 'completed') {
-    runningJob.value = false
-    jobProgress.value.status = 'completed'
-    jobProgress.value.progress = 100
-    jobProgress.value.message = '回测任务已完成！'
-    ElMessage.success('Top回测任务已完成！')
-    // 任务完成后自动刷新数据
-    setTimeout(() => {
-      refreshData()
-      // 延迟隐藏进度指示器
-      setTimeout(() => {
-        jobProgress.value.visible = false
-      }, 3000)
-    }, 1000)
-  } else if (data.status === 'failed') {
-    runningJob.value = false
-    jobProgress.value.status = 'failed'
-    jobProgress.value.message = `任务失败: ${data.message || '未知错误'}`
-    ElMessage.error(`Top回测任务失败: ${data.message || '未知错误'}`)
-    // 失败后也要隐藏进度指示器
-    setTimeout(() => {
-      jobProgress.value.visible = false
-    }, 5000)
-  } else if (data.status === 'rejected') {
-    runningJob.value = false
-    jobProgress.value.visible = false
-    ElMessage.warning(`Top回测任务被拒绝: ${data.message || '任务已在运行中'}`)
-  }
-}
-
-const handleJobProgress = (data: any) => {
-  // 更新全局进度指示器
-  if (jobProgress.value.visible) {
-    const progressPercentage = data.total > 0 ? (data.progress / data.total) * 100 : 0
-    jobProgress.value.progress = progressPercentage
-    jobProgress.value.message = data.message || '正在执行回测...'
-    jobProgress.value.detail = data.total > 0 ? `已完成 ${data.progress}/${data.total} 个回测任务` : ''
-  }
-  console.log('Top回测进度:', data)
-}
 
 // 方法
 const refreshData = async () => {
   loading.value = true
   try {
-    const [stocksResponse, statsResponse] = await Promise.all([
-      getAllTopStrategyStocks(),
-      getTopStocksStats()
+    const [statsResponse, stocksResponse, strategiesResponse] = await Promise.all([
+      getTopStocksStats(),
+      getTopStrategyStocks(),
+      getStrategies()
     ])
 
-    if ((stocksResponse as any).code===200) {
-      rawData.value = (stocksResponse as any).data
-    } else {
-      ElMessage.error((stocksResponse as any).message || '获取数据失败')
+    // 处理API响应
+    if (statsResponse.data) {
+      stats.value = statsResponse.data
     }
 
-    if ((statsResponse as any).code===200) {
-      stats.value = (statsResponse as any).data
+    if (stocksResponse.data) {
+      // 处理Top策略股票数据 - 需要展平数据结构
+      const allStocks: any[] = []
+      stocksResponse.data.forEach((strategyGroup: any) => {
+        if (strategyGroup.top_stocks && Array.isArray(strategyGroup.top_stocks)) {
+          // 确保每个股票对象都有正确的数据结构
+          strategyGroup.top_stocks.forEach((stock: any) => {
+            if (stock && typeof stock === 'object') {
+              allStocks.push(stock)
+            }
+          })
+        }
+      })
+      topStrategyStocks.value = allStocks
     }
+
+    if (strategiesResponse.data) {
+      availableStrategies.value = strategiesResponse.data
+    }
+
+    ElMessage.success('数据刷新成功')
   } catch (error) {
-    console.error('获取数据失败:', error)
-    ElMessage.error('网络错误，请稍后重试')
+    console.error('刷新数据失败:', error)
+    ElMessage.error('刷新数据失败')
   } finally {
     loading.value = false
   }
 }
 
 const runBacktestJob = async () => {
-  // 如果任务正在运行，则提示用户
-  if (runningJob.value) {
-    ElMessage.warning('回测任务正在运行中，请稍后再试')
-    return
-  }
-
   try {
     await ElMessageBox.confirm(
-      '执行回测任务可能需要较长时间（通常需要几分钟），确定要继续吗？',
+      '确定要执行Top策略回测吗？这可能需要一些时间。',
       '确认执行',
       {
         confirmButtonText: '确定',
@@ -961,29 +957,26 @@ const runBacktestJob = async () => {
     )
 
     runningJob.value = true
-    const response = await runTopStrategyBacktestJob()
-    
-    if ((response as any).success) {
-      ElMessage.success('回测任务已提交，请关注任务状态监控')
-      // 不需要在这里设置延迟刷新，因为WebSocket会处理任务完成通知
-    } else {
-      runningJob.value = false
-      ElMessage.error((response as any).message || '启动任务失败')
+    jobProgress.value = {
+      progress: 0,
+      detail: '正在启动回测任务...',
+      taskName: 'Top策略回测',
+      status: 'running'
     }
+
+    await runTopStrategyBacktestJob()
+    ElMessage.success('回测任务已启动')
   } catch (error) {
-    runningJob.value = false
     if (error !== 'cancel') {
-      console.error('启动任务失败:', error)
-      ElMessage.error('启动任务失败')
+      console.error('启动回测任务失败:', error)
+      ElMessage.error('启动回测任务失败')
+      runningJob.value = false
+      jobProgress.value.status = 'failed'
     }
   }
 }
 
-const toggleViewMode = () => {
-  viewMode.value = viewMode.value === 'table' ? 'card' : 'table'
-}
-
-const handleSortChange = ({ prop, order }: { prop: string; order: string }) => {
+const handleSortChange = ({ prop, order }: any) => {
   if (prop) {
     sortBy.value = prop
     sortOrder.value = order === 'ascending' ? 'asc' : 'desc'
@@ -999,16 +992,24 @@ const handleCurrentChange = (page: number) => {
   currentPage.value = page
 }
 
-const viewDetail = (stock: TopStrategyStock) => {
-  selectedStock.value = stock
+const viewDetail = (item: any) => {
+  selectedStock.value = item
   detailDialogVisible.value = true
 }
 
-// 工具函数
-const getRankTagType = (rank: number) => {
-  if (rank <= 3) return 'danger'
-  if (rank <= 10) return 'warning'
-  return 'info'
+const formatPercentage = (value: number) => {
+  if (value == null) return '-'
+  return `${(value * 100).toFixed(2)}%`
+}
+
+const formatLastUpdateTime = (timestamp?: string) => {
+  if (!timestamp) return '-'
+  try {
+    const date = new Date(timestamp)
+    return date.toLocaleString('zh-CN')
+  } catch {
+    return timestamp
+  }
 }
 
 const getWinRateColor = (winRate: number) => {
@@ -1017,41 +1018,33 @@ const getWinRateColor = (winRate: number) => {
   return '#f56c6c'
 }
 
-const getPotentialRatingTagType = (rating?: string) => {
-  if (!rating) return 'info'
-  switch (rating.toLowerCase()) {
-    case '高': return 'success'
-    case '中': return 'warning'
-    case '低': return 'danger'
-    default: return 'info'
-  }
-}
-
-const getReturnClass = (returnValue?: number) => {
-  if (returnValue && returnValue > 0) return 'positive-return'
-  if (returnValue && returnValue < 0) return 'negative-return'
+const getReturnClass = (value: number) => {
+  if (value == null) return ''
+  if (value > 0.2) return 'positive-return'
+  if (value < -0.1) return 'negative-return'
   return 'neutral-return'
 }
 
-const getSharpeClass = (sharpe: number) => {
-  if (sharpe > 1) return 'excellent-sharpe'
-  if (sharpe > 0.5) return 'good-sharpe'
+const getSharpeClass = (value: number) => {
+  if (value == null) return ''
+  if (value > 1.5) return 'excellent-sharpe'
+  if (value > 1.0) return 'good-sharpe'
   return 'poor-sharpe'
 }
 
-const formatPercentage = (value: number) => {
-  if (value == null) return '-'
-  return `${(value * 100).toFixed(2)}%`
+const getRankTagType = (rank: number) => {
+  if (rank <= 3) return 'danger'
+  if (rank <= 10) return 'warning'
+  return 'info'
 }
 
-const formatNumber = (value: number) => {
-  if (value == null) return '-'
-  return new Intl.NumberFormat('zh-CN').format(value)
-}
-
-const formatDate = (dateString: string) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('zh-CN')
+const getPotentialRatingTagType = (rating: string) => {
+  switch (rating) {
+    case '高': return 'success'
+    case '中': return 'warning'
+    case '低': return 'info'
+    default: return 'info'
+  }
 }
 
 const getProgressColor = (progress: number) => {
@@ -1060,47 +1053,136 @@ const getProgressColor = (progress: number) => {
   return '#409eff'
 }
 
-// 监听搜索和筛选变化，重置分页
-watch([searchQuery, selectedStrategy], () => {
-  currentPage.value = 1
+// WebSocket事件处理
+const handleWebSocketMessage = (data: any) => {
+  try {
+    // 处理job_progress事件
+    if (data.job_name === 'top_strategy_backtest') {
+      // 计算进度百分比
+      const progress = data.total > 0 ? (data.progress / data.total) * 100 : data.progress || 0
+
+      jobProgress.value = {
+        progress: progress,
+        detail: data.message || '',
+        taskName: 'Top策略回测',
+        status: 'running'
+      }
+    }
+
+    // 处理job_status事件
+    if (data.job_name === 'top_strategy_backtest' && data.status) {
+      if (data.status === 'completed') {
+        runningJob.value = false
+        jobProgress.value = {
+          progress: 100,
+          detail: data.message || '任务完成',
+          taskName: 'Top策略回测',
+          status: 'completed'
+        }
+        ElMessage.success('回测任务已完成')
+        refreshData() // 自动刷新数据
+      } else if (data.status === 'failed') {
+        runningJob.value = false
+        jobProgress.value = {
+          progress: 0,
+          detail: data.message || '任务失败',
+          taskName: 'Top策略回测',
+          status: 'failed'
+        }
+        ElMessage.error('回测任务失败')
+      } else if (data.status === 'started') {
+        runningJob.value = true
+        jobProgress.value = {
+          progress: 0,
+          detail: data.message || '任务开始',
+          taskName: 'Top策略回测',
+          status: 'running'
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[TopBacktestView] 处理WebSocket消息失败:', error)
+  }
+}
+
+// WebSocket连接管理
+const connectWebSocket = () => {
+  if (pageManager) {
+    // 使用现有的WebSocket连接
+    checkAndReconnect()
+
+    // 获取top_backtest连接管理器
+    const topBacktestManager = pageManager.getManager('top_backtest')
+    if (topBacktestManager) {
+      // 监听job_progress和job_status事件
+      topBacktestManager.on('job_progress', handleWebSocketMessage)
+      topBacktestManager.on('job_status', handleWebSocketMessage)
+    } else {
+      console.warn('[TopBacktestView] 未找到top_backtest连接管理器')
+    }
+  }
+}
+
+const disconnectWebSocket = () => {
+  if (pageManager) {
+    // 移除事件监听器
+    const topBacktestManager = pageManager.getManager('top_backtest')
+    if (topBacktestManager) {
+      topBacktestManager.off('job_progress', handleWebSocketMessage)
+      topBacktestManager.off('job_status', handleWebSocketMessage)
+    }
+  }
+}
+
+// 监听器
+watch(runningJob, (newVal) => {
+  if (!newVal) {
+    // 任务结束时重置进度
+    setTimeout(() => {
+      jobProgress.value = {
+        progress: 0,
+        detail: '',
+        taskName: '',
+        status: 'idle'
+      }
+    }, 3000)
+  }
 })
 
-// 初始化
+// 生命周期
 onMounted(() => {
   refreshData()
-  connectWebSocket()
+
+  // 延迟连接WebSocket，确保页面管理器已初始化
+  setTimeout(() => {
+    connectWebSocket()
+  }, 1000)
 })
 
-// 清理
+
+
 onUnmounted(() => {
   disconnectWebSocket()
 })
 </script>
 
 <style scoped>
-/* Main container for the entire view */
+/* Main container */
 .top-backtest-container {
-  @apply min-h-screen flex flex-col p-6 bg-gradient-to-br from-gray-950 to-gray-800 text-gray-100 font-sans;
-  height: 100%;
-  overflow-y: auto;
-}
-
-/* Wrapper for main content to apply max-width and center */
-.content-wrapper {
-  @apply w-full flex flex-col gap-8;
+  @apply min-h-screen bg-gray-950 text-gray-100 p-6;
 }
 
 /* Page Header */
 .page-header {
-  @apply flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-gray-700;
+  @apply flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8;
 }
 
 .header-left {
-  @apply text-white;
+  @apply flex-1;
 }
 
 .page-title {
-  @apply text-4xl font-extrabold;
+  @apply text-4xl font-bold text-white mb-2;
 }
 
 .page-subtitle {
@@ -1111,378 +1193,361 @@ onUnmounted(() => {
   @apply flex gap-3;
 }
 
-/* Stats and Monitor Section */
-.stats-monitor-section {
-  @apply grid grid-cols-1 lg:grid-cols-4 gap-6;
+.refresh-btn,
+.run-job-btn {
+  @apply px-6 py-3 rounded-lg font-medium;
 }
 
-.stats-cards-grid {
-  @apply lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6;
+/* Stats Section */
+.stats-section {
+  @apply mb-8;
 }
 
-.monitor-area {
-  @apply lg:col-span-1;
-}
-
-/* Global Progress Indicator */
-.global-progress-section {
-  @apply mb-6;
-}
-
-.progress-card {
-  @apply bg-gradient-to-r from-blue-900/50 to-purple-900/50 border border-blue-700/50 rounded-lg p-6 shadow-lg backdrop-blur-sm;
-}
-
-.progress-header {
-  @apply flex justify-between items-center mb-4;
-}
-
-.progress-title {
-  @apply flex items-center gap-2 text-white font-semibold text-lg;
-}
-
-.progress-icon {
-  @apply text-blue-400;
-}
-
-.progress-status {
-  @apply flex items-center;
-}
-
-.progress-body {
-  @apply space-y-3;
-}
-
-.progress-info {
-  @apply flex justify-between items-center;
-}
-
-.progress-percentage {
-  @apply text-2xl font-bold text-white;
-}
-
-.progress-detail {
-  @apply text-gray-300 text-sm font-medium;
-}
-
-.progress-message {
-  @apply text-gray-300 text-sm mt-2;
-}
-
-.progress-stats {
-  @apply text-blue-300 text-sm mt-2 font-medium;
-}
-
-.stats-text {
-  @apply bg-blue-900/30 px-2 py-1 rounded text-blue-200;
+.stats-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6;
 }
 
 .stat-card {
-  @apply bg-gray-800/60 border border-gray-700 rounded-lg p-5 flex items-center gap-4 shadow-lg transition-all duration-300 hover:bg-gray-700/70 hover:shadow-xl;
+  @apply relative;
 }
 
-.stat-icon {
-  @apply flex-shrink-0 w-14 h-14 bg-gradient-to-tr from-blue-600 to-purple-700 rounded-full flex items-center justify-center text-white text-2xl shadow-md;
+.stat-card::before {
+  content: '';
+  @apply absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl opacity-50 group-hover:opacity-75 transition duration-300;
+}
+
+.stat-card>div {
+  @apply relative bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-2xl hover:shadow-blue-500/10 transition-all duration-300;
 }
 
 .stat-content {
-  @apply flex flex-col;
+  @apply flex items-center gap-4;
+}
+
+.stat-icon {
+  @apply flex-shrink-0 w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center;
+}
+
+.stat-icon .el-icon {
+  @apply text-blue-400 text-xl;
+}
+
+.stat-info {
+  @apply flex-1 min-w-0;
 }
 
 .stat-value {
-  @apply text-3xl font-bold text-white;
+  @apply text-2xl font-bold text-white mb-1;
 }
 
 .stat-label {
-  @apply text-sm text-gray-400;
+  @apply text-gray-400 text-sm font-medium;
 }
 
-/* Control Panel */
-.control-panel {
-  @apply flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-5 bg-gray-800/60 border border-gray-700 rounded-lg shadow-lg;
+/* Progress Section */
+.progress-section {
+  @apply mb-8;
 }
 
-.control-group-left,
-.control-group-right {
-  @apply flex flex-col sm:flex-row gap-4;
-}
+.progress-card {
+  @apply relative;
+  }
+  
+  .progress-card::before {
+    content: '';
+    @apply absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl opacity-50 group-hover:opacity-75 transition duration-300;
+  }
+  
+  .progress-card>div {
+    @apply relative bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300;
+  }
+  
+  .progress-header {
+    @apply flex justify-between items-center mb-4;
+  }
+  
+  .progress-title {
+    @apply flex items-center gap-2 text-white font-semibold text-lg;
+  }
+  
+  .progress-icon {
+    @apply text-purple-400;
+    }
+    
+    .progress-percentage {
+      @apply text-2xl font-bold text-white;
+    }
+    
+    .progress-body {
+      @apply space-y-3;
+    }
+    
+        .progress-detail {
+          @apply text-gray-300 text-sm font-medium;
+        }
+    
+        /* Filter Section */
+        .filter-section {
+          @apply mb-8;
+        }
+    
+        .filter-card {
+          @apply relative;
+        }
+    
+        .filter-card::before {
+          content: '';
+          @apply absolute -inset-1 bg-gradient-to-r from-gray-500/20 to-slate-500/20 rounded-xl opacity-50 group-hover:opacity-75 transition duration-300;
+        }
+    
+        .filter-card>div {
+          @apply relative bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-2xl hover:shadow-gray-500/10 transition-all duration-300;
+        }
+    
+        .filter-content {
+          @apply space-y-6;
+        }
+    
+        .filter-row {
+          @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+        }
+    
+        .filter-item {
+          @apply flex flex-col gap-2;
+        }
+    
+        .filter-label {
+          @apply text-gray-300 text-sm font-medium;
+        }
+    
+        .filter-input {
+          @apply w-full;
+        }
+    
+        .view-toggle {
+          @apply w-full;
+        }
+    
+        .view-toggle .el-button {
+          @apply flex-1;
+        }
+    
+        /* Data Section */
+        .data-section {
+          @apply flex-1;
+        }
+    
+        .loading-state {
+          @apply p-6;
+        }
+    
+        .data-content {
+          @apply space-y-6;
+        }
+    
+        /* Table Container */
+        .table-container {
+          @apply relative;
+        }
+    
+        .table-container::before {
+          content: '';
+          @apply absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-blue-500/20 rounded-xl opacity-50 group-hover:opacity-75 transition duration-300;
+        }
+    
+        .table-container>div {
+          @apply relative bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 overflow-hidden;
+        }
+    
+        /* Table specific styling */
+        .data-table {
+          @apply w-full;
+          --el-table-bg-color: #1F2937;
+          --el-table-tr-bg-color: #374151;
+          --el-table-header-bg-color: #111827;
+          --el-table-header-text-color: #f3f4f6;
+          --el-table-text-color: #d1d5db;
+          --el-table-border-color: rgba(75, 85, 99, 0.2);
+          --el-table-row-hover-bg-color: #4B5563;
+        }
+    
+        .win-rate-cell {
+          @apply flex items-center gap-2;
+        }
+    
+        .win-rate-text {
+          @apply text-xs font-medium text-gray-300;
+        }
+    
+        /* Color classes for metrics */
+        .positive-return,
+        .excellent-sharpe {
+          @apply text-green-400 font-semibold;
+        }
+    
+        .negative-return,
+        .poor-sharpe,
+        .drawdown-text {
+          @apply text-red-400 font-semibold;
+        }
+    
+        .neutral-return,
+        .good-sharpe {
+          @apply text-yellow-400 font-semibold;
+        }
+    
+        /* Cards Container */
+        .cards-container {
+          @apply space-y-6;
+        }
+    
+        .cards-grid {
+          @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+        }
+    
+        .stock-card {
+          @apply relative;
+        }
+    
+        .stock-card::before {
+          content: '';
+          @apply absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl opacity-50 group-hover:opacity-75 transition duration-300;
+        }
+    
+        .stock-card>div {
+          @apply relative bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 flex flex-col gap-4 shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer hover:-translate-y-1;
+        }
+    
+        .card-header {
+          @apply flex justify-between items-start gap-2 border-b border-gray-700 pb-3;
+        }
+    
+        .card-title {
+          @apply flex flex-col;
+        }
+    
+        .stock-code {
+          @apply text-white font-bold text-lg;
+        }
+    
+        .stock-name {
+          @apply text-gray-400 text-sm;
+        }
+    
+        .card-strategy {
+          @apply mb-2;
+        }
+    
+        .card-metrics {
+          @apply space-y-3;
+        }
+    
+        .metric-item {
+          @apply flex justify-between items-center;
+        }
+    
+        .metric-label {
+          @apply text-gray-400 text-sm;
+        }
+    
+        .metric-value {
+          @apply flex items-center gap-2;
+        }
+    
+        .metric-text {
+          @apply text-white text-sm font-medium;
+        }
+    
+        /* Pagination Section */
+        .pagination-section {
+          @apply flex justify-center py-6 bg-gray-800/50 rounded-xl border border-gray-700/50;
+        }
+    
+        /* Empty State */
+        .empty-state {
+          @apply flex flex-col items-center justify-center py-20;
+        }
+    
+        /* Detail Dialog */
+        .detail-dialog {
+          --el-dialog-bg-color: #1a202c;
+          --el-dialog-title-font-size: 1.5rem;
+          --el-dialog-title-text-color: #f3f4f6;
+          --el-dialog-header-padding: 20px 20px 0;
+          --el-dialog-body-padding: 20px;
+          --el-dialog-border-radius: 12px;
+        }
+    
+        .detail-content {
+          @apply space-y-6;
+        }
+    
+        .detail-header {
+          @apply flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-700;
+        }
+    
+        .stock-info h3 {
+          @apply text-2xl font-bold text-white;
+        }
+    
+        .rank-badge .el-tag {
+          @apply text-lg px-4 py-2;
+        }
+    
+        .detail-metrics {
+          @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+        }
+    
+        .metric-card {
+          @apply bg-gray-900/70 rounded-lg p-4 text-center shadow-inner;
+        }
+    
+        .metric-title {
+          @apply text-gray-400 text-sm mb-2;
+        }
+    
+        .metric-main-value {
+          @apply text-2xl font-bold text-white mb-2;
+        }
+    
+        .detail-info {
+          @apply mt-6;
+        }
+    
+        /* Element Plus overrides */
+        :deep(.el-descriptions) {
+          --el-descriptions-border-color: rgba(75, 85, 99, 0.3);
+          --el-descriptions-header-text-color: #f3f4f6;
+          --el-descriptions-item-label-color: #d1d5db;
+          --el-descriptions-item-content-color: #f3f4f6;
+          --el-descriptions-table-bg-color: transparent;
+        }
+    
+        :deep(.el-descriptions__body) {
+          background-color: transparent !important;
+        }
+    
+        :deep(.el-descriptions__table) {
+          background-color: transparent !important;
+        }
+    
+        :deep(.el-input__wrapper),
+        :deep(.el-select__wrapper),
+        :deep(.el-input-number__controls) {
+          @apply bg-gray-700/50 border border-gray-600;
+        }
+    
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .stats-grid {
+            @apply grid-cols-2;
+          }
+      .filter-row {
+        @apply grid-cols-1;
+      }
 
-/* Specific input/select widths (adjust as needed for responsiveness) */
-.search-input { @apply w-full sm:w-64; }
-.strategy-select { @apply w-full sm:w-48; }
-.trade-count-input { @apply w-full sm:w-40; }
-.sort-select { @apply w-full sm:w-32; }
-.sort-order-select { @apply w-full sm:w-24; }
-.view-toggle-btn { @apply w-full sm:w-auto; }
-
-
-/* Data Display Area */
-.data-display-area {
-  @apply flex flex-col gap-6;
-}
-
-.loading-state, .empty-state {
-  @apply flex justify-center items-center py-10;
-}
-
-.data-content-wrapper {
-  @apply flex flex-col gap-6;
-}
-
-/* Table View */
-.table-view-container {
-  @apply bg-gray-800/60 border border-gray-700 rounded-lg p-5 shadow-lg overflow-x-auto;
-}
-
-/* Table specific styling (Element Plus overrides) */
-.data-table {
-  @apply w-full;
-  --el-table-bg-color: #1F2937; /* Darker background for table */
-  --el-table-tr-bg-color: #374151; /* Slightly lighter background for table rows */
-  --el-table-header-bg-color: #111827; /* Darkest background for table header */
-  --el-table-header-text-color: #f3f4f6;
-  --el-table-text-color: #d1d5db;
-  --el-table-border-color: rgba(75, 85, 99, 0.2);
-  --el-table-row-hover-bg-color: #4B5563;
-}
-
-.win-rate-cell {
-  @apply flex items-center gap-2; /* Align progress and text horizontally */
-}
-
-.win-rate-text {
-  @apply text-xs font-medium text-gray-300;
-}
-
-/* Color classes for metrics */
-.positive-return, .excellent-sharpe { @apply text-green-400 font-semibold; }
-.negative-return, .poor-sharpe, .drawdown-text { @apply text-red-400 font-semibold; }
-.neutral-return, .good-sharpe { @apply text-yellow-400 font-semibold; } /* Adjusted yellow for better contrast */
-
-/* Card View */
-.cards-grid {
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
-}
-
-.stock-card {
-  @apply bg-gray-800/60 border border-gray-700 rounded-lg p-5 flex flex-col gap-3 shadow-lg cursor-pointer transition-all duration-300 hover:bg-gray-700/70 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1;
-}
-
-.card-header {
-  @apply flex justify-between items-start gap-2 border-b border-gray-700 pb-3 mb-3;
-}
-
-.card-title {
-  @apply flex flex-col;
-}
-
-.stock-code {
-  @apply text-white font-bold text-xl;
-}
-
-.stock-name {
-  @apply text-gray-400 text-sm;
-}
-
-.card-strategy {
-  @apply mb-2;
-}
-
-.card-metrics {
-  @apply space-y-3;
-}
-
-.metric-item {
-  @apply flex justify-between items-center;
-}
-
-.metric-label {
-  @apply text-gray-400 text-sm;
-}
-
-.metric-value {
-  @apply flex items-center gap-2;
-}
-
-.metric-text {
-  @apply text-white text-base font-medium;
-}
-
-/* Pagination */
-.pagination-section {
-  @apply py-4 flex justify-center;
-}
-
-/* Detail Dialog (Element Plus overrides) */
-.detail-dialog {
-  --el-dialog-bg-color: #1a202c; /* Darker background for dialog */
-  --el-dialog-title-font-size: 1.5rem;
-  --el-dialog-title-text-color: #f3f4f6;
-  --el-dialog-header-padding: 20px 20px 0;
-  --el-dialog-body-padding: 20px;
-  --el-dialog-border-radius: 8px;
-}
-
-.detail-content {
-  @apply space-y-6;
-}
-
-.detail-header {
-  @apply flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-700;
-}
-
-.stock-info h3 {
-  @apply text-2xl font-bold text-white;
-}
-
-.rank-badge .el-tag {
-  @apply text-lg px-4 py-2; /* Make tag larger in dialog */
-}
-
-.detail-metrics {
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
-}
-
-.metric-card {
-  @apply bg-gray-900/70 rounded-lg p-4 text-center shadow-inner;
-}
-
-.metric-title {
-  @apply text-gray-400 text-sm mb-2;
-}
-
-.metric-main-value {
-  @apply text-3xl font-extrabold text-white mb-2;
-}
-
-.detail-info {
-  @apply mt-6;
-}
-
-/* Element Plus Descriptions override */
-:deep(.el-descriptions) {
-  --el-descriptions-border-color: rgba(75, 85, 99, 0.3);
-  --el-descriptions-header-text-color: #f3f4f6;
-  --el-descriptions-item-label-color: #d1d5db;
-  --el-descriptions-item-content-color: #f3f4f6;
-  --el-descriptions-table-bg-color: transparent;
-}
-:deep(.el-descriptions__body) {
-  background-color: transparent !important;
-}
-:deep(.el-descriptions__table) {
-  background-color: transparent !important;
-}
-
-/* Element Plus button overrides for refresh/run buttons */
-.refresh-btn, .run-job-btn {
-  @apply px-6 py-3 rounded-md text-base;
-}
-
-/* Ensure Element Plus inputs/selects adapt to dark theme */
-:deep(.el-input__wrapper),
-:deep(.el-select__wrapper),
-:deep(.el-input-number__controls) {
-  @apply bg-gray-700/50 border border-gray-600;
-}
-
-:deep(.el-input__inner),
-:deep(.el-select__placeholder),
-:deep(.el-select__selected-item) {
-  @apply text-gray-200;
-}
-
-:deep(.el-input__prefix-inner) {
-  @apply text-gray-400;
-}
-
-:deep(.el-input-number__increase),
-:deep(.el-input-number__decrease) {
-  @apply bg-gray-700/50 border-gray-600 text-gray-200;
-}
-
-:deep(.el-pagination) {
-  --el-pagination-bg-color: transparent;
-  --el-pagination-text-color: #d1d5db;
-  --el-pagination-button-bg-color: rgba(55, 65, 81, 0.4);
-  --el-pagination-button-color: #d1d5db;
-  --el-pagination-hover-color: #409eff;
-  --el-pagination-active-color: #409eff;
-  --el-pagination-border-radius: 4px;
-}
-:deep(.el-pager li) {
-  @apply text-gray-300;
-}
-:deep(.el-pager li.is-active) {
-  @apply text-blue-400 !important;
-}
-:deep(.el-pagination .el-select .el-input .el-input__wrapper) {
-  @apply bg-gray-700/50 border-gray-600;
-}
-
-/* Progress bar color for win rate, ensure it's still good in dark mode */
-:deep(.el-progress-bar__outer) {
-  @apply bg-gray-700; /* Darker background for progress bar */
-}
-
-/* Skeleton loader adjustments */
-:deep(.el-skeleton__item) {
-  @apply bg-gray-700/50;
-}
-
-/* Empty state button */
-.empty-container .el-button {
-  @apply px-6 py-3;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-  .stats-monitor-section {
+  .cards-grid {
     @apply grid-cols-1;
   }
-  .stats-cards-grid {
-    @apply grid-cols-2; /* Adjust to 2 columns on medium screens */
-  }
-  .monitor-area {
-    @apply col-span-1;
-  }
-  .cards-grid {
-    @apply grid-cols-2; /* Adjust to 2 columns for card view on medium screens */
-  }
 }
-
-@media (max-width: 768px) {
-  .page-header {
-    @apply items-center text-center;
-  }
-  .header-left {
-    @apply w-full;
-  }
-  .header-right {
-    @apply w-full justify-center;
-  }
-  .stats-cards-grid {
-    @apply grid-cols-1; /* Adjust to 1 column on small screens */
-  }
-  .control-panel {
-    @apply flex-col;
-  }
-  .control-group-left,
-  .control-group-right {
-    @apply w-full flex-col;
-  }
-  .search-input, .strategy-select, .trade-count-input,
-  .sort-select, .sort-order-select, .view-toggle-btn {
-    @apply w-full;
-  }
-  .cards-grid {
-    @apply grid-cols-1; /* Adjust to 1 column for card view on small screens */
-  }
-  .detail-metrics {
-    @apply grid-cols-1; /* Adjust detail metrics to 1 column on small screens */
-  }
-  .detail-header {
-    @apply flex-col items-center text-center;
-  }
-}
-</style> 
+</style>

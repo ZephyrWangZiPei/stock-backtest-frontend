@@ -201,3 +201,8 @@ export const getBacktestHistory = (params: { stock_code?: string; page?: number;
 export const clearBacktestHistory = (stock_code?: string) => {
     return service.delete('/backtests/clear', { params: stock_code ? { stock_code } : {} });
 } 
+
+// Top策略相关API
+export const getTopStrategyStocks = () => service.get('/top-strategy/')
+export const getTopStrategyStocksByStrategy = (strategyId: number) => service.get(`/top-strategy/${strategyId}`)
+export const getTopStrategyScoreDetails = () => service.get('/top-strategy/score-details') 

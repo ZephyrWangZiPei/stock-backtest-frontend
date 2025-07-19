@@ -1,9 +1,9 @@
+/* 导入全局样式 */
+@import './styles/global.scss';
 /* 导入Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* 导入全局样式 */
-@import './styles/global.scss';
 
 /* 自定义Tailwind组件 */
 @layer components {

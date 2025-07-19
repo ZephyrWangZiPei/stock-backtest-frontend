@@ -251,8 +251,9 @@ const testTopBacktestConnection = () => {
   }
 
   topBacktestManager = createWebSocketManager({
-    url: 'http://localhost:5000',
-    transports: ['websocket'],
+    url: 'http://localhost:5000/scheduler',
+    path: '/socket.io/',
+    transports: ['websocket', 'polling'],
     connectionName: 'top_backtest',
     onConnect: (socket) => {
       topBacktestConnected.value = true

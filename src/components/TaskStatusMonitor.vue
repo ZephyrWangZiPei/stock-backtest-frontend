@@ -96,11 +96,9 @@ const connectWebSocket = () => {
     connectionName: 'task_monitor',
     onConnect: (socket) => {
       isConnected.value = true
-      console.log('TaskStatusMonitor WebSocket connected')
     },
     onDisconnect: () => {
       isConnected.value = false
-      console.log('TaskStatusMonitor WebSocket disconnected')
     }
   })
 
@@ -108,19 +106,16 @@ const connectWebSocket = () => {
 
   // 监听后端推送的job_status事件
   socket.on('job_status', (data: any) => {
-    console.log('Received job_status:', data)
     handleJobStatus(data)
   })
 
   // 监听后端推送的job_progress事件
   socket.on('job_progress', (data: any) => {
-    console.log('Received job_progress:', data)
     handleJobProgress(data)
   })
 
   // 监听调度器状态更新
   socket.on('scheduler_status', (data: any) => {
-    console.log('Received scheduler_status:', data)
     handleSchedulerUpdate(data)
   })
 }
@@ -209,7 +204,6 @@ const handleJobProgress = (data: any) => {
 
 const handleSchedulerUpdate = (data: any) => {
   // 处理调度器更新
-  console.log('Scheduler update:', data)
 }
 
 const getTaskStatusClass = (status: string) => {

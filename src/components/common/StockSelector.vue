@@ -123,8 +123,8 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
-@import '@/assets/styles/mixins.scss';
+@use '@/assets/styles/variables.scss' as *;
+@use '@/assets/styles/mixins.scss' as *;
 
 .stock-selector {
   .custom-select {

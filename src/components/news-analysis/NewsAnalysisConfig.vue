@@ -1,84 +1,124 @@
 <template>
-  <el-card class="config-card">
-    <template #header>
-      <div class="card-header">
-        <span class="header-title">
-          <el-icon class="header-icon">
-            <Setting />
-          </el-icon>
-          分析配置
-        </span>
+  <div class="config-wrapper">
+    <div class="config-header">
+      <div class="header-left">
+        <div class="flex items-center space-x-3">
+          <div class="w-2 h-2 bg-blue-400 rounded-md animate-pulse"></div>
+          <span
+            class="font-bold text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">分析配置</span>
+        </div>
+      </div>
+      <div class="header-right">
         <el-tag
           :type="isConnected ? 'success' : 'danger'"
           size="small"
+          class="connection-tag"
+          effect="dark"
         >
+          <el-icon class="tag-icon">
+            <component :is="isConnected ? 'CircleCheck' : 'CircleClose'" />
+          </el-icon>
           {{ isConnected ? '已连接' : '未连接' }}
         </el-tag>
       </div>
-    </template>
+    </div>
 
-    <el-form label-width="120px">
-      <el-row :gutter="20">
-        <el-col :span="8">
-          <el-form-item label="股票搜索">
-            <StockSelector
-              v-model="selectedStockCode"
-              :disabled="disabled"
-              placeholder="输入股票代码或名称搜索"
-              @change="handleStockChange"
-              @clear="handleStockClear"
-            />
-          </el-form-item>
-        </el-col>
+    <div class="config-content">
+      <el-form
+        label-position="top"
+        class="config-form"
+      >
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">股票搜索</label>
+            <div class="form-control">
+              <StockSelector
+                v-model="selectedStockCode"
+                :disabled="disabled"
+                placeholder="输入股票代码或名称搜索"
+                @change="handleStockChange"
+                @clear="handleStockClear"
+              />
+            </div>
+          </div>
 
-        <el-col :span="8">
-          <el-form-item label="已选股票">
-            <div v-if="selectedStock" class="selected-stock">
-              <el-tag
-                type="primary"
-                closable
-                @close="handleStockClear"
+          <div class="form-group">
+            <label class="form-label">已选股票</label>
+            <div class="form-control">
+              <div
+                v-if="selectedStock"
+                class="selected-stock"
               >
-                {{ selectedStock.code }} - {{ selectedStock.name }}
-              </el-tag>
+                <el-tag
+                  type="primary"
+                  closable
+                  class="stock-tag"
+                  effect="dark"
+                  @close="handleStockClear"
+                >
+                  <div class="stock-info">
+                    <span class="stock-code">{{ selectedStock.code }}</span>
+                    <span class="stock-name">{{ selectedStock.name }}</span>
+                  </div>
+                </el-tag>
+              </div>
+              <div
+                v-else
+                class="no-stock-selected"
+              >
+                <el-icon class="placeholder-icon">
+                  <Search />
+                </el-icon>
+                <span class="placeholder-text">请先搜索并选择股票</span>
+              </div>
             </div>
-            <div v-else class="no-stock-selected">
-              <span class="placeholder-text">请先搜索并选择股票</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">分析日期</label>
+            <div class="form-control">
+              <el-date-picker
+                v-model="analysisDate"
+                type="date"
+                placeholder="选择分析日期"
+                :disabled="disabled"
+                class="date-picker"
+              />
             </div>
-          </el-form-item>
-        </el-col>
+          </div>
+        </div>
 
-        <el-col :span="8">
-          <el-form-item label="分析日期">
-            <el-date-picker
-              v-model="analysisDate"
-              type="date"
-              placeholder="选择分析日期"
-              :disabled="disabled"
-              style="width: 100%"
-            />
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-form-item>
-        <el-button
-          type="primary"
-          @click="handleStartAnalysis"
-          :disabled="!canStartAnalysis || disabled"
-          :loading="loading"
-          size="large"
-        >
-          {{ loading ? '分析中...' : '🔍 开始新闻分析' }}
-        </el-button>
-      </el-form-item>
-    </el-form>
-  </el-card>
+        <div class="form-actions">
+          <button
+            @click="handleStartAnalysis"
+            :disabled="!canStartAnalysis || disabled"
+            class="action-btn action-btn-primary w-full"
+          >
+            <div class="flex items-center justify-center space-x-3">
+              <div class="w-6 h-6 bg-purple-500/20 rounded-sm flex items-center justify-center">
+                <div
+                  class="w-3 h-3 bg-purple-400 rounded-xs"
+                  :class="loading ? 'animate-spin' : ''"
+                ></div>
+              </div>
+              <span class="font-medium text-lg">
+                {{ loading ? '分析中...' : '开始新闻分析' }}
+              </span>
+            </div>
+            <div
+              v-if="loading"
+              class="absolute inset-0 bg-purple-500/10 rounded-md animate-pulse"
+            ></div>
+          </button>
+        </div>
+      </el-form>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Setting } from '@element-plus/icons-vue'
+import { CircleCheck, CircleClose, Search } from '@element-plus/icons-vue'
 import StockSelector from '@/components/common/StockSelector.vue'
 import type { Stock } from '@/types/api'
 
@@ -168,41 +208,169 @@ watch(() => props.analysisDate, (newDate) => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
-@import '@/assets/styles/mixins.scss';
+@use '@/assets/styles/variables.scss' as *;
+@use '@/assets/styles/mixins.scss' as *;
 
-.config-card {
-  @include card-base;
-  margin-bottom: $spacing-lg;
-
-  .card-header {
+.config-wrapper {
+  .config-header {
     @include flex(row, space-between, center);
-
-    .header-title {
-      @include flex(row, flex-start, center);
-      font-weight: $font-weight-medium;
-      color: $text-primary;
-
-      .header-icon {
-        margin-right: $spacing-sm;
-        font-size: $font-size-medium;
-      }
-    }
-  }
-
-  .selected-stock {
-    .el-tag {
-      font-size: $font-size-small;
-    }
-  }
-
-  .no-stock-selected {
-    @include flex(row, flex-start, center);
-    height: 32px;
-
-    .placeholder-text {
-      color: $text-placeholder;
-      font-size: $font-size-small;
+    padding: $spacing-xl;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    
+      .header-left {
+          @include flex(row, flex-start, center);
+          gap: $spacing-sm;
+          }
+          
+          .header-right {
+            .connection-tag {
+              @include flex(row, center, center);
+              gap: $spacing-xs;
+              padding: $spacing-xs $spacing-sm;
+              border-radius: $card-border-radius;
+              font-weight: $font-weight-medium;
+              background: rgba(0, 0, 0, 0.3);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+          
+              .tag-icon {
+                font-size: $font-size-small;
+              }
+            }
+          }
+          }
+          
+          .config-content {
+            padding: $spacing-xxl;
+          
+            .config-form {
+              .form-row {
+                @include grid(3, $spacing-xl);
+                margin-bottom: $spacing-xxl;
+          
+                @include respond-to(md) {
+                  grid-template-columns: repeat(2, 1fr);
+                }
+          
+                @include respond-to(sm) {
+                  grid-template-columns: 1fr;
+                }
+              }
+          
+              .form-group {
+                .form-label {
+                  display: block;
+                  margin-bottom: $spacing-sm;
+                  font-weight: $font-weight-medium;
+                  color: #e2e8f0;
+                  font-size: $font-size-base;
+                }
+          
+                .form-control {
+                  .selected-stock {
+                    .stock-tag {
+                      width: 100%;
+                      padding: $spacing-md;
+                      border-radius: $card-border-radius;
+                      border: 1px solid rgba(59, 130, 246, 0.5);
+                      background: rgba(59, 130, 246, 0.1);
+          
+                      .stock-info {
+                        @include flex(column, center, flex-start);
+                        gap: $spacing-xs;
+          
+                        .stock-code {
+                          font-size: $font-size-medium;
+                          font-weight: $font-weight-bold;
+                          color: #60a5fa;
+                        }
+          
+                        .stock-name {
+                          font-size: $font-size-small;
+                          color: #94a3b8;
+                        }
+                      }
+                    }
+                  }
+          
+                  .no-stock-selected {
+                    @include flex(column, center, center);
+                    height: 80px;
+                    border: 2px dashed rgba(148, 163, 184, 0.3);
+                    border-radius: $card-border-radius;
+                    background: rgba(51, 65, 85, 0.3);
+                    gap: $spacing-sm;
+          
+                    .placeholder-icon {
+                      font-size: $font-size-large;
+                      color: #64748b;
+                    }
+          
+                    .placeholder-text {
+                      color: #64748b;
+                      font-size: $font-size-small;
+                    }
+                  }
+          
+                  .date-picker {
+                    width: 100%;
+                  }
+                }
+              }
+          
+              .form-actions {
+                @include flex(row, center, center);
+                padding-top: $spacing-lg;
+                border-top: 1px solid rgba(148, 163, 184, 0.2);
+          
+                .action-btn {
+                  @include flex(row, center, center);
+                  gap: $spacing-sm;
+                  padding: $spacing-md $spacing-xxl;
+                  font-size: $font-size-medium;
+                  font-weight: $font-weight-medium;
+                  border-radius: $card-border-radius * 2;
+                  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                  transition: all $transition-base $ease-in-out;
+                  position: relative;
+                  overflow: hidden;
+                  border: none;
+                  cursor: pointer;
+          
+                  &:hover:not(:disabled) {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+                  }
+          
+                  &:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                  }
+          
+                  &.action-btn-primary {
+                    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                    color: white;
+          
+                    &:hover:not(:disabled) {
+                      background: linear-gradient(135deg, #2563eb, #7c3aed);
+                    }
+                  }
+                }
+              }
+            }
+          }
+          }
+          
+          // 响应式设计
+          @include respond-to(sm) {
+            .config-wrapper {
+              .config-content {
+                padding: $spacing-lg;
+          
+                .config-form {
+                  .form-row {
+                    gap: $spacing-lg;
+                  }
+                }
     }
   }
 }

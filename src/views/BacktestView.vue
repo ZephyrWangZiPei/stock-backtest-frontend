@@ -1119,13 +1119,11 @@ const startAiAnalysis = async () => {
       transports: ['websocket'],
       connectionName: 'ai_analysis',
       onConnect: (socket) => {
-        console.log('AI分析WebSocket连接成功');
         // 发送开始分析请求
         socket.emit('start_ai_analysis', { backtest_id: backtestResult.value!.id });
         startTypingEffect(); // 连接成功后开始打字效果
       },
       onDisconnect: (socket) => {
-        console.log('AI分析WebSocket连接断开');
         // 如果不是因为完成或错误而断开，也停止打字效果
         if (!aiAnalysisCompleted.value && !aiAnalysisError.value) {
           stopTypingEffect();
@@ -1147,14 +1145,12 @@ const startAiAnalysis = async () => {
 
     // 接收分析内容块
     socket.on('ai_analysis_chunk', (data: { content: string }) => {
-      console.log('收到AI分析内容块:', data.content);
       aiAnalysisContent.value += data.content;
       // 注意：这里不再直接操作 displayedAnalysisContent，而是让定时器自行追加
     });
 
     // 分析完成
     socket.on('ai_analysis_complete', async (data: { message: string }) => {
-      console.log('AI分析完成:', data.message);
       stopTypingEffect(); // 停止打字效果
       aiAnalysisLoading.value = false;
       aiAnalysisCompleted.value = true;
@@ -1167,7 +1163,6 @@ const startAiAnalysis = async () => {
         if (resultData?.ai_analysis_report) {
           aiAnalysisContent.value = resultData.ai_analysis_report;
           displayedAnalysisContent.value = resultData.ai_analysis_report; // 确保显示完整的最终结果
-          console.log('已获取完整的AI分析报告');
         }
       } catch (error) {
         console.error('获取完整AI分析报告失败:', error);
@@ -1179,7 +1174,6 @@ const startAiAnalysis = async () => {
 
     // 分析错误
     socket.on('ai_analysis_error', (data: { message: string }) => {
-      console.log('AI分析错误:', data.message);
       stopTypingEffect(); // 停止打字效果
       aiAnalysisLoading.value = false;
       aiAnalysisError.value = data.message;

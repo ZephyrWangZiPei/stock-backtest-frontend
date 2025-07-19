@@ -317,7 +317,6 @@ onMounted(() => {
 onUnmounted(() => {
   // 清理定时器和其他资源
   // 注意：WebSocket连接由全局管理器处理，这里不需要手动清理
-  console.log('DashboardView unmounted')
 });
 </script>
 

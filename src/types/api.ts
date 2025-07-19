@@ -121,18 +121,30 @@ export interface BacktestTrade {
 export interface TopStrategyStock {
   id: number
   strategy_id: number
-  stock_id: number
+  strategy_name?: string
   stock_code: string
   stock_name: string
   win_rate: number
-  total_trades: number
-  avg_return: number
-  max_drawdown: number
-  sharpe_ratio: number
-  last_signal_date?: string
-  ai_analysis?: string
-  created_at: string
+  total_return?: number
+  annual_return?: number
+  max_drawdown?: number
+  sharpe_ratio?: number
+  trade_count?: number
+  win_rate_lb?: number
+  expectancy?: number
+  profit_factor?: number
+  rank: number
+  backtest_period_days?: number
+  initial_capital?: number
+  created_at?: string
   updated_at?: string
+  // DeepSeek AI 分析字段
+  potential_rating?: string
+  confidence_score?: number
+  recommendation_reason?: string
+  buy_point?: string
+  sell_point?: string
+  risks?: string
 }
 
 // 系统统计类型
