@@ -153,24 +153,13 @@
                         </el-icon>
                       </el-tooltip>
                     </template>
-                    <el-select
+                    <StockSelector
                       v-model="form.stock_codes"
-                      multiple
-                      filterable
-                      remote
-                      reserve-keyword
+                      :multiple="true"
+                      :disabled="loading"
                       placeholder="输入股票代码或名称搜索"
-                      :remote-method="searchStocks"
-                      :loading="stockSearchLoading"
-                      class="w-full custom-select"
-                    >
-                      <el-option
-                        v-for="item in stockOptions"
-                        :key="item.code"
-                        :label="`${item.name} (${item.code})`"
-                        :value="item.code"
-                      />
-                    </el-select>
+                      @change="handleStockSelectionChange"
+                    />
                   </el-form-item>
 
                   <el-form-item class="mt-6">
@@ -598,6 +587,7 @@ import { Socket } from 'socket.io-client'
 import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager'
 import { usePageWebSocket } from '@/utils/pageWebSocketManager'
 import VMdEditor from '@kangc/v-md-editor'
+import StockSelector from '@/components/common/StockSelector.vue'
 
 interface Strategy {
   id: number;
@@ -637,12 +627,9 @@ const pollProgress = ref(0);
 const chartStock = ref<string | null>(null);
 const activeTab = ref('chart');
 const strategyOptions = ref<Strategy[]>([]);
-const stockOptions = ref<Stock[]>([]);
-const stockSearchLoading = ref(false);
 const chartRef = ref<HTMLElement | null>(null);
 let chart: IChartApi | null = null;
 let candlestickSeries: ISeriesApi<'Candlestick'> | null = null;
-let searchTimeout: number | null = null;
 
 // AI 分析相关变量
 const aiAnalysisSocket = ref<Socket | null>(null);
@@ -763,8 +750,7 @@ const filteredTrades = computed(() => {
 });
 
 const getStockName = (code: string) => {
-  const stock = stockOptions.value.find(s => s.code === code);
-  return stock ? `${stock.name} (${stock.code})` : code;
+  return code;
 };
 
 const loadResultById = async (id: number) => {
@@ -831,27 +817,7 @@ onMounted(async () => {
   }
 });
 
-const searchStocks = (query: string) => {
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-  }
 
-  if (query) {
-    stockSearchLoading.value = true;
-    searchTimeout = window.setTimeout(async () => {
-      try {
-        const res = await getStocks({ query: query, per_page: 50 });
-        stockOptions.value = res.data.items;
-      } catch (error) {
-        stockOptions.value = [];
-      } finally {
-        stockSearchLoading.value = false;
-      }
-    }, 300); // 300ms 延迟
-  } else {
-    stockOptions.value = [];
-  }
-}
 
 const formatDate = (date: Date) => {
   const year = date.getFullYear();
@@ -1288,6 +1254,11 @@ watch(backtestResult, (newResult) => {
     stopTypingEffect();
   }
 }, { deep: true });
+
+const handleStockSelectionChange = (selectedCodes: string[]) => {
+  form.stock_codes = selectedCodes;
+  chartStock.value = selectedCodes[0];
+};
 </script>
 
 <style scoped>

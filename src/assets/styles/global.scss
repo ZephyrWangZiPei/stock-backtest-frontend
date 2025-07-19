@@ -1,0 +1,574 @@
+// =============================================================================
+// 全局样式文件
+// =============================================================================
+
+// 导入变量和混入
+@import './variables.scss';
+@import './mixins.scss';
+
+// =============================================================================
+// 全局重置和基础样式
+// =============================================================================
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $text-primary;
+  background-color: $bg-secondary;
+}
+
+#app {
+  height: 100%;
+  min-height: 100vh;
+}
+
+// =============================================================================
+// 通用布局类
+// =============================================================================
+
+.container {
+  @include container;
+}
+
+.page-container {
+  @include container;
+  padding-top: $spacing-lg;
+  padding-bottom: $spacing-lg;
+  min-height: calc(100vh - #{$header-height});
+}
+
+.flex {
+  @include flex;
+}
+
+.flex-center {
+  @include center;
+}
+
+.flex-between {
+  @include flex(row, space-between, center);
+}
+
+.flex-around {
+  @include flex(row, space-around, center);
+}
+
+.flex-column {
+  @include flex(column);
+}
+
+.grid {
+  @include grid;
+}
+
+// =============================================================================
+// 通用文本类
+// =============================================================================
+
+.text-primary {
+  color: $text-primary;
+}
+
+.text-regular {
+  color: $text-regular;
+}
+
+.text-secondary {
+  color: $text-secondary;
+}
+
+.text-placeholder {
+  color: $text-placeholder;
+}
+
+.text-success {
+  color: $success-color;
+}
+
+.text-warning {
+  color: $warning-color;
+}
+
+.text-danger {
+  color: $danger-color;
+}
+
+.text-info {
+  color: $info-color;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-truncate {
+  @include text-truncate;
+}
+
+.text-truncate-2 {
+  @include text-truncate(2);
+}
+
+.text-truncate-3 {
+  @include text-truncate(3);
+}
+
+// =============================================================================
+// 通用间距类
+// =============================================================================
+
+.m-0 { margin: 0 !important; }
+.m-1 { margin: $spacing-xs !important; }
+.m-2 { margin: $spacing-sm !important; }
+.m-3 { margin: $spacing-md !important; }
+.m-4 { margin: $spacing-lg !important; }
+.m-5 { margin: $spacing-xl !important; }
+
+.mt-0 { margin-top: 0 !important; }
+.mt-1 { margin-top: $spacing-xs !important; }
+.mt-2 { margin-top: $spacing-sm !important; }
+.mt-3 { margin-top: $spacing-md !important; }
+.mt-4 { margin-top: $spacing-lg !important; }
+.mt-5 { margin-top: $spacing-xl !important; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: $spacing-xs !important; }
+.mb-2 { margin-bottom: $spacing-sm !important; }
+.mb-3 { margin-bottom: $spacing-md !important; }
+.mb-4 { margin-bottom: $spacing-lg !important; }
+.mb-5 { margin-bottom: $spacing-xl !important; }
+
+.ml-0 { margin-left: 0 !important; }
+.ml-1 { margin-left: $spacing-xs !important; }
+.ml-2 { margin-left: $spacing-sm !important; }
+.ml-3 { margin-left: $spacing-md !important; }
+.ml-4 { margin-left: $spacing-lg !important; }
+.ml-5 { margin-left: $spacing-xl !important; }
+
+.mr-0 { margin-right: 0 !important; }
+.mr-1 { margin-right: $spacing-xs !important; }
+.mr-2 { margin-right: $spacing-sm !important; }
+.mr-3 { margin-right: $spacing-md !important; }
+.mr-4 { margin-right: $spacing-lg !important; }
+.mr-5 { margin-right: $spacing-xl !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: $spacing-xs !important; }
+.p-2 { padding: $spacing-sm !important; }
+.p-3 { padding: $spacing-md !important; }
+.p-4 { padding: $spacing-lg !important; }
+.p-5 { padding: $spacing-xl !important; }
+
+.pt-0 { padding-top: 0 !important; }
+.pt-1 { padding-top: $spacing-xs !important; }
+.pt-2 { padding-top: $spacing-sm !important; }
+.pt-3 { padding-top: $spacing-md !important; }
+.pt-4 { padding-top: $spacing-lg !important; }
+.pt-5 { padding-top: $spacing-xl !important; }
+
+.pb-0 { padding-bottom: 0 !important; }
+.pb-1 { padding-bottom: $spacing-xs !important; }
+.pb-2 { padding-bottom: $spacing-sm !important; }
+.pb-3 { padding-bottom: $spacing-md !important; }
+.pb-4 { padding-bottom: $spacing-lg !important; }
+.pb-5 { padding-bottom: $spacing-xl !important; }
+
+.pl-0 { padding-left: 0 !important; }
+.pl-1 { padding-left: $spacing-xs !important; }
+.pl-2 { padding-left: $spacing-sm !important; }
+.pl-3 { padding-left: $spacing-md !important; }
+.pl-4 { padding-left: $spacing-lg !important; }
+.pl-5 { padding-left: $spacing-xl !important; }
+
+.pr-0 { padding-right: 0 !important; }
+.pr-1 { padding-right: $spacing-xs !important; }
+.pr-2 { padding-right: $spacing-sm !important; }
+.pr-3 { padding-right: $spacing-md !important; }
+.pr-4 { padding-right: $spacing-lg !important; }
+.pr-5 { padding-right: $spacing-xl !important; }
+
+// =============================================================================
+// 通用背景类
+// =============================================================================
+
+.bg-primary {
+  background-color: $bg-primary;
+}
+
+.bg-secondary {
+  background-color: $bg-secondary;
+}
+
+.bg-tertiary {
+  background-color: $bg-tertiary;
+}
+
+.bg-success {
+  background-color: rgba($success-color, 0.1);
+}
+
+.bg-warning {
+  background-color: rgba($warning-color, 0.1);
+}
+
+.bg-danger {
+  background-color: rgba($danger-color, 0.1);
+}
+
+.bg-info {
+  background-color: rgba($info-color, 0.1);
+}
+
+// =============================================================================
+// 通用边框类
+// =============================================================================
+
+.border {
+  border: 1px solid $border-color;
+}
+
+.border-light {
+  border: 1px solid $border-light;
+}
+
+.border-lighter {
+  border: 1px solid $border-lighter;
+}
+
+.border-success {
+  border: 1px solid rgba($success-color, 0.2);
+}
+
+.border-warning {
+  border: 1px solid rgba($warning-color, 0.2);
+}
+
+.border-danger {
+  border: 1px solid rgba($danger-color, 0.2);
+}
+
+.border-info {
+  border: 1px solid rgba($info-color, 0.2);
+}
+
+.border-radius {
+  @include border-radius;
+}
+
+.border-radius-sm {
+  @include border-radius(4px);
+}
+
+.border-radius-lg {
+  @include border-radius(12px);
+}
+
+// =============================================================================
+// 通用阴影类
+// =============================================================================
+
+.shadow {
+  @include shadow;
+}
+
+.shadow-light {
+  @include shadow('light');
+}
+
+.shadow-dark {
+  @include shadow('dark');
+}
+
+// =============================================================================
+// 通用过渡类
+// =============================================================================
+
+.transition {
+  @include transition;
+}
+
+.transition-fast {
+  @include transition(all, $transition-fast);
+}
+
+.transition-slow {
+  @include transition(all, $transition-slow);
+}
+
+// =============================================================================
+// 通用显示类
+// =============================================================================
+
+.hidden {
+  display: none !important;
+}
+
+.visible {
+  display: block !important;
+}
+
+.invisible {
+  visibility: hidden !important;
+}
+
+.clearfix {
+  @include clearfix;
+}
+
+// =============================================================================
+// 通用滚动条样式
+// =============================================================================
+
+.custom-scrollbar {
+  @include custom-scrollbar;
+}
+
+.hide-scrollbar {
+  @include hide-scrollbar;
+}
+
+// =============================================================================
+// Element Plus 组件样式覆盖
+// =============================================================================
+
+// 卡片样式统一
+.el-card {
+  @include card-base;
+  margin-bottom: $spacing-lg;
+
+  .el-card__header {
+    @include card-header;
+  }
+
+  .el-card__body {
+    @include card-content;
+  }
+}
+
+// 按钮样式统一
+.el-button {
+  @include button-base;
+  @include transition;
+
+  &.el-button--primary {
+    @include button-variant($primary-color, white);
+  }
+
+  &.el-button--success {
+    @include button-variant($success-color, white);
+  }
+
+  &.el-button--warning {
+    @include button-variant($warning-color, white);
+  }
+
+  &.el-button--danger {
+    @include button-variant($danger-color, white);
+  }
+
+  &.el-button--info {
+    @include button-variant($info-color, white);
+  }
+}
+
+// 输入框样式统一
+.el-input {
+  .el-input__wrapper {
+    @include input-base;
+  }
+}
+
+// 表单样式统一
+.el-form-item {
+  @include form-group;
+}
+
+// 标签样式统一
+.el-tag {
+  @include transition;
+  border-radius: $card-border-radius;
+}
+
+// 进度条样式统一
+.el-progress {
+  .el-progress-bar__outer {
+    border-radius: $card-border-radius;
+  }
+
+  .el-progress-bar__inner {
+    border-radius: $card-border-radius;
+  }
+}
+
+// 描述列表样式统一
+.el-descriptions {
+  .el-descriptions__label {
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+  }
+
+  .el-descriptions__content {
+    color: $text-regular;
+  }
+}
+
+// 空状态样式统一
+.el-empty {
+  .el-empty__description {
+    color: $text-secondary;
+  }
+}
+
+// =============================================================================
+// 响应式工具类
+// =============================================================================
+
+// 隐藏元素（响应式）
+.hide-xs {
+  @include hide-on(xs);
+}
+
+.hide-sm {
+  @include hide-on(sm);
+}
+
+.hide-md {
+  @include hide-on(md);
+}
+
+.hide-lg {
+  @include hide-on(lg);
+}
+
+.hide-xl {
+  @include hide-on(xl);
+}
+
+// 显示元素（响应式）
+.show-xs {
+  @include show-on(xs);
+}
+
+.show-sm {
+  @include show-on(sm);
+}
+
+.show-md {
+  @include show-on(md);
+}
+
+.show-lg {
+  @include show-on(lg);
+}
+
+.show-xl {
+  @include show-on(xl);
+}
+
+// =============================================================================
+// 动画类
+// =============================================================================
+
+.fade-in {
+  @include fade-in;
+}
+
+.slide-in-up {
+  @include slide-in('up');
+}
+
+.slide-in-down {
+  @include slide-in('down');
+}
+
+.slide-in-left {
+  @include slide-in('left');
+}
+
+.slide-in-right {
+  @include slide-in('right');
+}
+
+// =============================================================================
+// 工具类
+// =============================================================================
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
+
+.user-select-none {
+  user-select: none;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+.overflow-scroll {
+  overflow: scroll;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.position-absolute {
+  position: absolute;
+}
+
+.position-fixed {
+  position: fixed;
+}
+
+.position-sticky {
+  position: sticky;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.h-100 {
+  height: 100%;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+.max-w-100 {
+  max-width: 100%;
+}
+
+.max-h-100 {
+  max-height: 100%;
+} 

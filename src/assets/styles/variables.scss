@@ -1,0 +1,196 @@
+// =============================================================================
+// 全局样式变量定义
+// =============================================================================
+
+// =============================================================================
+// 颜色主题
+// =============================================================================
+
+// 主色调
+$primary-color: #409eff;
+$primary-light: #79bbff;
+$primary-dark: #337ecc;
+
+// 辅助色
+$success-color: #67c23a;
+$warning-color: #e6a23c;
+$danger-color: #f56c6c;
+$info-color: #909399;
+
+// 文字颜色
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-placeholder: #c0c4cc;
+
+// 背景色
+$bg-primary: #ffffff;
+$bg-secondary: #f5f7fa;
+$bg-tertiary: #fafafa;
+$bg-overlay: rgba(0, 0, 0, 0.5);
+
+// 边框颜色
+$border-color: #dcdfe6;
+$border-light: #e4e7ed;
+$border-lighter: #ebeef5;
+$border-extra-light: #f2f6fc;
+
+// 阴影
+$box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+$box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+$box-shadow-dark: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.12);
+
+// =============================================================================
+// 字体规范
+// =============================================================================
+
+// 字体大小层级
+$font-size-extra-large: 20px;
+$font-size-large: 18px;
+$font-size-medium: 16px;
+$font-size-base: 14px;
+$font-size-small: 13px;
+$font-size-extra-small: 12px;
+
+// 字体行高
+$line-height-base: 1.5;
+$line-height-small: 1.3;
+$line-height-large: 1.8;
+
+// 字体粗细
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 600;
+$font-weight-extra-bold: 700;
+
+// =============================================================================
+// 间距规范
+// =============================================================================
+
+// 基础间距单位
+$spacing-unit: 8px;
+
+// 间距值
+$spacing-xs: $spacing-unit * 0.5;    // 4px
+$spacing-sm: $spacing-unit;          // 8px
+$spacing-md: $spacing-unit * 1.5;    // 12px
+$spacing-lg: $spacing-unit * 2;      // 16px
+$spacing-xl: $spacing-unit * 3;      // 24px
+$spacing-xxl: $spacing-unit * 4;     // 32px
+$spacing-xxxl: $spacing-unit * 6;    // 48px
+
+// 组件间距
+$component-padding: $spacing-lg;
+$component-margin: $spacing-lg;
+$section-margin: $spacing-xxl;
+
+// =============================================================================
+// 断点规范
+// =============================================================================
+
+// 响应式断点
+$breakpoint-xs: 480px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 992px;
+$breakpoint-lg: 1200px;
+$breakpoint-xl: 1920px;
+
+// 媒体查询混入
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == xs {
+    @media (max-width: #{$breakpoint-xs}) { @content; }
+  } @else if $breakpoint == sm {
+    @media (min-width: #{$breakpoint-xs + 1}) and (max-width: #{$breakpoint-sm}) { @content; }
+  } @else if $breakpoint == md {
+    @media (min-width: #{$breakpoint-sm + 1}) and (max-width: #{$breakpoint-md}) { @content; }
+  } @else if $breakpoint == lg {
+    @media (min-width: #{$breakpoint-md + 1}) and (max-width: #{$breakpoint-lg}) { @content; }
+  } @else if $breakpoint == xl {
+    @media (min-width: #{$breakpoint-lg + 1}) { @content; }
+  }
+}
+
+// =============================================================================
+// 布局规范
+// =============================================================================
+
+// 容器最大宽度
+$container-max-width: 1200px;
+$container-padding: $spacing-lg;
+
+// 侧边栏宽度
+$sidebar-width: 240px;
+$sidebar-collapsed-width: 64px;
+
+// 头部高度
+$header-height: 60px;
+
+// 卡片样式
+$card-border-radius: 8px;
+$card-padding: $spacing-lg;
+$card-margin: $spacing-md;
+
+// =============================================================================
+// 动画规范
+// =============================================================================
+
+// 过渡时间
+$transition-fast: 0.15s;
+$transition-base: 0.3s;
+$transition-slow: 0.5s;
+
+// 缓动函数
+$ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+$ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+// =============================================================================
+// Z-index层级
+// =============================================================================
+
+$z-index-dropdown: 1000;
+$z-index-sticky: 1020;
+$z-index-fixed: 1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal: 1050;
+$z-index-popover: 1060;
+$z-index-tooltip: 1070;
+
+// =============================================================================
+// 功能类
+// =============================================================================
+
+// 文本对齐
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+// 显示/隐藏
+.hidden { display: none !important; }
+.visible { display: block !important; }
+.invisible { visibility: hidden !important; }
+
+// 浮动
+.float-left { float: left; }
+.float-right { float: right; }
+.clearfix::after {
+  content: '';
+  display: table;
+  clear: both;
+}
+
+// 间距工具类
+.m-0 { margin: 0 !important; }
+.m-1 { margin: $spacing-xs !important; }
+.m-2 { margin: $spacing-sm !important; }
+.m-3 { margin: $spacing-md !important; }
+.m-4 { margin: $spacing-lg !important; }
+.m-5 { margin: $spacing-xl !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: $spacing-xs !important; }
+.p-2 { padding: $spacing-sm !important; }
+.p-3 { padding: $spacing-md !important; }
+.p-4 { padding: $spacing-lg !important; }
+.p-5 { padding: $spacing-xl !important; } 

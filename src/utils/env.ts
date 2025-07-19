@@ -47,11 +47,11 @@ export const appConfig = {
   env: getEnv('VITE_APP_ENV', 'development'),
   
   // API配置
-  apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://localhost:5000/api'),
+  apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://127.0.0.1:5000/api'),
   apiTimeout: getNumberEnv('VITE_API_TIMEOUT', 30000),
   
   // WebSocket配置
-  wsUrl: getEnv('VITE_WS_URL', 'http://localhost:5000'),
+  wsUrl: getEnv('VITE_WS_URL', 'http://127.0.0.1:5000'),
   wsReconnectInterval: getNumberEnv('VITE_WS_RECONNECT_INTERVAL', 5000),
   wsMaxReconnectAttempts: getNumberEnv('VITE_WS_MAX_RECONNECT_ATTEMPTS', 5),
   

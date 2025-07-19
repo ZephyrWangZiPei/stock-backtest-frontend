@@ -9,7 +9,7 @@ const PAGE_WEBSOCKET_CONFIGS = {
   '/dashboard': [
     {
       name: 'scheduler',
-      url: 'http://localhost:5000/scheduler',
+      url: 'http://127.0.0.1:5000/scheduler',
       path: '/socket.io/',
       transports: ['websocket', 'polling'],
       description: '调度器连接'
@@ -18,7 +18,7 @@ const PAGE_WEBSOCKET_CONFIGS = {
   '/scheduler': [
     {
       name: 'scheduler',
-      url: 'http://localhost:5000/scheduler',
+      url: 'http://127.0.0.1:5000/scheduler',
       path: '/socket.io/',
       transports: ['websocket', 'polling'],
       description: '调度器连接'
@@ -27,7 +27,7 @@ const PAGE_WEBSOCKET_CONFIGS = {
   '/top-backtest': [
     {
       name: 'top_backtest',
-      url: 'http://localhost:5000',
+      url: 'http://127.0.0.1:5000',
       transports: ['websocket'],
       description: 'Top回测连接'
     }
@@ -35,7 +35,7 @@ const PAGE_WEBSOCKET_CONFIGS = {
   '/backtest': [
     {
       name: 'ai_analysis',
-      url: 'http://localhost:5000/ai_analysis',
+      url: 'http://127.0.0.1:5000/ai_analysis',
       path: '/socket.io',
       transports: ['websocket'],
       description: 'AI分析连接'
@@ -44,7 +44,7 @@ const PAGE_WEBSOCKET_CONFIGS = {
   '/backtest-history': [
     {
       name: 'scheduler',
-      url: 'http://localhost:5000/scheduler',
+      url: 'http://127.0.0.1:5000/scheduler',
       path: '/socket.io/',
       transports: ['websocket', 'polling'],
       description: '调度器连接'
@@ -53,27 +53,27 @@ const PAGE_WEBSOCKET_CONFIGS = {
   '/websocket-test': [
     {
       name: 'scheduler',
-      url: 'http://localhost:5000/scheduler',
+      url: 'http://127.0.0.1:5000/scheduler',
       path: '/socket.io/',
       transports: ['websocket', 'polling'],
       description: '调度器连接'
     },
     {
       name: 'task_monitor',
-      url: 'http://localhost:5000/scheduler',
+      url: 'http://127.0.0.1:5000/scheduler',
       path: '/socket.io/',
       transports: ['websocket', 'polling'],
       description: '任务监控连接'
     },
     {
       name: 'top_backtest',
-      url: 'http://localhost:5000',
+      url: 'http://127.0.0.1:5000',
       transports: ['websocket'],
       description: 'Top回测连接'
     },
     {
       name: 'ai_analysis',
-      url: 'http://localhost:5000/ai_analysis',
+      url: 'http://127.0.0.1:5000/ai_analysis',
       path: '/socket.io',
       transports: ['websocket'],
       description: 'AI分析连接'

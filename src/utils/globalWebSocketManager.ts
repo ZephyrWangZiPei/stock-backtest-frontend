@@ -6,7 +6,7 @@ import { ElMessage } from 'element-plus'
 const GLOBAL_WEBSOCKET_CONFIGS = [
   {
     name: 'scheduler',
-    url: 'http://localhost:5000/scheduler',
+    url: 'http://127.0.0.1:5000/scheduler',
     path: '/socket.io/',
     transports: ['websocket', 'polling'],
     description: '调度器连接'
@@ -81,6 +81,14 @@ class GlobalWebSocketManager {
     this.checkInterval = setInterval(() => {
       this.checkAndReconnect()
     }, 10000) // 每10秒检查一次
+  }
+
+  // 停止定期检查
+  private stopPeriodicCheck() {
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval)
+      this.checkInterval = null
+    }
   }
 
   // 检查并重连断开的连接
