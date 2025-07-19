@@ -44,6 +44,12 @@ const router = createRouter({
           name: 'WebSocketTest',
           component: () => import('@/views/WebSocketTestView.vue'),
           meta: { title: 'WebSocket测试' }
+        },
+        {
+          path: 'news-analysis',
+          name: 'NewsAnalysis',
+          component: () => import('@/views/NewsAnalysisView.vue'),
+          meta: { title: '新闻分析' }
         }
       ]
     },

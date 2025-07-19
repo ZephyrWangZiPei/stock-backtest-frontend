@@ -10,6 +10,7 @@ export interface WebSocketConfig {
   reconnectionDelay?: number
   reconnectionDelayMax?: number
   connectionName: string
+  namespace?: string
   onConnect?: (socket: Socket) => void
   onDisconnect?: () => void
   onConnectError?: (error: any) => void
@@ -63,12 +64,18 @@ export class WebSocketManager {
     console.log(`[WebSocketManager] 连接 ${this.config.connectionName}: ${this.config.url}`)
 
     // 创建 socket 连接
-    this.socket = io(this.config.url, {
+    const socketOptions: any = {
       path: this.config.path,
       transports: this.config.transports,
       reconnection: false, // 我们手动处理重连
       autoConnect: false
-    })
+    }
+    
+    if (this.config.namespace) {
+      this.socket = io(`${this.config.url}${this.config.namespace}`, socketOptions)
+    } else {
+      this.socket = io(this.config.url, socketOptions)
+    }
 
     // 设置事件监听器
     this.setupEventListeners()

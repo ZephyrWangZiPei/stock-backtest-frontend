@@ -118,6 +118,7 @@ import {
   ArrowLeftBold,
   ArrowRightBold,
   Connection,
+  Document,
 } from '@element-plus/icons-vue';
 
 const currentRoute = useRoute();
@@ -160,6 +161,11 @@ const allAppRoutes = [
     path: '/websocket-test',
     name: 'WebSocketTest',
     meta: { title: 'WebSocket测试', icon: Connection, showInSidebar: true },
+  },
+  {
+    path: '/news-analysis',
+    name: 'NewsAnalysis',
+    meta: { title: '新闻分析', icon: Document, showInSidebar: true },
   },
   // 您可以在这里添加更多路由，只要有 showInSidebar: true 就会自动显示
 ];
