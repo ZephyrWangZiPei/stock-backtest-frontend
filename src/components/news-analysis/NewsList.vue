@@ -32,52 +32,36 @@
       </div>
     </div>
 
-    <!-- 新闻统计 -->
+    <!-- 新闻来源统计 -->
     <div class="news-stats">
-      <div class="stats-grid">
+      <div class="stats-row">
         <div class="stat-item">
-          <div class="stat-icon cctv">
-            <el-icon>
-              <VideoPlay />
-            </el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ getNewsCountBySource('CCTV') }}</div>
-            <div class="stat-label">CCTV新闻</div>
-          </div>
+          <el-icon class="stat-icon cctv">
+            <VideoPlay />
+          </el-icon>
+          <span class="stat-label">CCTV</span>
+          <span class="stat-count">{{ getNewsCountBySource('CCTV') }}</span>
         </div>
         <div class="stat-item">
-          <div class="stat-icon baidu">
-            <el-icon>
-              <Search />
-            </el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ getNewsCountBySource('百度经济') }}</div>
-            <div class="stat-label">百度经济</div>
-          </div>
+          <el-icon class="stat-icon baidu">
+            <Search />
+          </el-icon>
+          <span class="stat-label">百度</span>
+          <span class="stat-count">{{ getNewsCountBySource('百度经济') }}</span>
         </div>
         <div class="stat-item">
-          <div class="stat-icon eastmoney">
-            <el-icon>
-              <TrendCharts />
-            </el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ getNewsCountBySource('东方财富') }}</div>
-            <div class="stat-label">东方财富</div>
-          </div>
+          <el-icon class="stat-icon eastmoney">
+            <TrendCharts />
+          </el-icon>
+          <span class="stat-label">东方财富</span>
+          <span class="stat-count">{{ getNewsCountBySource('东方财富') }}</span>
         </div>
         <div class="stat-item">
-          <div class="stat-icon market">
-            <el-icon>
-              <DataBoard />
-            </el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ getNewsCountBySource('市场新闻') }}</div>
-            <div class="stat-label">市场新闻</div>
-          </div>
+          <el-icon class="stat-icon market">
+            <DataBoard />
+          </el-icon>
+          <span class="stat-label">市场</span>
+          <span class="stat-count">{{ getNewsCountBySource('市场新闻') }}</span>
         </div>
       </div>
     </div>
@@ -229,7 +213,25 @@ const expandedNews = ref<{ [key: number]: boolean }>({})
 
 // 方法
 const getNewsCountBySource = (source: string) => {
-  return props.news.filter(news => news.source === source).length
+  const count = props.news.filter(news => {
+    const newsSource = news.source?.toLowerCase() || ''
+
+    // 定义来源映射规则
+    const sourceMappings = {
+      'CCTV': ['cctv', '央视', '中央电视台', 'cctv新闻'],
+      '百度经济': ['百度', 'baidu', '百度经济', '百度财经', '百度新闻'],
+      '东方财富': ['东方财富', 'eastmoney', '东方', '东方财富网', '东方财经'],
+      '市场新闻': ['市场', 'market', '财经', '市场新闻', '财经新闻', '经济新闻']
+    }
+
+    // 获取当前来源的匹配规则
+    const mappings = sourceMappings[source as keyof typeof sourceMappings] || []
+
+    // 检查是否匹配任何规则
+    return mappings.some(mapping => newsSource.includes(mapping))
+  }).length
+
+  return count
 }
 
 const getTruncatedContent = (content: string) => {
@@ -345,72 +347,58 @@ const handleExport = () => {
           }
           
           .news-stats {
-            margin-bottom: $spacing-xl;
-          
-            .stats-grid {
-              @include grid(4, $spacing-lg);
-          
-              @include respond-to(md) {
-                grid-template-columns: repeat(2, 1fr);
-              }
-          
-              @include respond-to(sm) {
-                grid-template-columns: 1fr;
-              }
-          
-              .stat-item {
-                @include flex(row, flex-start, center);
-                padding: $spacing-lg;
-                background: $bg-primary;
-                border: 1px solid $border-light;
-                border-radius: $card-border-radius;
-                transition: all $transition-base $ease-in-out;
-          
-                &:hover {
-                  transform: translateY(-2px);
-                  box-shadow: $box-shadow;
-                }
-          
-                .stat-icon {
-                  @include flex(row, center, center);
-                  width: 48px;
-                  height: 48px;
-                  border-radius: 50%;
-                  margin-right: $spacing-md;
-                  font-size: $font-size-large;
-                  color: white;
-          
-                  &.cctv {
-                    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            margin-bottom: 16px;
+            
+              .stats-row {
+                display: flex;
+                gap: 16px;
+            
+                .stat-item {
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  padding: 8px 12px;
+                  background: var(--el-bg-color-page);
+                  border-radius: 6px;
+                  border: 1px solid var(--el-border-color-lighter);
+            
+                  .stat-icon {
+                    font-size: 14px;
+            
+                    &.cctv {
+                      color: #ff6b6b;
+                    }
+            
+                    &.baidu {
+                      color: #4ecdc4;
+                    }
+            
+                    &.eastmoney {
+                      color: #45b7d1;
+                    }
+            
+                    &.market {
+                      color: #f093fb;
+                    }
                   }
-          
-                  &.baidu {
-                    background: linear-gradient(135deg, #4ecdc4, #44a08d);
-                  }
-          
-                  &.eastmoney {
-                    background: linear-gradient(135deg, #45b7d1, #96c93d);
-                  }
-          
-                  &.market {
-                    background: linear-gradient(135deg, #f093fb, #f5576c);
-                  }
-                }
-          
-                .stat-content {
-                  .stat-value {
-                    font-size: $font-size-extra-large;
-                    font-weight: $font-weight-bold;
-                    color: $text-primary;
-                    margin-bottom: $spacing-xs;
-                  }
-          
+            
                   .stat-label {
-                    font-size: $font-size-small;
-                    color: $text-secondary;
-                    font-weight: $font-weight-medium;
+                    font-size: 12px;
+                    color: var(--el-text-color-regular);
+                  }
+            
+                  .stat-count {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--el-text-color-primary);
                   }
                 }
+              }
+            
+              @media (max-width: 768px) {
+                .stats-row {
+                  flex-wrap: wrap;
+                  gap: 8px;
               }
             }
           }

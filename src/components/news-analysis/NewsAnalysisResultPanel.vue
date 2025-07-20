@@ -4,12 +4,18 @@
     <div class="result-header">
       <div class="header-left">
         <h2 class="result-title">分析结果</h2>
-        <p class="result-subtitle" v-if="analysisResult">
+        <p
+          class="result-subtitle"
+          v-if="analysisResult"
+        >
           共分析 {{ analysisResult.news?.length || 0 }} 条新闻
         </p>
       </div>
-      
-      <div class="header-actions" v-if="analysisResult?.news?.length">
+
+      <div
+        class="header-actions"
+        v-if="analysisResult?.news?.length"
+      >
         <el-button
           type="primary"
           @click="handleExportNews"
@@ -22,28 +28,6 @@
 
     <!-- 结果内容 -->
     <div class="result-content">
-      <!-- 新闻列表 -->
-      <div
-        v-if="analysisResult?.news?.length"
-        class="news-section"
-      >
-        <el-card class="news-card">
-          <template #header>
-            <div class="card-header">
-              <el-icon><Document /></el-icon>
-              <span>新闻列表</span>
-            </div>
-          </template>
-          
-          <NewsList
-            :news="analysisResult.news"
-            :show-all-news="showAllNews"
-            @toggle-show-all="toggleShowAllNews"
-            @export="handleExportNews"
-          />
-        </el-card>
-      </div>
-
       <!-- 情感分析汇总 -->
       <div
         v-if="analysisResult?.sentimentSummary"
@@ -52,12 +36,38 @@
         <el-card class="sentiment-card">
           <template #header>
             <div class="card-header">
-              <el-icon><DataAnalysis /></el-icon>
+              <el-icon>
+                <DataAnalysis />
+              </el-icon>
               <span>情感分析汇总</span>
             </div>
           </template>
-          
+
           <SentimentSummary :summary="analysisResult.sentimentSummary" />
+        </el-card>
+      </div>
+
+      <!-- 新闻列表 -->
+      <div
+        v-if="analysisResult?.news?.length"
+        class="news-section"
+      >
+        <el-card class="news-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon>
+                <Document />
+              </el-icon>
+              <span>新闻列表</span>
+            </div>
+          </template>
+
+          <NewsList
+            :news="analysisResult.news"
+            :show-all-news="showAllNews"
+            @toggle-show-all="toggleShowAllNews"
+            @export="handleExportNews"
+          />
         </el-card>
       </div>
 
@@ -71,7 +81,10 @@
           :image-size="120"
         >
           <template #image>
-            <el-icon size="120" color="var(--el-text-color-placeholder)">
+            <el-icon
+              size="120"
+              color="var(--el-text-color-placeholder)"
+            >
               <Document />
             </el-icon>
           </template>
@@ -127,7 +140,7 @@ const handleExportNews = () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  
+
   .result-header {
     padding: 20px;
     border-bottom: 1px solid var(--el-border-color-light);
@@ -135,7 +148,7 @@ const handleExportNews = () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    
+
     .header-left {
       .result-title {
         margin: 0 0 4px 0;
@@ -143,27 +156,30 @@ const handleExportNews = () => {
         font-weight: 600;
         color: var(--el-text-color-primary);
       }
-      
+
       .result-subtitle {
         margin: 0;
         font-size: 14px;
         color: var(--el-text-color-regular);
       }
     }
-    
+
     .header-actions {
       display: flex;
       gap: 12px;
     }
   }
-  
+
   .result-content {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-height: 0;
+    /* 确保flex子元素可以收缩 */
     
     .news-section,
     .sentiment-section {

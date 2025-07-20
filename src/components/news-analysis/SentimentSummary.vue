@@ -1,86 +1,68 @@
 <template>
   <div class="sentiment-summary">
-    <div class="section-header">
-      <h3 class="section-title">
-        <el-icon class="section-icon">
-          <ChatDotRound />
-        </el-icon>
-        情感分析汇总
-      </h3>
-      <div class="section-subtitle">基于AI深度学习的新闻情感分析结果</div>
+    <!-- 简洁的标题 -->
+    <div class="summary-header">
+      <h4 class="summary-title">情感分析汇总</h4>
+      <span class="summary-subtitle">AI深度学习分析结果</span>
     </div>
 
-    <div class="summary-content">
-      <div class="summary-stats">
-        <div class="summary-item positive">
-          <div class="item-icon">
-            <el-icon>
-              <CircleCheck />
-            </el-icon>
-          </div>
-          <div class="item-content">
-            <div class="summary-value">{{ summary.positive_count }}</div>
-            <div class="summary-label">正面新闻</div>
-            <div class="summary-percentage">
-              {{ getPercentage(summary.positive_count) }}%
-            </div>
-          </div>
+    <!-- 紧凑的统计卡片 -->
+    <div class="summary-stats">
+      <div class="stat-card positive">
+        <div class="stat-icon">
+          <el-icon>
+            <CircleCheck />
+          </el-icon>
         </div>
-        <div class="summary-item negative">
-          <div class="item-icon">
-            <el-icon>
-              <CircleClose />
-            </el-icon>
-          </div>
-          <div class="item-content">
-            <div class="summary-value">{{ summary.negative_count }}</div>
-            <div class="summary-label">负面新闻</div>
-            <div class="summary-percentage">
-              {{ getPercentage(summary.negative_count) }}%
-            </div>
-          </div>
-        </div>
-        <div class="summary-item neutral">
-          <div class="item-icon">
-            <el-icon>
-              <Warning />
-            </el-icon>
-          </div>
-          <div class="item-content">
-            <div class="summary-value">{{ summary.neutral_count }}</div>
-            <div class="summary-label">中性新闻</div>
-            <div class="summary-percentage">
-              {{ getPercentage(summary.neutral_count) }}%
-            </div>
-          </div>
+        <div class="stat-info">
+          <div class="stat-count">{{ summary.positive_count }}</div>
+          <div class="stat-label">正面</div>
+          <div class="stat-percent">{{ getPercentage(summary.positive_count) }}%</div>
         </div>
       </div>
 
-      <div class="summary-details">
-        <div class="details-grid">
-          <div class="detail-item">
-            <div class="detail-icon">
-              <el-icon>
-                <TrendCharts />
-              </el-icon>
-            </div>
-            <div class="detail-content">
-              <div class="detail-label">平均情感得分</div>
-              <div class="detail-value">{{ formatScore(summary.avg_sentiment_score) }}</div>
-            </div>
-          </div>
-          <div class="detail-item">
-            <div class="detail-icon">
-              <el-icon>
-                <DataBoard />
-              </el-icon>
-            </div>
-            <div class="detail-content">
-              <div class="detail-label">市场情感指数</div>
-              <div class="detail-value">{{ formatScore(summary.market_sentiment_index) }}</div>
-            </div>
-          </div>
+      <div class="stat-card negative">
+        <div class="stat-icon">
+          <el-icon>
+            <CircleClose />
+          </el-icon>
         </div>
+        <div class="stat-info">
+          <div class="stat-count">{{ summary.negative_count }}</div>
+          <div class="stat-label">负面</div>
+          <div class="stat-percent">{{ getPercentage(summary.negative_count) }}%</div>
+        </div>
+      </div>
+
+      <div class="stat-card neutral">
+        <div class="stat-icon">
+          <el-icon>
+            <Warning />
+          </el-icon>
+        </div>
+        <div class="stat-info">
+          <div class="stat-count">{{ summary.neutral_count }}</div>
+          <div class="stat-label">中性</div>
+          <div class="stat-percent">{{ getPercentage(summary.neutral_count) }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 简洁的指标 -->
+    <div class="summary-metrics">
+      <div class="metric-item">
+        <el-icon class="metric-icon">
+          <TrendCharts />
+        </el-icon>
+        <span class="metric-label">平均得分</span>
+        <span class="metric-value">{{ formatScore(summary.avg_sentiment_score) }}</span>
+      </div>
+      <div class="metric-item">
+        <el-icon class="metric-icon">
+          <DataBoard />
+        </el-icon>
+        <span class="metric-label">市场指数</span>
+        <span class="metric-value">{{ formatScore(summary.market_sentiment_index) }}</span>
       </div>
     </div>
   </div>
@@ -88,7 +70,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ChatDotRound, CircleCheck, CircleClose, Warning, TrendCharts, DataBoard } from '@element-plus/icons-vue'
+import { CircleCheck, CircleClose, Warning, TrendCharts, DataBoard } from '@element-plus/icons-vue'
 import { formatNumber } from '@/utils/format'
 
 /**
@@ -130,225 +112,143 @@ const getPercentage = (count: number): string => {
 </script>
 
 <style lang="scss" scoped>
-@use '@/assets/styles/variables.scss' as *;
-@use '@/assets/styles/mixins.scss' as *;
-@use 'sass:color';
-
 .sentiment-summary {
-  .section-header {
-      margin-bottom: $spacing-xl;
+  .summary-header {
+      margin-bottom: 16px;
   
-      .section-title {
-        @include flex(row, flex-start, center);
-        margin: 0 0 $spacing-xs 0;
-          font-size: $font-size-large;
-          font-weight: $font-weight-bold;
-            color: $text-primary;
-          
-            .section-icon {
-              margin-right: $spacing-sm;
-              color: $primary-color;
-            }
-          }
-          
-          .section-subtitle {
-            font-size: $font-size-small;
-            color: $text-secondary;
-            font-weight: $font-weight-normal;
-          }
-          }
-          
-          .summary-content {
-            .summary-stats {
-              @include grid(3, $spacing-lg);
-              margin-bottom: $spacing-xl;
-          
-              @include respond-to(md) {
-                grid-template-columns: repeat(2, 1fr);
-              }
-          
-              @include respond-to(sm) {
-                grid-template-columns: 1fr;
-              }
-          
-              .summary-item {
-                @include flex(row, flex-start, center);
-                padding: $spacing-xl;
-                border-radius: $card-border-radius;
-                transition: all $transition-base $ease-in-out;
-                position: relative;
-                overflow: hidden;
-          
-                &:hover {
-                  transform: translateY(-2px);
-                  box-shadow: $box-shadow;
-                }
-          
-                &::before {
-                  content: '';
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  height: 4px;
-                  background: linear-gradient(90deg, transparent, currentColor, transparent);
-                  opacity: 0.6;
-                }
-          
-                &.positive {
-                  background: linear-gradient(135deg, rgba(var(--el-color-success), 0.1), rgba(var(--el-color-success), 0.05));
-                    border: 1px solid rgba(var(--el-color-success), 0.2);
-                  
-                    .item-icon {
-                      background: linear-gradient(135deg, var(--el-color-success), var(--el-color-success-light-3));
-                      }
-                      
-                      .summary-value {
-                        color: var(--el-color-success);
-                        }
-                        
-                        &::before {
-                          color: var(--el-color-success);
-                          }
-                          }
-                          
-                          &.negative {
-                            background: linear-gradient(135deg, rgba(var(--el-color-danger), 0.1), rgba(var(--el-color-danger), 0.05));
-                            border: 1px solid rgba(var(--el-color-danger), 0.2);
-                          
-                            .item-icon {
-                              background: linear-gradient(135deg, var(--el-color-danger), var(--el-color-danger-light-3));
-                            }
-                          
-                            .summary-value {
-                              color: var(--el-color-danger);
-                            }
-                          
-                            &::before {
-                              color: var(--el-color-danger);
-                            }
-                          }
-                          
-                          &.neutral {
-                            background: linear-gradient(135deg, rgba(var(--el-color-info), 0.1), rgba(var(--el-color-info), 0.05));
-                            border: 1px solid rgba(var(--el-color-info), 0.2);
-          
-                  .item-icon {
-                    background: linear-gradient(135deg, var(--el-color-info), var(--el-color-info-light-3));
-                  }
-          
-                  .summary-value {
-                    color: var(--el-color-info);
-                  }
-          
-                  &::before {
-                    color: var(--el-color-info);
-                  }
-                }
-          
-                .item-icon {
-                  @include flex(row, center, center);
-                  width: 48px;
-                  height: 48px;
-                  border-radius: 50%;
-                  margin-right: $spacing-md;
-                  color: white;
-                  font-size: $font-size-large;
-                }
-          
-                .item-content {
-                  flex: 1;
-          
-                  .summary-value {
-                    font-size: $font-size-extra-large;
-                    font-weight: $font-weight-bold;
-                    margin-bottom: $spacing-xs;
-                    line-height: 1;
-                  }
-          
-                  .summary-label {
-                    color: $text-regular;
-                    font-size: $font-size-base;
-                    font-weight: $font-weight-medium;
-                    margin-bottom: $spacing-xs;
-                  }
-          
-                  .summary-percentage {
-                    color: $text-secondary;
-                    font-size: $font-size-small;
-                    font-weight: $font-weight-medium;
-                  }
-                }
-              }
-            }
-          
-            .summary-details {
-              .details-grid {
-                @include grid(2, $spacing-lg);
-          
-                @include respond-to(sm) {
-                  grid-template-columns: 1fr;
-                }
-          
-                .detail-item {
-                  @include flex(row, flex-start, center);
-                  padding: $spacing-lg;
-                  background: $bg-secondary;
-                  border-radius: $card-border-radius;
-                  border: 1px solid $border-light;
-                  transition: all $transition-base $ease-in-out;
-          
-                  &:hover {
-                    background: $bg-primary;
-                    box-shadow: $box-shadow;
-                  }
-          
-                  .detail-icon {
-                    @include flex(row, center, center);
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 50%;
-                    background: $primary-color;
-                    color: white;
-                    margin-right: $spacing-md;
-                    font-size: $font-size-medium;
-                  }
-          
-                  .detail-content {
-                    flex: 1;
-          
-                    .detail-label {
-                      font-size: $font-size-small;
-                      color: $text-secondary;
-                      margin-bottom: $spacing-xs;
-                      font-weight: $font-weight-medium;
-                    }
-          
-                    .detail-value {
-                      font-size: $font-size-large;
-                      font-weight: $font-weight-bold;
-                      color: $text-primary;
-                    }
-                  }
-                }
-              }
-            }
-          }
-          }
-          
-          // 响应式设计
-          @include respond-to(sm) {
-            .sentiment-summary {
-              .summary-content {
-                .summary-stats {
-                  gap: $spacing-md;
-                }
-          
-                .summary-details {
-                  .details-grid {
-                    gap: $spacing-md;
-                  }
+      .summary-title {
+        margin: 0 0 4px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
       }
+  
+      .summary-subtitle {
+        font-size: 12px;
+        color: var(--el-text-color-regular);
+      }
+    }
+  
+    .summary-stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+  
+      .stat-card {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--el-border-color-light);
+        background: var(--el-bg-color-page);
+  
+        .stat-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          margin-right: 8px;
+          color: white;
+          font-size: 16px;
+        }
+  
+        .stat-info {
+          flex: 1;
+  
+          .stat-count {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1;
+            margin-bottom: 2px;
+          }
+  
+          .stat-label {
+            font-size: 12px;
+            color: var(--el-text-color-regular);
+            margin-bottom: 2px;
+          }
+  
+          .stat-percent {
+            font-size: 11px;
+            color: var(--el-text-color-placeholder);
+          }
+        }
+  
+        &.positive {
+          .stat-icon {
+            background: var(--el-color-success);
+          }
+  
+          .stat-count {
+            color: var(--el-color-success);
+          }
+        }
+  
+        &.negative {
+          .stat-icon {
+            background: var(--el-color-danger);
+          }
+  
+          .stat-count {
+            color: var(--el-color-danger);
+          }
+        }
+  
+        &.neutral {
+          .stat-icon {
+            background: var(--el-color-info);
+          }
+  
+          .stat-count {
+            color: var(--el-color-info);
+          }
+        }
+      }
+    }
+  
+    .summary-metrics {
+      display: flex;
+      gap: 16px;
+  
+      .metric-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        background: var(--el-bg-color-page);
+        border-radius: 6px;
+        border: 1px solid var(--el-border-color-lighter);
+  
+        .metric-icon {
+          color: var(--el-color-primary);
+          font-size: 14px;
+        }
+  
+        .metric-label {
+          font-size: 12px;
+          color: var(--el-text-color-regular);
+        }
+  
+        .metric-value {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--el-text-color-primary);
+        }
+      }
+    }
+  
+    @media (max-width: 768px) {
+      .summary-stats {
+        flex-direction: column;
+        gap: 8px;
+      }
+  
+      .summary-metrics {
+        flex-direction: column;
+        gap: 8px;
     }
   }
 }

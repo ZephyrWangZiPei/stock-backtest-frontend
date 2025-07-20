@@ -174,10 +174,13 @@ const formatTime = (timestamp: Date) => {
 
 <style lang="scss" scoped>
 .news-analysis-control-panel {
+  height: 100%;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-y: auto;
+    overflow-x: hidden;
   
   .config-section,
   .progress-section,

@@ -220,5 +220,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background: var(--el-bg-color);
+  overflow: hidden;
+    /* 防止整体出现滚动条 */
 }
 </style>
