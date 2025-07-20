@@ -50,6 +50,12 @@ const router = createRouter({
           name: 'NewsAnalysis',
           component: () => import('@/views/NewsAnalysisView.vue'),
           meta: { title: '新闻分析' }
+        },
+        {
+          path: 'test',
+          name: 'Test',
+          component: () => import('@/views/TestView.vue'),
+          meta: { title: '样式测试' }
         }
       ]
     },

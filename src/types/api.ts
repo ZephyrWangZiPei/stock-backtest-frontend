@@ -56,7 +56,9 @@ export interface Strategy {
   name: string
   description?: string
   class_name: string
+  identifier: string
   parameters?: Record<string, any>
+  parameter_definitions?: StrategyParameter[]
   created_at?: string
   updated_at?: string
 }
@@ -102,6 +104,7 @@ export interface BacktestResult {
   error_message?: string
   selected_stocks?: string[]
   parameters_used?: string
+  ai_analysis_report?: string
 }
 
 export interface BacktestTrade {

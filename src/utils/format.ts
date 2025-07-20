@@ -306,4 +306,26 @@ export function formatDuration(seconds: number): string {
   return remainingHours > 0
     ? `${days}天${remainingHours}小时`
     : `${days}天`
+}
+
+/**
+ * 获取变化颜色
+ * @param change 变化值
+ * @returns 颜色类名
+ */
+export function getChangeColor(change: number): string {
+  if (change > 0) return 'text-red-500'
+  if (change < 0) return 'text-green-500'
+  return 'text-gray-500'
+}
+
+/**
+ * 格式化变化值
+ * @param change 变化值
+ * @param decimals 小数位数
+ * @returns 格式化后的变化值字符串
+ */
+export function formatChange(change: number, decimals = 2): string {
+  const sign = change >= 0 ? '+' : ''
+  return `${sign}${change.toFixed(decimals)}%`
 } 

@@ -10,7 +10,7 @@
       :remote-method="searchStocks"
       :loading="stockSearchLoading"
       :disabled="disabled"
-      class="w-full custom-select"
+      style="width: 100%"
       @change="handleSelectionChange"
       @clear="handleClear"
     >
@@ -123,38 +123,5 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-@use '@/assets/styles/variables.scss' as *;
-@use '@/assets/styles/mixins.scss' as *;
-
-.stock-selector {
-  .custom-select {
-    :deep(.el-input__wrapper) {
-      @include input-base;
-    }
-
-    :deep(.el-input__inner) {
-      color: $text-primary;
-      background: transparent;
-    }
-
-    :deep(.el-select-dropdown) {
-      background: $bg-primary;
-      border: 1px solid $border-color;
-      @include shadow;
-    }
-
-    :deep(.el-select-dropdown__item) {
-      color: $text-primary;
-      
-      &:hover {
-        background: $bg-secondary;
-      }
-      
-      &.selected {
-        background: rgba($primary-color, 0.1);
-        color: $primary-color;
-      }
-    }
-  }
-}
-</style> 
+/* 使用 Element Plus 原生样式，无需自定义覆盖 */
+</style>

@@ -291,6 +291,8 @@ onUnmounted(() => {
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(75, 85, 99, 0.3);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: relative;
+  z-index: 1000;
 }
 
 /* Left Section */
@@ -381,8 +383,9 @@ onUnmounted(() => {
 }
 
 .connection-tooltip {
-  @apply absolute top-full left-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl opacity-0 invisible transition-all duration-200 z-50 cursor-pointer;
+  @apply absolute top-full left-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl opacity-0 invisible transition-all duration-200 cursor-pointer;
   transform: translateY(-10px);
+  z-index: 9999;
 }
 
 .connection-tooltip-container:hover .connection-tooltip {

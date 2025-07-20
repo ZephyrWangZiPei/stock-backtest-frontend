@@ -483,12 +483,7 @@ const handleResize = () => {
 
 .score-table {
   @apply w-full;
-  --el-table-bg-color: transparent;
-  --el-table-tr-bg-color: rgba(55, 65, 81, 0.3);
-  --el-table-header-bg-color: rgba(31, 41, 55, 0.8);
-  --el-table-header-text-color: #f3f4f6;
-  --el-table-text-color: #d1d5db;
-  --el-table-border-color: rgba(75, 85, 99, 0.2);
+  /* 移除所有 Element Plus 组件样式覆盖，使用原生样式 */
 }
 
 .score-breakdown {

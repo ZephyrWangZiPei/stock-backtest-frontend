@@ -123,6 +123,14 @@ export const useSchedulerStore = defineStore('scheduler', {
           } else if (data.status === 'completed') {
             status.current_date_progress = 100;
             status.success = true;
+            // 触发任务完成事件
+            this.$patch((state) => {
+              state.taskStatus[data.job_name] = status;
+            });
+            // 发出自定义事件，通知组件任务完成
+            window.dispatchEvent(new CustomEvent('job_completed', {
+              detail: { job_name: data.job_name, data }
+            }));
           } else if (data.status === 'failed') {
             status.current_date_progress = 0;
             status.success = false;
@@ -139,9 +147,16 @@ export const useSchedulerStore = defineStore('scheduler', {
         console.log(`[SchedulerStore] Received job_progress for ${data.job_name}:`, data);
         if (data && data.job_name) {
           const status = this.taskStatus[data.job_name] || {};
-          if (data.total > 0) {
+          
+          // 检查progress是否已经是百分比（大于1）
+          if (data.progress > 1) {
+            // progress已经是百分比，直接使用
+            status.current_date_progress = Math.round(data.progress);
+          } else if (data.total > 0) {
+            // progress是分子，需要计算百分比
             status.current_date_progress = Math.round((data.progress / data.total) * 100);
           }
+          
           status.message = data.message;
           this.taskStatus[data.job_name] = status;
         }

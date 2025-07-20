@@ -226,50 +226,7 @@ onUnmounted(() => {
 });
 </script>
 
-<style>
-/* Global Element Plus overrides (not scoped) */
-.el-menu {
-  border-right: none !important;
-  background-color: transparent !important;
-}
-
-.el-menu-item {
-  /* Tailwind applies some base styles */
-  @apply transition-all duration-300;
-}
-
-.el-menu-item.is-active {
-  background-color: rgba(60, 100, 200, 0.2) !important; /* A light blue/purple for active */
-}
-
-.el-menu-item:hover {
-  background-color: rgba(60, 100, 200, 0.1) !important;
-}
-
-.el-menu-item .el-icon {
-  color: #9ca3af; /* Default icon color */
-}
-
-.el-menu-item.is-active .el-icon {
-  color: #e9d5ff; /* Active icon color */
-}
-
-.el-menu-item:hover .el-icon {
-  color: #e2e8f0; /* Hover icon color */
-}
-
-.el-menu-item .el-menu-item__title {
-  color: #9ca3af; /* Default text color */
-}
-
-.el-menu-item.is-active .el-menu-item__title {
-  color: #e9d5ff; /* Active text color */
-}
-
-.el-menu-item:hover .el-menu-item__title {
-  color: #e2e8f0; /* Hover text color */
-}
-</style>
+<!-- 移除所有 Element Plus 组件样式覆盖，使用原生样式 -->
 
 <style scoped>
 .sidebar-container {

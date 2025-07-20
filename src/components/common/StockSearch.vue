@@ -161,83 +161,86 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
-@import '@/assets/styles/mixins.scss';
-
 .stock-search {
   position: relative;
   width: 100%;
-
-  .stock-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: $z-index-dropdown;
-    background: $bg-primary;
-    border: 1px solid $border-color;
-    border-radius: $card-border-radius;
-    box-shadow: $box-shadow;
-    max-height: 300px;
-    overflow-y: auto;
-    margin-top: 4px;
-
-    .stock-option {
-      @include flex(row, space-between, center);
-      padding: $spacing-sm $spacing-md;
-      cursor: pointer;
-      transition: background-color $transition-base $ease-in-out;
-
-      &:hover {
-        background-color: $bg-secondary;
-      }
-
-      &:not(:last-child) {
-        border-bottom: 1px solid $border-light;
-      }
-
-      .stock-info {
-        @include flex(column, flex-start, flex-start);
-        flex: 1;
-
-        .stock-code {
-          font-weight: $font-weight-medium;
-          color: $text-primary;
-          font-size: $font-size-base;
-        }
-
-        .stock-name {
-          color: $text-regular;
-          font-size: $font-size-small;
-          @include text-truncate;
-          max-width: 200px;
-        }
-      }
-
-      .stock-market {
-        color: $text-secondary;
-        font-size: $font-size-extra-small;
-        padding: 2px 6px;
-        background-color: $bg-secondary;
-        border-radius: 4px;
-      }
-    }
-
-    &.empty-state {
-      padding: $spacing-lg;
-      text-align: center;
-
-      .empty-text {
-        color: $text-secondary;
-        font-size: $font-size-small;
-      }
-    }
-  }
-
-  .error-message {
-    margin-top: $spacing-xs;
-    color: $danger-color;
-    font-size: $font-size-extra-small;
-  }
 }
-</style> 
+
+.stock-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+  border-radius: 6px;
+  box-shadow: var(--el-box-shadow);
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.stock-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.stock-option:hover {
+  background: var(--el-fill-color-light);
+}
+
+.stock-option:not(:last-child) {
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.stock-code {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.stock-name {
+  font-size: 12px;
+  opacity: 0.8;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stock-market {
+  font-size: 11px;
+  opacity: 0.7;
+  padding: 2px 6px;
+  background: var(--el-fill-color);
+  border-radius: 4px;
+}
+
+.stock-dropdown.empty-state {
+  padding: 24px;
+  text-align: center;
+}
+
+.empty-text {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.error-message {
+  margin-top: 4px;
+  color: var(--el-color-danger);
+  font-size: 11px;
+}
+</style>

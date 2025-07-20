@@ -1,10 +1,11 @@
 import './assets/main.css'
-import 'element-plus/theme-chalk/dark/css-vars.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+// 启用 Element Plus 官方暗黑主题
+import 'element-plus/theme-chalk/dark/css-vars.css'
 
 // v-md-editor 配置
 import VMdEditor from '@kangc/v-md-editor'

@@ -1,141 +1,140 @@
 <template>
   <div class="dashboard-container">
-    <!-- Header moved to NavBar -->
-
-    <el-row :gutter="24" class="dashboard-row">
-      <!-- System Statistics -->
-      <el-col :span="8">
-        <div class="relative group h-full">
-          <div class="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-lg opacity-50 group-hover:opacity-75 transition duration-300"></div>
-          <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
+    <!-- 紧凑布局：上下两行 -->
+    <div class="dashboard-content">
+      <!-- 第一行：系统统计和股票推荐 -->
+      <div class="dashboard-row">
+        <!-- System Statistics -->
+        <div class="stats-card">
+          <el-card
+            shadow="hover"
+            class="compact-card"
+          >
             <template #header>
-              <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-green-400 rounded-md animate-pulse"></div>
-                  <span class="font-bold text-xl bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">系统统计</span>
-                </div>
-                <el-button text @click="refreshSystemData" :loading="systemLoading" class="hover:bg-gray-700/50 transition-colors">
-                  <el-icon class="text-green-400"><Refresh /></el-icon>
-                </el-button>
+              <div class="card-header">
+                <span class="card-title">系统统计</span>
+                <el-button
+                  type="primary"
+                  :icon="Refresh"
+                  @click="refreshSystemData"
+                  :loading="systemLoading"
+                  circle
+                  size="small"
+                />
               </div>
             </template>
-            
-            <div class="grid grid-cols-2 gap-6">
-              <div class="stats-card stats-card-blue">
-                <div class="stats-icon bg-blue-500/20">
-                  <div class="w-6 h-6 bg-blue-400 rounded-sm"></div>
-                </div>
-                <div class="text-3xl font-bold text-blue-400 mb-1">{{ systemStats.totalStocks }}</div>
-                <div class="text-sm text-gray-300 font-medium">股票总数</div>
+
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-value">{{ systemStats.totalStocks }}</div>
+                <div class="stat-label">股票总数</div>
               </div>
-              <div class="stats-card stats-card-green">
-                <div class="stats-icon bg-green-500/20">
-                  <div class="w-6 h-6 bg-green-400 rounded-sm"></div>
-                </div>
-                <div class="text-3xl font-bold text-green-400 mb-1">{{ systemStats.totalBacktests }}</div>
-                <div class="text-sm text-gray-300 font-medium">回测次数</div>
+              <div class="stat-item">
+                <div class="stat-value">{{ systemStats.totalBacktests }}</div>
+                <div class="stat-label">回测次数</div>
               </div>
-              <div class="stats-card stats-card-purple">
-                <div class="stats-icon bg-purple-500/20">
-                  <div class="w-6 h-6 bg-purple-400 rounded-sm"></div>
-                </div>
-                <div class="text-3xl font-bold text-purple-400 mb-1">{{ systemStats.totalStrategies }}</div>
-                <div class="text-sm text-gray-300 font-medium">策略数量</div>
+              <div class="stat-item">
+                <div class="stat-value">{{ systemStats.totalStrategies }}</div>
+                <div class="stat-label">策略数量</div>
               </div>
             </div>
           </el-card>
         </div>
-      </el-col>
 
-      <!-- Stock Recommendations -->
-      <el-col :span="16">
-        <div class="relative group h-full">
-          <div class="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg opacity-50 group-hover:opacity-75 transition duration-300"></div>
-          <el-card class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
+        <!-- Stock Recommendations -->
+        <div class="recommendation-card">
+          <el-card
+            shadow="hover"
+            class="compact-card"
+          >
             <template #header>
-              <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                  <div class="w-2 h-2 bg-purple-400 rounded-md animate-pulse"></div>
-                  <span class="font-bold text-xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">股票推荐</span>
-                </div>
-                <el-button text @click="fetchRecommendations" :loading="recoLoading" class="hover:bg-gray-700/50 transition-colors">
-                  <el-icon class="text-purple-400"><Refresh /></el-icon>
-                </el-button>
+              <div class="card-header">
+                <span class="card-title">股票推荐</span>
+                <el-button
+                  type="primary"
+                  :icon="Refresh"
+                  @click="fetchRecommendations"
+                  :loading="recoLoading"
+                  circle
+                  size="small"
+                />
               </div>
             </template>
 
             <div class="recommendation-content">
-              <div v-if="stockRecommendations.length === 0" class="flex flex-col items-center justify-center h-48 text-gray-400">
-                <span class="text-sm">暂无股票推荐</span>
-              </div>
-              <div v-else class="flex-1 min-h-0">
-                <div class="h-full overflow-y-auto custom-scrollbar space-y-3 pr-2">
-                  <div v-for="reco in paginatedStockRecommendations" :key="'stk-' + reco.code" class="recommendation-card group">
-                    <div class="flex items-center justify-between p-4 bg-gray-700/30 hover:bg-gray-700/50 rounded-md border border-gray-600/30 hover:border-purple-500/30 transition-all duration-300">
-                      <div class="flex items-center space-x-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-sm flex items-center justify-center">
-                          <div class="w-4 h-4 bg-purple-400 rounded-xs"></div>
-                        </div>
-                        <div>
-                          <div class="font-semibold text-white group-hover:text-purple-300 transition-colors">{{ reco.name }}</div>
-                          <div class="text-sm text-gray-400">{{ reco.code }}</div>
-                        </div>
-                      </div>
-                      <div class="flex items-center space-x-3">
-                        <div class="flex space-x-2">
-                          <el-tag type="success" effect="dark" size="small" class="px-3 py-1 rounded-md font-medium">
-                            买:{{ reco.signals.buy }}
-                          </el-tag>
-                          <el-tag type="danger" effect="dark" size="small" class="px-3 py-1 rounded-md font-medium">
-                            卖:{{ reco.signals.sell }}
-                          </el-tag>
-                        </div>
-                      </div>
+              <el-empty
+                v-if="stockRecommendations.length === 0"
+                description="暂无股票推荐"
+              />
+              <div
+                v-else
+                class="recommendation-scroll-container"
+              >
+                <div class="recommendation-list">
+                  <div
+                    v-for="reco in stockRecommendations"
+                    :key="'stk-' + reco.code"
+                    class="recommendation-item"
+                  >
+                    <div class="stock-info">
+                      <div class="stock-name">{{ reco.name }}</div>
+                      <div class="stock-code">{{ reco.code }}</div>
+                    </div>
+                    <div class="stock-signals">
+                      <el-tag
+                        type="success"
+                        size="small"
+                      >
+                        买:{{ reco.signals.buy }}
+                      </el-tag>
+                      <el-tag
+                        type="danger"
+                        size="small"
+                      >
+                        卖:{{ reco.signals.sell }}
+                      </el-tag>
                     </div>
                   </div>
                 </div>
-                <el-pagination v-if="stockRecommendations.length > pageSize" class="pt-2 flex justify-center" background layout="prev, pager, next" :page-size="pageSize" :current-page="stockPage" :total="stockRecommendations.length" @current-change="handleStockPageChange" />
               </div>
             </div>
           </el-card>
         </div>
-      </el-col>
-    </el-row>
+      </div>
 
-    <!-- Recent Activities -->
-    <div class="mt-6">
-      <div class="relative group">
-        <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-lg opacity-50 group-hover:opacity-75 transition duration-300"></div>
-        <el-card class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+      <!-- 第二行：最近活动 -->
+      <div class="activities-section">
+        <el-card
+          shadow="hover"
+          class="compact-card"
+        >
           <template #header>
-            <div class="flex justify-between items-center">
-              <div class="flex items-center space-x-3">
-                <div class="w-2 h-2 bg-indigo-400 rounded-md animate-pulse"></div>
-                <span class="font-bold text-xl bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">最近活动</span>
-              </div>
-            </div>
+            <span class="card-title">最近活动</span>
           </template>
-          
-          <div v-if="recentActivities.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-400">
-            <div class="w-16 h-16 bg-gray-700/50 rounded-md flex items-center justify-center mb-4">
-              <div class="w-8 h-8 border-2 border-gray-600 rounded-md"></div>
-            </div>
-            <p class="text-lg font-medium">暂无最近活动</p>
-          </div>
-          
-          <el-timeline v-else class="custom-timeline">
-            <el-timeline-item 
-              v-for="(activity, index) in recentActivities" 
+
+          <el-empty
+            v-if="recentActivities.length === 0"
+            description="暂无最近活动"
+          />
+
+          <el-timeline
+            v-else
+            class="compact-timeline"
+          >
+            <el-timeline-item
+              v-for="activity in recentActivities"
               :key="activity.id"
               :timestamp="activity.timestamp"
               :type="activity.type"
-              class="timeline-item"
-              :style="{ animationDelay: `${index * 150}ms` }"
+              size="large"
             >
-              <div class="bg-gray-700/30 hover:bg-gray-700/50 rounded-md p-4 border border-gray-600/30 hover:border-indigo-500/30 transition-all duration-300">
-                <div class="text-white font-medium mb-1">{{ activity.title }}</div>
-                <div class="text-sm text-gray-300">{{ activity.description }}</div>
-              </div>
+              <el-card
+                class="activity-card"
+                shadow="never"
+              >
+                <div class="activity-title">{{ activity.title }}</div>
+                <div class="activity-description">{{ activity.description }}</div>
+              </el-card>
             </el-timeline-item>
           </el-timeline>
         </el-card>
@@ -151,7 +150,7 @@ import { ElMessage } from 'element-plus'
 import 'element-plus/es/components/virtual-list/style/css'
 import { Refresh, Plus } from '@element-plus/icons-vue'
 import { getChangeColor, formatChange } from '@/utils/format'
-import { 
+import {
   getSystemStats,
   getRecommendations,
 } from '@/utils/api'
@@ -202,9 +201,7 @@ const recentActivities = ref<Activity[]>([]);
 const systemLoading = ref(false);
 const recoLoading = ref(false);
 
-// --- 分类与分页 ---
-const pageSize = 10; // 单页数量
-
+// --- 分类 ---
 const isIndexRecommendation = (reco: Recommendation) => {
   const name = reco.name || '';
   const code = (reco.code || '').toLowerCase();
@@ -224,23 +221,6 @@ const isIndexRecommendation = (reco: Recommendation) => {
 // 分类结果
 const indexRecommendations = computed(() => recommendations.value.filter(isIndexRecommendation));
 const stockRecommendations = computed(() => recommendations.value.filter(r => !isIndexRecommendation(r)));
-
-// 分页状态
-const indexPage = ref(1);
-const stockPage = ref(1);
-
-const paginatedIndexRecommendations = computed(() => {
-  const start = (indexPage.value - 1) * pageSize;
-  return indexRecommendations.value.slice(start, start + pageSize);
-});
-
-const paginatedStockRecommendations = computed(() => {
-  const start = (stockPage.value - 1) * pageSize;
-  return stockRecommendations.value.slice(start, start + pageSize);
-});
-
-const handleIndexPageChange = (page: number) => { indexPage.value = page; };
-const handleStockPageChange = (page: number) => { stockPage.value = page; };
 
 // 刷新系统数据
 const refreshSystemData = async () => {
@@ -268,9 +248,6 @@ const fetchRecommendations = async () => {
     const response = await getRecommendations() as unknown as { success: boolean; data: Recommendation[] };
     if (response.success) {
       recommendations.value = response.data;
-      // 重置分页
-      indexPage.value = 1;
-      stockPage.value = 1;
     }
   } catch (error) {
     console.error('获取策略推荐失败:', error);
@@ -321,67 +298,236 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Dashboard Container */
+/* Dashboard Container - 紧凑布局 */
 .dashboard-container {
-  @apply h-full flex flex-col overflow-hidden;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-  overflow: auto;
+  height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    overflow: hidden;
+  }
+  
+  .dashboard-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+  }
+  
+  /* Dashboard Row - 第一行布局 */
+  .dashboard-row {
+    display: flex;
+      gap: 16px;
+      height: 45%;
+      min-height: 300px;
+    }
+    
+    /* 卡片容器 */
+    .stats-card {
+      flex: 1;
+      min-width: 300px;
+    }
+    
+    .recommendation-card {
+      flex: 2;
+      min-width: 400px;
+    }
+    
+    /* 紧凑卡片样式 */
+    .compact-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .compact-card :deep(.el-card__body) {
+      flex: 1;
+      padding: 16px;
+      overflow: hidden;
+    }
+    
+    /* Card Headers */
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    /* Statistics Grid - 更紧凑 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      height: 100%;
+    }
+    
+    .stat-item {
+      text-align: center;
+      padding: 12px 8px;
+      border-radius: 6px;
+      background: var(--el-fill-color-light);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .stat-item:hover {
+      background: var(--el-fill-color);
+      transform: translateY(-2px);
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--el-color-primary);
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    /* Recommendation Content - 滚动容器 */
+    .recommendation-content {
+      height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .recommendation-scroll-container {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+      }
+      
+      .recommendation-list {
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 4px;
+      
+        /* 自定义滚动条 */
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+      
+        &::-webkit-scrollbar-track {
+          background: var(--el-fill-color-light);
+          border-radius: 3px;
+        }
+      
+        &::-webkit-scrollbar-thumb {
+          background: var(--el-border-color);
+          border-radius: 3px;
+      
+          &:hover {
+            background: var(--el-border-color-hover);
+          }
+        }
+      }
+      
+      .recommendation-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        margin-bottom: 6px;
+        border-radius: 6px;
+        background: var(--el-fill-color-light);
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+      }
+      
+      .recommendation-item:hover {
+        background: var(--el-fill-color);
+        border-color: var(--el-border-color);
+        transform: translateX(2px);
+      }
+      
+      .stock-info {
+        flex: 1;
+        min-width: 0;
+      }
+      
+      .stock-name {
+        font-weight: 600;
+        margin-bottom: 2px;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .stock-code {
+        font-size: 11px;
+        opacity: 0.7;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .stock-signals {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      
+      /* Activities Section - 第二行 */
+      .activities-section {
+        flex: 1;
+        min-height: 200px;
+      }
+      
+      .compact-timeline {
+        max-height: 100%;
+        overflow-y: auto;
+      
+        /* 自定义滚动条 */
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+      
+        &::-webkit-scrollbar-track {
+          background: var(--el-fill-color-light);
+          border-radius: 3px;
+        }
+      
+        &::-webkit-scrollbar-thumb {
+          background: var(--el-border-color);
+          border-radius: 3px;
+      
+          &:hover {
+            background: var(--el-border-color-hover);
+          }
+        }
 }
 
-/* Dashboard Row */
-.dashboard-row {
-  @apply mb-6 flex-shrink-0;
-  min-height: 400px;
+.activity-card {
+  margin-bottom: 6px;
+  padding: 8px 12px;
 }
 
-/* Recommendation Content */
-.recommendation-content {
-  @apply h-full flex flex-col;
-  min-height: 320px;
-  max-height: 400px;
+.activity-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+  font-size: 14px;
 }
 
-/* Custom Scrollbar */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.6) rgba(31, 41, 55, 0.3);
+.activity-description {
+  font-size: 12px;
+  opacity: 0.8;
+  line-height: 1.4;
 }
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(31, 41, 55, 0.3);
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(139, 92, 246, 0.8), rgba(99, 102, 241, 0.8));
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(139, 92, 246, 1), rgba(99, 102, 241, 1));
-}
-
-/* Market Index Cards */
-.market-index-card {
-  animation: fadeInUp 0.6s ease-out forwards;
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.market-index-card:nth-child(1) { animation-delay: 0.1s; }
-.market-index-card:nth-child(2) { animation-delay: 0.2s; }
-.market-index-card:nth-child(3) { animation-delay: 0.3s; }
 
 /* Stats Cards */
 .stats-card {
-  @apply relative p-6 rounded-md border transition-all duration-300 cursor-pointer;
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.8) 100%);
-  border-color: rgba(75, 85, 99, 0.3);
   animation: fadeInUp 0.6s ease-out forwards;
   opacity: 0;
   transform: translateY(20px);
@@ -449,49 +595,5 @@ onUnmounted(() => {
   }
 }
 
-/* Improved card heights for better layout */
-:deep(.el-card) {
-  background: rgba(31, 41, 55, 0.8) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-}
-
-:deep(.el-card__header) {
-  background: rgba(17, 24, 39, 0.3) !important;
-  border-bottom: 1px solid rgba(75, 85, 99, 0.2) !important;
-}
-
-:deep(.el-card__body) {
-  height: calc(100% - 100px) !important;
-  padding: 1.5rem !important;
-}
-
-/* Enhanced scrollbar styling */
-:deep(.el-scrollbar__thumb) {
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 0.8)) !important;
-  border-radius: 6px !important;
-}
-
-:deep(.el-scrollbar__bar) {
-  background: rgba(31, 41, 55, 0.3) !important;
-}
-
-/* Button hover effects */
-:deep(.el-button) {
-  transition: all 0.3s ease !important;
-}
-
-:deep(.el-button:hover) {
-  transform: translateY(-1px) !important;
-}
-
-/* Tag styling */
-:deep(.el-tag) {
-  backdrop-filter: blur(4px) !important;
-  transition: all 0.3s ease !important;
-}
-
-:deep(.el-tag:hover) {
-  transform: scale(1.05) !important;
-}
+/* 移除所有 Element Plus 组件样式覆盖，使用原生样式 */
 </style> 

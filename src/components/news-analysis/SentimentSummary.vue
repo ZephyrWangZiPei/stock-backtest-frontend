@@ -132,6 +132,7 @@ const getPercentage = (count: number): string => {
 <style lang="scss" scoped>
 @use '@/assets/styles/variables.scss' as *;
 @use '@/assets/styles/mixins.scss' as *;
+@use 'sass:color';
 
 .sentiment-summary {
   .section-header {
@@ -195,53 +196,53 @@ const getPercentage = (count: number): string => {
                 }
           
                 &.positive {
-                  background: linear-gradient(135deg, rgba($success-color, 0.1), rgba($success-color, 0.05));
-                  border: 1px solid rgba($success-color, 0.2);
+                  background: linear-gradient(135deg, rgba(var(--el-color-success), 0.1), rgba(var(--el-color-success), 0.05));
+                    border: 1px solid rgba(var(--el-color-success), 0.2);
+                  
+                    .item-icon {
+                      background: linear-gradient(135deg, var(--el-color-success), var(--el-color-success-light-3));
+                      }
+                      
+                      .summary-value {
+                        color: var(--el-color-success);
+                        }
+                        
+                        &::before {
+                          color: var(--el-color-success);
+                          }
+                          }
+                          
+                          &.negative {
+                            background: linear-gradient(135deg, rgba(var(--el-color-danger), 0.1), rgba(var(--el-color-danger), 0.05));
+                            border: 1px solid rgba(var(--el-color-danger), 0.2);
+                          
+                            .item-icon {
+                              background: linear-gradient(135deg, var(--el-color-danger), var(--el-color-danger-light-3));
+                            }
+                          
+                            .summary-value {
+                              color: var(--el-color-danger);
+                            }
+                          
+                            &::before {
+                              color: var(--el-color-danger);
+                            }
+                          }
+                          
+                          &.neutral {
+                            background: linear-gradient(135deg, rgba(var(--el-color-info), 0.1), rgba(var(--el-color-info), 0.05));
+                            border: 1px solid rgba(var(--el-color-info), 0.2);
           
                   .item-icon {
-                    background: linear-gradient(135deg, $success-color, lighten($success-color, 10%));
+                    background: linear-gradient(135deg, var(--el-color-info), var(--el-color-info-light-3));
                   }
           
                   .summary-value {
-                    color: $success-color;
+                    color: var(--el-color-info);
                   }
           
                   &::before {
-                    color: $success-color;
-                  }
-                }
-          
-                &.negative {
-                  background: linear-gradient(135deg, rgba($danger-color, 0.1), rgba($danger-color, 0.05));
-                  border: 1px solid rgba($danger-color, 0.2);
-          
-                  .item-icon {
-                    background: linear-gradient(135deg, $danger-color, lighten($danger-color, 10%));
-                  }
-          
-                  .summary-value {
-                    color: $danger-color;
-                  }
-          
-                  &::before {
-                    color: $danger-color;
-                  }
-                }
-          
-                &.neutral {
-                  background: linear-gradient(135deg, rgba($info-color, 0.1), rgba($info-color, 0.05));
-                  border: 1px solid rgba($info-color, 0.2);
-          
-                  .item-icon {
-                    background: linear-gradient(135deg, $info-color, lighten($info-color, 10%));
-                  }
-          
-                  .summary-value {
-                    color: $info-color;
-                  }
-          
-                  &::before {
-                    color: $info-color;
+                    color: var(--el-color-info);
                   }
                 }
           

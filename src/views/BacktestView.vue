@@ -345,44 +345,47 @@
                       label="交易日志"
                       name="trades"
                     >
-                      <el-table
-                        :data="filteredTrades"
-                        class="custom-table"
-                      >
-                        <el-table-column
-                          prop="trade_date"
-                          label="交易日期"
-                          width="180"
-                        />
-                        <el-table-column
-                          prop="stock_code"
-                          label="股票代码"
-                          width="120"
-                        />
-                        <el-table-column
-                          prop="trade_type"
-                          label="操作"
-                          width="100"
+                      <div class="trades-container">
+                        <el-table
+                          :data="filteredTrades"
+                          class="custom-table trades-table"
+                          :max-height="400"
                         >
-                          <template #default="scope">
-                            <el-tag
-                              :type="scope.row.trade_type === 'buy' ? 'success' : 'danger'"
-                              effect="dark"
-                              class="!font-bold custom-tag"
-                            >
-                              {{ scope.row.trade_type.toUpperCase() }}
-                            </el-tag>
-                          </template>
-                        </el-table-column>
-                        <el-table-column
-                          prop="price"
-                          label="成交价"
-                        />
-                        <el-table-column
-                          prop="quantity"
-                          label="股数"
-                        />
-                      </el-table>
+                          <el-table-column
+                            prop="trade_date"
+                            label="交易日期"
+                            width="180"
+                          />
+                          <el-table-column
+                            prop="stock_code"
+                            label="股票代码"
+                            width="120"
+                          />
+                          <el-table-column
+                            prop="trade_type"
+                            label="操作"
+                            width="100"
+                          >
+                            <template #default="scope">
+                              <el-tag
+                                :type="scope.row.trade_type === 'buy' ? 'success' : 'danger'"
+                                effect="dark"
+                                class="!font-bold custom-tag"
+                              >
+                                {{ scope.row.trade_type.toUpperCase() }}
+                              </el-tag>
+                            </template>
+                          </el-table-column>
+                          <el-table-column
+                            prop="price"
+                            label="成交价"
+                          />
+                          <el-table-column
+                            prop="quantity"
+                            label="股数"
+                          />
+                        </el-table>
+                      </div>
                     </el-tab-pane>
                     <el-tab-pane
                       label="AI 分析"
@@ -582,7 +585,7 @@ import { runBacktest, getStrategies, getStocks, getBacktestResult, getDailyData,
 import { ElMessage, ElEmpty } from 'element-plus'
 import { createChart, IChartApi, ISeriesApi, CrosshairMode } from 'lightweight-charts';
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { Socket } from 'socket.io-client'
 import { createWebSocketManager, WebSocketManager } from '@/utils/websocketManager'
 import { usePageWebSocket } from '@/utils/pageWebSocketManager'
@@ -607,7 +610,6 @@ interface ParameterDefinition {
   description?: string;
 }
 
-const route = useRoute();
 const router = useRouter();
 
 const form = reactive({
@@ -753,46 +755,7 @@ const getStockName = (code: string) => {
   return code;
 };
 
-const loadResultById = async (id: number) => {
-  try {
-    const res = await getBacktestResult(id);
-    const resultData = res.data; // API wrapper -> data
-    if (!resultData) {
-      throw new Error('无效的回测结果');
-    }
-    backtestResult.value = {
-      id,
-      status: resultData.status || 'completed',
-      data: resultData,
-    };
-
-    // 检查是否有AI分析报告
-    if (resultData.ai_analysis_report) {
-      aiAnalysisContent.value = resultData.ai_analysis_report;
-      displayedAnalysisContent.value = resultData.ai_analysis_report; // 直接显示完整内容
-      aiAnalysisCompleted.value = true;
-      aiAnalysisLoading.value = false;
-      aiAnalysisError.value = '';
-      stopTypingEffect(); // 确保停止任何可能的打字效果
-    } else {
-      // 如果没有AI分析报告，清空相关状态
-      aiAnalysisContent.value = '';
-      displayedAnalysisContent.value = '';
-      aiAnalysisCompleted.value = false;
-      aiAnalysisLoading.value = false;
-      aiAnalysisError.value = '';
-      stopTypingEffect(); // 确保停止任何可能的打字效果
-    }
-
-    if (resultData?.selected_stocks?.length) {
-      const list: any[] = resultData.selected_stocks;
-      form.stock_codes = list.map((item: any) => typeof item === 'string' ? item : item.code);
-      chartStock.value = form.stock_codes[0];
-    }
-  } catch (e: any) {
-    ElMessage.error(e.message || '获取回测结果失败');
-  }
-}
+// 移除历史记录查看功能，专注于回测功能
 
 onMounted(async () => {
   try {
@@ -806,14 +769,6 @@ onMounted(async () => {
   } catch (error) {
     ElMessage.error('获取策略列表失败');
     console.error(error);
-  }
-
-  // 如果通过 /backtest?id=xx 进入，直接加载结果
-  if (route.query.id) {
-    const idNum = Number(route.query.id);
-    if (!isNaN(idNum)) {
-      await loadResultById(idNum);
-    }
   }
 });
 
@@ -839,8 +794,10 @@ const onStrategyChange = async (strategyId: number | null) => {
   try {
     const response = await getStrategyDetails(selectedStrategy.identifier);
     const details = response.data; // 新结构: response.data 包含策略详情
-    parameterDefinitions.value = details.parameter_definitions;
-    strategyDescription.value = details.description;
+    if (details) {
+      parameterDefinitions.value = details.parameter_definitions || [];
+      strategyDescription.value = details.description || '';
+    }
     // 根据定义初始化表单参数
     for (const param of parameterDefinitions.value) {
       formParameters[param.name] = param.default;
@@ -875,9 +832,14 @@ const onSubmit = async () => {
     };
 
     const response = await runBacktest(payload);
-    const backtestId = response.data.backtest_id;
+    let backtestId: number;
+    if (response.data) {
+      backtestId = response.data.backtest_id;
 
-    ElMessage.success(response.data.message || `回测任务 (ID: ${backtestId}) 已启动`);
+      ElMessage.success(`回测任务 (ID: ${backtestId}) 已启动`);
+    } else {
+      throw new Error('启动回测失败：未获取到回测ID');
+    }
 
     // 开始轮询获取结果
     pollForResult(backtestId);
@@ -901,7 +863,7 @@ const pollForResult = async (id: number, interval = 3000, maxAttempts = 20) => {
       if (resultData && resultData.status !== 'running') {
         backtestResult.value = { id: id, status: 'completed', data: resultData };
         pollProgress.value = 100;
-        ElMessage.success(response.data.message || '回测结果获取成功！');
+        ElMessage.success('回测结果获取成功！');
 
         // 检查是否有AI分析报告
         if (resultData.ai_analysis_report) {
@@ -1123,7 +1085,7 @@ const startAiAnalysis = async () => {
         socket.emit('start_ai_analysis', { backtest_id: backtestResult.value!.id });
         startTypingEffect(); // 连接成功后开始打字效果
       },
-      onDisconnect: (socket) => {
+      onDisconnect: () => {
         // 如果不是因为完成或错误而断开，也停止打字效果
         if (!aiAnalysisCompleted.value && !aiAnalysisError.value) {
           stopTypingEffect();
@@ -1249,603 +1211,493 @@ watch(backtestResult, (newResult) => {
   }
 }, { deep: true });
 
-const handleStockSelectionChange = (selectedCodes: string[]) => {
-  form.stock_codes = selectedCodes;
-  chartStock.value = selectedCodes[0];
+const handleStockSelectionChange = (value: string | string[] | Stock) => {
+  if (Array.isArray(value)) {
+    form.stock_codes = value;
+    chartStock.value = value[0];
+  } else if (typeof value === 'string') {
+    form.stock_codes = [value];
+    chartStock.value = value;
+  } else {
+    form.stock_codes = [value.code];
+    chartStock.value = value.code;
+  }
 };
 </script>
 
 <style scoped>
 /* Backtest Container */
 .backtest-container {
-  @apply h-full flex flex-col overflow-hidden;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-}
-
-.backtest-content {
-  @apply flex-1 min-h-0;
-}
-
-/* Custom Scrollbar */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(168, 85, 247, 0.6) rgba(31, 41, 55, 0.3);
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(31, 41, 55, 0.3);
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(168, 85, 247, 0.8), rgba(147, 51, 234, 0.8));
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(168, 85, 247, 1), rgba(147, 51, 234, 1));
-}
-
-/* Action Buttons */
-.action-btn {
-  @apply relative px-6 py-4 rounded-md font-semibold transition-all duration-300 border backdrop-blur-sm overflow-hidden;
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.8) 100%);
-  border-color: rgba(75, 85, 99, 0.3);
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-}
-
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.action-btn-primary {
-  @apply text-purple-300 hover:text-purple-200;
-}
-
-.action-btn-primary:hover {
-  border-color: rgba(168, 85, 247, 0.5);
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-}
-
-/* KPI Items */
-.kpi-item {
-  @apply transition-all duration-300 cursor-pointer;
-  backdrop-filter: blur(4px);
-}
-
-.kpi-item:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3);
-}
-
-/* Enhanced Element Plus overrides */
-:deep(.el-card) {
-  background: rgba(31, 41, 55, 0.8) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-}
-
-:deep(.el-card__header) {
-  background: rgba(17, 24, 39, 0.3) !important;
-  border-bottom: 1px solid rgba(75, 85, 99, 0.2) !important;
-}
-
-:deep(.el-card__body) {
-  height: calc(100% - 60px) !important;
-  padding: 1.5rem !important;
-  overflow: hidden !important;
-}
-
-/* Form Styles */
-.custom-form :deep(.el-form-item__label) {
-  color: #d1d5db !important;
-  font-weight: 500;
-}
-
-.custom-input :deep(.el-input__wrapper) {
-  background: rgba(31, 41, 55, 0.6) !important;
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-  border-radius: 8px;
-}
-
-.custom-input :deep(.el-input__inner) {
-  color: #f3f4f6 !important;
-  background: transparent !important;
-}
-
-.custom-input-number :deep(.el-input-number__decrease),
-.custom-input-number :deep(.el-input-number__increase) {
-  background: rgba(31, 41, 55, 0.8) !important;
-  border-color: rgba(75, 85, 99, 0.3) !important;
-  color: #d1d5db !important;
-}
-
-.custom-input-number :deep(.el-input__wrapper) {
-  background: rgba(31, 41, 55, 0.6) !important;
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-}
-
-.custom-select :deep(.el-input__wrapper) {
-  background: rgba(31, 41, 55, 0.6) !important;
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-}
-
-.custom-select :deep(.el-input__inner) {
-  color: #f3f4f6 !important;
-}
-
-.custom-date-picker :deep(.el-input__wrapper) {
-  background: rgba(31, 41, 55, 0.6) !important;
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-}
-
-.custom-date-picker :deep(.el-input__inner) {
-  color: #f3f4f6 !important;
-}
-
-/* Alert Styles */
-.custom-alert :deep(.el-alert__content) {
-  color: #d1d5db !important;
-}
-
-.custom-alert :deep(.el-alert) {
-  background: rgba(31, 41, 55, 0.6) !important;
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-}
-
-/* Enhanced Table Styles */
-.custom-table :deep(.el-table) {
-  background: transparent !important;
-  color: #f3f4f6 !important;
-  height: 100% !important;
-}
-
-.custom-table :deep(.el-table__inner-wrapper) {
-  height: 100% !important;
-}
-
-.custom-table :deep(.el-table__body-wrapper) {
-  max-height: calc(100% - 48px) !important;
-  overflow-y: auto !important;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(168, 85, 247, 0.6) rgba(31, 41, 55, 0.3);
-}
-
-.custom-table :deep(.el-table__body-wrapper)::-webkit-scrollbar {
-  width: 8px;
-}
-
-.custom-table :deep(.el-table__body-wrapper)::-webkit-scrollbar-track {
-  background: rgba(31, 41, 55, 0.3);
-  border-radius: 4px;
-}
-
-.custom-table :deep(.el-table__body-wrapper)::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(168, 85, 247, 0.8), rgba(147, 51, 234, 0.8));
-  border-radius: 4px;
-}
-
-.custom-table :deep(.el-table__body-wrapper)::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(168, 85, 247, 1), rgba(147, 51, 234, 1));
-}
-
-.custom-table :deep(.el-table th) {
-  background: rgba(17, 24, 39, 0.6) !important;
-  border-color: rgba(75, 85, 99, 0.3) !important;
-  color: #d1d5db !important;
-}
-
-.custom-table :deep(.el-table td) {
-  border-color: rgba(75, 85, 99, 0.2) !important;
-  background: rgba(31, 41, 55, 0.3) !important;
-}
-
-.custom-table :deep(.el-table__row:hover) {
-  background: rgba(55, 65, 81, 0.5) !important;
-}
-
-/* Tag Styles */
-.custom-tag :deep(.el-tag) {
-  backdrop-filter: blur(4px) !important;
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-}
-
-/* Tabs Styles */
-.custom-tabs :deep(.el-tabs__header) {
-  border-bottom: 1px solid rgba(75, 85, 99, 0.3) !important;
-}
-
-.custom-tabs :deep(.el-tabs__nav-wrap::after) {
-  background: rgba(75, 85, 99, 0.3) !important;
-}
-
-.custom-tabs :deep(.el-tabs__item) {
-  color: #9ca3af !important;
-}
-
-.custom-tabs :deep(.el-tabs__item.is-active) {
-  color: #a855f7 !important;
-}
-
-.custom-tabs :deep(.el-tabs__active-bar) {
-  background: #a855f7 !important;
-}
-
-/* Progress Styles */
-:deep(.el-progress-circle__track) {
-  stroke: rgba(75, 85, 99, 0.3) !important;
-}
-
-:deep(.el-progress-circle__path) {
-  stroke: #a855f7 !important;
-}
-
-:deep(.el-progress__text) {
-  color: #f3f4f6 !important;
-}
-
-/* Tooltip Styles */
-:deep(.el-tooltip__trigger) {
-  color: #9ca3af !important;
-}
-
-/* Loading animations */
-@keyframes pulse {
-0%,
-  100% {
-    opacity: 1;
+  height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 24px;
   }
-
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes spin {
-  from {
-      transform: rotate(0deg);
+  
+  .backtest-content {
+    flex: 1;
+      min-height: 0;
     }
-  
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  
-  .animate-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  
-  .animate-spin {
-    animation: spin 1s linear infinite;
-  }
-  
-  /* Change Colors */
-  .text-red-500 {
-    color: #ef4444 !important;
-  }
-  
-  .text-green-500 {
-    color: #22c55e !important;
-  }
-  
-  /* Hover effects */
-  .transition-all {
-    transition: all 0.3s ease;
-  }
-  
-  /* Enhanced scrollbar for dropdown */
-  :deep(.el-select-dropdown) {
-    background: rgba(31, 41, 55, 0.95) !important;
-    border: 1px solid rgba(75, 85, 99, 0.3) !important;
-    backdrop-filter: blur(10px);
-  }
-  
-  :deep(.el-select-dropdown__item) {
-    color: #f3f4f6 !important;
-  }
-  
-  :deep(.el-select-dropdown__item:hover) {
-    background: rgba(55, 65, 81, 0.5) !important;
-  }
-  
-  :deep(.el-select-dropdown__item.selected) {
-    background: rgba(168, 85, 247, 0.2) !important;
-    color: #e9d5ff !important;
-  }
-                                /* AI 分析模块样式 */
-                                .ai-analysis-container {
-                                  @apply h-full overflow-y-auto custom-scrollbar;
-                                }
+    
+    /* Custom Scrollbar - 简化版本 */
+    .custom-scrollbar {
+      scrollbar-width: thin;
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+    
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: var(--el-fill-color-light);
+          border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: var(--el-border-color);
+            border-radius: 3px;
+          }
+          
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--el-border-color-hover);
+            }
+            
+            /* Action Buttons - 使用Element Plus样式 */
+            .action-btn {
+              position: relative;
+                padding: 16px 24px;
+                border-radius: 6px;
+                font-weight: 600;
+                transition: all 0.3s ease;
+                border: 1px solid var(--el-border-color);
+                background: var(--el-bg-color);
+                overflow: hidden;
+              }
+              
+              .action-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--el-box-shadow);
+                  border-color: var(--el-border-color-hover);
+                }
                 
-                                .ai-content-area {
-                                  @apply min-h-[400px];
-                                }
+                .action-btn:disabled {
+                  opacity: 0.6;
+                  cursor: not-allowed;
+                  transform: none;
+                }
                 
-                                .ai-analysis-result {
-                                  @apply p-6 rounded-md bg-gray-800/50 border border-gray-700/30;
-                                }
-                
-                                /* v-md-editor 样式定制 */
-                                :deep(.v-md-editor) {
-                                  background: transparent !important;
-                                  border: none !important;
-                                }
-                
-                                :deep(.v-md-editor-preview) {
-                                  background: transparent !important;
-                                  color: #e5e7eb !important;
-                                  font-size: 0.95rem;
-                                  line-height: 1.6;
-                                  padding: 0 !important;
-                                }
-                
-                                :deep(.v-md-editor-preview-content) {
-                                  background: transparent !important;
-                                }
-                
-                                /* 标题样式 */
-                                :deep(.v-md-editor-preview h1),
-                                :deep(.v-md-editor-preview h2),
-                                :deep(.v-md-editor-preview h3),
-                                :deep(.v-md-editor-preview h4),
-                                :deep(.v-md-editor-preview h5),
-                                :deep(.v-md-editor-preview h6) {
-                                  color: #a5b4fc !important;
-                                  font-weight: 700;
-                                  margin-top: 1.5rem;
-                                  margin-bottom: 0.75rem;
-                                  line-height: 1.3;
-                                }
-                
-                                :deep(.v-md-editor-preview h1) {
-                                  font-size: 1.75rem;
-                                  border-bottom: 2px solid rgba(165, 180, 252, 0.3);
-                                  padding-bottom: 0.5rem;
-                                }
-                
-                                :deep(.v-md-editor-preview h2) {
-                                  font-size: 1.5rem;
-                                  border-bottom: 1px solid rgba(165, 180, 252, 0.2);
-                                  padding-bottom: 0.25rem;
-                                }
-                
-                                :deep(.v-md-editor-preview h3) {
-                                  font-size: 1.25rem;
-                                }
-                
-                                :deep(.v-md-editor-preview h4) {
-                                  font-size: 1.125rem;
-                                }
-                
-                                /* 段落和文本 */
-                                :deep(.v-md-editor-preview p) {
-                                  margin-bottom: 1rem;
-                                  color: #d1d5db !important;
-                                  line-height: 1.6;
-                                }
-                
-                                /* 表格样式 */
-                                :deep(.v-md-editor-preview table) {
-                                  background: rgba(31, 41, 55, 0.6) !important;
-                                  border-radius: 0.5rem;
-                                  overflow: hidden;
-                                  border-collapse: separate;
-                                  border-spacing: 0;
-                                  margin: 1.5rem 0;
-                                  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-                                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                }
-                
-                                :deep(.v-md-editor-preview th) {
-                                  background: rgba(55, 65, 81, 0.8) !important;
-                                  color: #f3f4f6 !important;
-                                  font-weight: 600;
-                                  border-bottom: 1px solid rgba(75, 85, 99, 0.5) !important;
-                                  padding: 0.75rem 1rem;
-                                  text-align: left;
-                                }
-                
-                                :deep(.v-md-editor-preview td) {
-                                  border-bottom: 1px solid rgba(75, 85, 99, 0.2) !important;
-                                  padding: 0.75rem 1rem;
-                                  color: #d1d5db !important;
-                                }
-                
-                                :deep(.v-md-editor-preview tr:hover) {
-                                  background: rgba(55, 65, 81, 0.3) !important;
-                                }
-                
-                                /* 代码块样式 */
-                                :deep(.v-md-editor-preview pre) {
-                                  background: #1e293b !important;
-                                  border-radius: 0.5rem;
-                                  padding: 1rem;
-                                  color: #e2e8f0;
-                                  font-size: 0.875rem;
-                                  margin: 1.5rem 0;
-                                  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-                                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                  overflow-x: auto;
-                                }
-                
-                                :deep(.v-md-editor-preview code) {
-                                  background: rgba(55, 65, 81, 0.5) !important;
-                                  color: #fbbf24 !important;
-                                  padding: 0.125rem 0.25rem;
-                                  border-radius: 0.25rem;
-                                  font-size: 0.875em;
-                                  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-                                }
-                
-                                :deep(.v-md-editor-preview pre code) {
-                                  background: transparent !important;
-                                  color: inherit !important;
-                                  padding: 0;
-                                  border-radius: 0;
-                                }
-                
-                                /* 引用块 */
-                                :deep(.v-md-editor-preview blockquote) {
-                                  background: rgba(59, 130, 246, 0.08) !important;
-                                  border-left: 4px solid #60a5fa !important;
-                                  color: #bae6fd !important;
-                                  border-radius: 0.5rem;
-                                  padding: 1rem 1.25rem;
-                                  margin: 1.5rem 0;
-                                  font-style: italic;
-                                }
-                
-                                /* 列表样式 */
-                                :deep(.v-md-editor-preview ul),
-                                :deep(.v-md-editor-preview ol) {
-                                  margin-left: 1.5rem;
-                                  margin-bottom: 1rem;
-                                  color: #d1d5db !important;
-                                }
-                
-                                :deep(.v-md-editor-preview li) {
-                                  margin-bottom: 0.5rem;
-                                  line-height: 1.6;
-                                }
-                
-                                :deep(.v-md-editor-preview ul li) {
-                                  list-style-type: disc;
-                                }
-                
-                                :deep(.v-md-editor-preview ol li) {
-                                  list-style-type: decimal;
-                                }
-                
-                                /* 强调和加粗 */
-                                :deep(.v-md-editor-preview strong) {
-                                  color: #fbbf24 !important;
-                                  font-weight: 700;
-                                }
-                
-                                :deep(.v-md-editor-preview em) {
-                                  color: #f472b6 !important;
-                                  font-style: italic;
-                                }
-                
-                                /* 链接 */
-                                :deep(.v-md-editor-preview a) {
-                                  color: #60a5fa !important;
-                                  text-decoration: none;
-                                  border-bottom: 1px solid rgba(96, 165, 250, 0.3);
-                                  transition: all 0.2s ease;
-                                }
-                
-                                :deep(.v-md-editor-preview a:hover) {
-                                  color: #93c5fd !important;
-                                  border-bottom-color: rgba(147, 197, 253, 0.6);
-                                }
-                
-                                /* 水平分割线 */
-                                :deep(.v-md-editor-preview hr) {
-                                  border: none;
-                                  height: 1px;
-                                  background: linear-gradient(90deg, transparent, rgba(75, 85, 99, 0.5), transparent);
-                                  margin: 2rem 0;
-                                }
-                
-                                /* 图片 */
-                                :deep(.v-md-editor-preview img) {
-                                  border-radius: 0.5rem;
-                                  max-width: 100%;
-                                  height: auto;
-                                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                }
-                
-                                /* 表格样式 */
-                                :deep(.v-md-editor-preview table) {
-                                  width: 100%;
-                                  background: rgba(31, 41, 55, 0.7) !important;
-                                  border-radius: 0.75rem !important;
-                                  border-collapse: separate !important;
-                                  border-spacing: 0 !important;
-                                  margin: 1.5rem 0;
-                                  border: 1px solid rgba(75, 85, 99, 0.3) !important;
-                                  box-shadow: 0 4px 16px 0 rgba(16, 24, 40, 0.10);
-                                  overflow: hidden;
-                                }
-                
-                                :deep(.v-md-editor-preview th) {
-                                  background: rgba(55, 65, 81, 0.95) !important;
-                                  color: #f3f4f6 !important;
-                                  font-weight: 700 !important;
-                                  border-bottom: 1px solid rgba(75, 85, 99, 0.5) !important;
-                                  padding: 0.85rem 1.2rem !important;
-                                  text-align: left;
-                                  font-size: 1rem;
-                                }
-                
-                                :deep(.v-md-editor-preview td) {
-                                  background: transparent !important;
-                                  border-bottom: 1px solid rgba(75, 85, 99, 0.2) !important;
-                                  padding: 0.85rem 1.2rem !important;
-                                  color: #e5e7eb !important;
-                                  font-size: 1rem;
-                                }
-                
-                                :deep(.v-md-editor-preview tr:last-child td) {
-                                  border-bottom: none !important;
-                                }
-                
-                                :deep(.v-md-editor-preview tr) {
-                                  background: rgba(55, 65, 81, 0.3) !important;
-                                }
-                
-                                /* 适配深色滚动条 */
-                                :deep(.v-md-editor-preview)::-webkit-scrollbar {
-                                  width: 6px;
-                                  background: rgba(31, 41, 55, 0.3);
-                                }
-                
-                                :deep(.v-md-editor-preview)::-webkit-scrollbar-thumb {
-                                  background: linear-gradient(180deg, rgba(168, 85, 247, 0.8), rgba(147, 51, 234, 0.8));
-                                  border-radius: 3px;
-                                }
-                
-                                :deep(.v-md-editor-preview)::-webkit-scrollbar-thumb:hover {
-                                  background: linear-gradient(180deg, rgba(168, 85, 247, 1), rgba(147, 51, 234, 1));
-                                }
-                
-                                .action-btn-secondary {
-                                  @apply text-gray-300 hover:text-gray-200;
-                                }
-                
-                                .action-btn-secondary:hover {
-                                  border-color: rgba(75, 85, 99, 0.5);
-                                  background: linear-gradient(135deg, rgba(75, 85, 99, 0.1) 0%, rgba(55, 65, 81, 0.1) 100%);
-                                }
-                
-                                /* 打字机光标样式 */
-                                .typing-cursor {
-                                  @apply inline-block w-0.5 h-6 bg-blue-400 ml-1;
-                                  animation: blink 1s infinite;
-                                }
-                
-                                @keyframes blink {
-                
-                                  0%,
-                                  50% {
-                                    opacity: 1;
-                                  }
-                
-                                  51%,
-                                  100% {
-                                    opacity: 0;
-                                  }
-                                }
+                .action-btn-primary {
+                  color: var(--el-color-primary);
+                  }
+                  
+                  .action-btn-primary:hover {
+                    border-color: var(--el-color-primary);
+                      background: var(--el-color-primary-light-9);
+                      color: var(--el-color-primary);
+                    }
+                    
+                    /* KPI Items */
+                    .kpi-item {
+                      transition: all 0.3s ease;
+                      cursor: pointer;
+                    }
+                    
+                    .kpi-item:hover {
+                      transform: translateY(-2px) scale(1.02);
+                      box-shadow: var(--el-box-shadow);
+                    }
+                    
+                    /* 移除所有 Element Plus 组件样式覆盖，使用原生样式 */
+                    
+                    /* Loading animations */
+                    @keyframes pulse {
+                    
+                      0%,
+                      100% {
+                        opacity: 1;
+                      }
+                    
+                      50% {
+                        opacity: 0.5;
+                      }
+                    }
+                    
+                    @keyframes spin {
+                      from {
+                        transform: rotate(0deg);
+                      }
+                    
+                      to {
+                        transform: rotate(360deg);
+                      }
+                    }
+                    
+                    .animate-pulse {
+                      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                    }
+                    
+                    .animate-spin {
+                      animation: spin 1s linear infinite;
+                    }
+                    
+                    /* Change Colors */
+                    .text-red-500 {
+                      color: #ef4444 !important;
+                    }
+                    
+                    .text-green-500 {
+                      color: #22c55e !important;
+                    }
+                    
+                    /* Hover effects */
+                    .transition-all {
+                      transition: all 0.3s ease;
+                    }
+                    
+                    /* 移除所有 Element Plus 组件样式覆盖，使用原生样式 */
+                    
+                    /* AI 分析模块样式 */
+                    .ai-analysis-container {
+                      height: 100%;
+                      overflow-y: auto;
+                    }
+                    
+                    .ai-content-area {
+                      min-height: 400px;
+                    }
+                    
+                    .ai-analysis-result {
+                      padding: 24px;
+                      border-radius: 6px;
+                      background: var(--el-fill-color-light);
+                      border: 1px solid var(--el-border-color);
+                    }
+                    
+                    /* v-md-editor 样式定制 */
+                    :deep(.v-md-editor) {
+                      background: transparent !important;
+                      border: none !important;
+                    }
+                    
+                    :deep(.v-md-editor-preview) {
+                      background: transparent !important;
+                      color: #e5e7eb !important;
+                      font-size: 0.95rem;
+                      line-height: 1.6;
+                      padding: 0 !important;
+                    }
+                    
+                    :deep(.v-md-editor-preview-content) {
+                      background: transparent !important;
+                    }
+                    
+                    /* 标题样式 */
+                    :deep(.v-md-editor-preview h1),
+                    :deep(.v-md-editor-preview h2),
+                    :deep(.v-md-editor-preview h3),
+                    :deep(.v-md-editor-preview h4),
+                    :deep(.v-md-editor-preview h5),
+                    :deep(.v-md-editor-preview h6) {
+                      color: #a5b4fc !important;
+                      font-weight: 700;
+                      margin-top: 1.5rem;
+                      margin-bottom: 0.75rem;
+                      line-height: 1.3;
+                    }
+                    
+                    :deep(.v-md-editor-preview h1) {
+                      font-size: 1.75rem;
+                      border-bottom: 2px solid rgba(165, 180, 252, 0.3);
+                      padding-bottom: 0.5rem;
+                    }
+                    
+                    :deep(.v-md-editor-preview h2) {
+                      font-size: 1.5rem;
+                      border-bottom: 1px solid rgba(165, 180, 252, 0.2);
+                      padding-bottom: 0.25rem;
+                    }
+                    
+                    :deep(.v-md-editor-preview h3) {
+                      font-size: 1.25rem;
+                    }
+                    
+                    :deep(.v-md-editor-preview h4) {
+                      font-size: 1.125rem;
+                    }
+                    
+                    /* 段落和文本 */
+                    :deep(.v-md-editor-preview p) {
+                      margin-bottom: 1rem;
+                      color: #d1d5db !important;
+                      line-height: 1.6;
+                    }
+                    
+                    /* 表格样式 */
+                    :deep(.v-md-editor-preview table) {
+                      background: rgba(31, 41, 55, 0.6) !important;
+                      border-radius: 0.5rem;
+                      overflow: hidden;
+                      border-collapse: separate;
+                      border-spacing: 0;
+                      margin: 1.5rem 0;
+                      border: 1px solid rgba(75, 85, 99, 0.3) !important;
+                      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    }
+                    
+                    :deep(.v-md-editor-preview th) {
+                      background: rgba(55, 65, 81, 0.8) !important;
+                      color: #f3f4f6 !important;
+                      font-weight: 600;
+                      border-bottom: 1px solid rgba(75, 85, 99, 0.5) !important;
+                      padding: 0.75rem 1rem;
+                      text-align: left;
+                    }
+                    
+                    :deep(.v-md-editor-preview td) {
+                      border-bottom: 1px solid rgba(75, 85, 99, 0.2) !important;
+                      padding: 0.75rem 1rem;
+                      color: #d1d5db !important;
+                    }
+                    
+                    :deep(.v-md-editor-preview tr:hover) {
+                      background: rgba(55, 65, 81, 0.3) !important;
+                    }
+                    
+                    /* 代码块样式 */
+                    :deep(.v-md-editor-preview pre) {
+                      background: #1e293b !important;
+                      border-radius: 0.5rem;
+                      padding: 1rem;
+                      color: #e2e8f0;
+                      font-size: 0.875rem;
+                      margin: 1.5rem 0;
+                      border: 1px solid rgba(75, 85, 99, 0.3) !important;
+                      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                      overflow-x: auto;
+                    }
+                    
+                    :deep(.v-md-editor-preview code) {
+                      background: rgba(55, 65, 81, 0.5) !important;
+                      color: #fbbf24 !important;
+                      padding: 0.125rem 0.25rem;
+                      border-radius: 0.25rem;
+                      font-size: 0.875em;
+                      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                    }
+                    
+                    :deep(.v-md-editor-preview pre code) {
+                      background: transparent !important;
+                      color: inherit !important;
+                      padding: 0;
+                      border-radius: 0;
+                    }
+                    
+                    /* 引用块 */
+                    :deep(.v-md-editor-preview blockquote) {
+                      background: rgba(59, 130, 246, 0.08) !important;
+                      border-left: 4px solid #60a5fa !important;
+                      color: #bae6fd !important;
+                      border-radius: 0.5rem;
+                      padding: 1rem 1.25rem;
+                      margin: 1.5rem 0;
+                      font-style: italic;
+                    }
+                    
+                    /* 列表样式 */
+                    :deep(.v-md-editor-preview ul),
+                    :deep(.v-md-editor-preview ol) {
+                      margin-left: 1.5rem;
+                      margin-bottom: 1rem;
+                      color: #d1d5db !important;
+                    }
+                    
+                    :deep(.v-md-editor-preview li) {
+                      margin-bottom: 0.5rem;
+                      line-height: 1.6;
+                    }
+                    
+                    :deep(.v-md-editor-preview ul li) {
+                      list-style-type: disc;
+                    }
+                    
+                    :deep(.v-md-editor-preview ol li) {
+                      list-style-type: decimal;
+                    }
+                    
+                    /* 强调和加粗 */
+                    :deep(.v-md-editor-preview strong) {
+                      color: #fbbf24 !important;
+                      font-weight: 700;
+                    }
+                    
+                    :deep(.v-md-editor-preview em) {
+                      color: #f472b6 !important;
+                      font-style: italic;
+                    }
+                    
+                    /* 链接 */
+                    :deep(.v-md-editor-preview a) {
+                      color: #60a5fa !important;
+                      text-decoration: none;
+                      border-bottom: 1px solid rgba(96, 165, 250, 0.3);
+                      transition: all 0.2s ease;
+                    }
+                    
+                    :deep(.v-md-editor-preview a:hover) {
+                      color: #93c5fd !important;
+                      border-bottom-color: rgba(147, 197, 253, 0.6);
+                    }
+                    
+                    /* 水平分割线 */
+                    :deep(.v-md-editor-preview hr) {
+                      border: none;
+                      height: 1px;
+                      background: linear-gradient(90deg, transparent, rgba(75, 85, 99, 0.5), transparent);
+                      margin: 2rem 0;
+                    }
+                    
+                    /* 图片 */
+                    :deep(.v-md-editor-preview img) {
+                      border-radius: 0.5rem;
+                      max-width: 100%;
+                      height: auto;
+                      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    }
+                    
+                    /* 表格样式 */
+                    :deep(.v-md-editor-preview table) {
+                      width: 100%;
+                      background: rgba(31, 41, 55, 0.7) !important;
+                      border-radius: 0.75rem !important;
+                      border-collapse: separate !important;
+                      border-spacing: 0 !important;
+                      margin: 1.5rem 0;
+                      border: 1px solid rgba(75, 85, 99, 0.3) !important;
+                      box-shadow: 0 4px 16px 0 rgba(16, 24, 40, 0.10);
+                      overflow: hidden;
+                    }
+                    
+                    :deep(.v-md-editor-preview th) {
+                      background: rgba(55, 65, 81, 0.95) !important;
+                      color: #f3f4f6 !important;
+                      font-weight: 700 !important;
+                      border-bottom: 1px solid rgba(75, 85, 99, 0.5) !important;
+                      padding: 0.85rem 1.2rem !important;
+                      text-align: left;
+                      font-size: 1rem;
+                    }
+                    
+                    :deep(.v-md-editor-preview td) {
+                      background: transparent !important;
+                      border-bottom: 1px solid rgba(75, 85, 99, 0.2) !important;
+                      padding: 0.85rem 1.2rem !important;
+                      color: #e5e7eb !important;
+                      font-size: 1rem;
+                    }
+                    
+                    :deep(.v-md-editor-preview tr:last-child td) {
+                      border-bottom: none !important;
+                    }
+                    
+                    :deep(.v-md-editor-preview tr) {
+                      background: rgba(55, 65, 81, 0.3) !important;
+                    }
+                    
+                    /* 适配深色滚动条 */
+                    :deep(.v-md-editor-preview)::-webkit-scrollbar {
+                      width: 6px;
+                      background: rgba(31, 41, 55, 0.3);
+                    }
+                    
+                    :deep(.v-md-editor-preview)::-webkit-scrollbar-thumb {
+                      background: linear-gradient(180deg, rgba(168, 85, 247, 0.8), rgba(147, 51, 234, 0.8));
+                      border-radius: 3px;
+                    }
+                    
+                    :deep(.v-md-editor-preview)::-webkit-scrollbar-thumb:hover {
+                      background: linear-gradient(180deg, rgba(168, 85, 247, 1), rgba(147, 51, 234, 1));
+                    }
+                    
+                    .action-btn-secondary {
+                      color: var(--el-text-color-regular);
+                    }
+                    
+                    .action-btn-secondary:hover {
+                      border-color: var(--el-border-color-hover);
+                      background: var(--el-fill-color-light);
+                      color: var(--el-text-color-primary);
+                    }
+                    
+                    /* 打字机光标样式 */
+                    .typing-cursor {
+                      display: inline-block;
+                      width: 2px;
+                      height: 24px;
+                      background: var(--el-color-primary);
+                      margin-left: 4px;
+                      animation: blink 1s infinite;
+                    }
+                    
+                    @keyframes blink {
+                    
+                      0%,
+                      50% {
+                        opacity: 1;
+                      }
+                    
+                      51%,
+                      100% {
+                        opacity: 0;
+                      }
+                    }
+                    
+                    /* 交易日志滚动容器 */
+                    .trades-container {
+                      height: 100%;
+                      overflow: hidden;
+                    }
+                    
+                    .trades-table {
+                      height: 100%;
+                    
+                      /* 自定义滚动条样式 */
+                      :deep(.el-table__body-wrapper)::-webkit-scrollbar {
+                        width: 8px;
+                        height: 8px;
+                      }
+                    
+                      :deep(.el-table__body-wrapper)::-webkit-scrollbar-track {
+                        background: var(--el-fill-color-light);
+                        border-radius: 4px;
+                      }
+                    
+                      :deep(.el-table__body-wrapper)::-webkit-scrollbar-thumb {
+                        background: var(--el-border-color);
+                        border-radius: 4px;
+                    
+                        &:hover {
+                          background: var(--el-border-color-hover);
+                        }
+                      }
+                    
+                      /* 表格行悬停效果 */
+                      :deep(.el-table__row:hover) {
+                        background: var(--el-fill-color-light) !important;
+                        transform: translateY(-1px);
+                        transition: all 0.2s ease;
+                      }
+                    
+                      /* 表格头部样式 */
+                      :deep(.el-table__header) {
+                        background: var(--el-bg-color-page);
+                        border-bottom: 1px solid var(--el-border-color);
+                      }
+                    
+                      :deep(.el-table__header th) {
+                        background: var(--el-bg-color-page);
+                        color: var(--el-text-color-primary);
+                        font-weight: 600;
+                        border-bottom: 1px solid var(--el-border-color);
+                      }
+                    }
+                    }
 </style>
