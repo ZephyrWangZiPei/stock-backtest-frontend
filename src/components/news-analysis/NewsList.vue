@@ -130,7 +130,7 @@
                   {{ expandedNews[index] || showAllNews ? newsItem.content : getTruncatedContent(newsItem.content) }}
                 </p>
                 <el-button
-                  v-if="newsItem.content.length > 200"
+                  v-if="newsItem.content.length > 500"
                   @click="toggleNewsContent(index)"
                   type="primary"
                   link
@@ -235,7 +235,7 @@ const getNewsCountBySource = (source: string) => {
 }
 
 const getTruncatedContent = (content: string) => {
-  return content.length > 200 ? content.substring(0, 200) + '...' : content
+  return content.length > 500 ? content.substring(0, 500) + '...' : content
 }
 
 const toggleNewsContent = (index: number) => {
