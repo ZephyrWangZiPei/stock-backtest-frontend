@@ -58,7 +58,16 @@ export class WebSocketManager {
   // 建立连接
   connect(): Socket {
     if (this.socket?.connected) {
+      console.log(`[WebSocketManager] ${this.config.connectionName} 已经连接，返回现有连接`)
       return this.socket
+    }
+
+    // 如果存在旧的socket实例，先清理
+    if (this.socket) {
+      console.log(`[WebSocketManager] ${this.config.connectionName} 清理旧的socket实例`)
+      this.socket.removeAllListeners()
+      this.socket.disconnect()
+      this.socket = null
     }
 
     console.log(`[WebSocketManager] 连接 ${this.config.connectionName}: ${this.config.url}`)
@@ -157,7 +166,8 @@ export class WebSocketManager {
     this.reconnectTimer = setTimeout(() => {
       if (!this.isManualDisconnect) {
         console.log(`[WebSocketManager] ${this.config.connectionName} 开始重连`)
-        this.socket?.connect()
+        // 重新创建socket实例以确保正确的连接
+        this.connect()
       }
     }, delay)
   }

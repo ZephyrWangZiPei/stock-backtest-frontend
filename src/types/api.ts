@@ -207,9 +207,22 @@ export interface SchedulerStatus {
 export interface TaskStatus {
   progress?: number
   current_date_progress: number
+  current_stock_progress?: number
+  current_date_progress_detail?: number
   message: string
   success?: boolean
   data?: any
+  // 重构版智能更新新增字段
+  scan_progress?: number
+  update_progress?: number
+  phase?: 'scanning' | 'updating' | 'complete' | 'error'
+  current_stock?: string
+  completed_scans?: number
+  total_stocks?: number
+  missing_dates_count?: number
+  batch_progress?: number
+  current_batch?: number
+  total_batches?: number
 }
 
 // 任务相关类型

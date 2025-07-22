@@ -55,209 +55,240 @@
         :max-height="tableMaxHeight"
         @sort-change="handleSortChange"
       >
-      <!-- 表格列定义 -->
-      <el-table-column
-        prop="stock_code"
-        label="股票代码"
-        width="120"
-        sortable
-      />
-      <el-table-column
-        prop="stock_name"
-        label="股票名称"
-        min-width="150"
-        sortable
-      />
-      <!-- AI 分析列 -->
-      <el-table-column
-        prop="potential_rating"
-        label="AI评级"
-        width="100"
-        sortable
-      >
-        <template #default="{ row }">
-          <el-tag
-            v-if="row.potential_rating"
-            size="small"
-            :class="['rating-tag', getRatingColorClass(row.potential_rating)]"
-          >
-            {{ row.potential_rating }}
-          </el-tag>
-          <span v-else class="text-gray-400">-</span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="confidence_score"
-        label="置信度"
-        width="100"
-        sortable
-      >
-        <template #default="{ row }">
-          <span 
-            v-if="row.confidence_score !== undefined"
-            :class="getConfidenceClass(row.confidence_score)"
-          >
-            {{ formatConfidenceScore(row.confidence_score) }}
-          </span>
-          <span v-else class="text-gray-400">-</span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        v-if="showFullAI"
-        prop="recommendation_reason"
-        label="推荐理由"
-        min-width="200"
-        show-overflow-tooltip
-      >
-        <template #default="{ row }">
-          <span v-if="row.recommendation_reason" class="recommendation-text">
-            {{ row.recommendation_reason }}
-          </span>
-          <span v-else class="text-gray-400">-</span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        v-if="showFullAI"
-        prop="buy_point"
-        label="买入点"
-        width="100"
-        sortable
-      >
-        <template #default="{ row }">
-          <span v-if="row.buy_point" class="buy-point">
-            ¥{{ row.buy_point }}
-          </span>
-          <span v-else class="text-gray-400">-</span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        v-if="showFullAI"
-        prop="sell_point"
-        label="卖出点"
-        width="100"
-        sortable
-      >
-        <template #default="{ row }">
-          <span v-if="row.sell_point" class="sell-point">
-            ¥{{ row.sell_point }}
-          </span>
-          <span v-else class="text-gray-400">-</span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        v-if="showFullAI"
-        prop="risks"
-        label="风险提示"
-        min-width="180"
-        show-overflow-tooltip
-      >
-        <template #default="{ row }">
-          <span v-if="row.risks" class="risk-text">
-            {{ row.risks }}
-          </span>
-          <span v-else class="text-gray-400">-</span>
-        </template>
-      </el-table-column>
-      <!-- 策略和回测指标列 -->
-      <el-table-column
-        prop="strategy_name"
-        label="策略名称"
-        min-width="150"
-        sortable
-      />
-      <el-table-column
-        prop="total_return"
-        label="总收益率"
-        width="120"
-        sortable
-      >
-        <template #default="{ row }">
-          <span :class="getReturnClass(row.total_return)">
-            {{ formatPercentage(row.total_return) }}
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="win_rate"
-        label="胜率"
-        width="100"
-        sortable
-      >
-        <template #default="{ row }">
-          <span :class="getWinRateClass(row.win_rate)">
-            {{ formatPercentage(row.win_rate) }}
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="profit_factor"
-        label="盈亏比"
-        width="100"
-        sortable
-      >
-        <template #default="{ row }">
-          <span :class="getProfitFactorClass(row.profit_factor)">
-            {{ formatNumber(row.profit_factor, 2) }}
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="max_drawdown"
-        label="最大回撤"
-        width="120"
-        sortable
-      >
-        <template #default="{ row }">
-          <span :class="getDrawdownClass(row.max_drawdown)">
-            {{ formatPercentage(row.max_drawdown) }}
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="sharpe_ratio"
-        label="夏普比率"
-        width="120"
-        sortable
-      >
-        <template #default="{ row }">
-          <span :class="getSharpeClass(row.sharpe_ratio)">
-            {{ formatNumber(row.sharpe_ratio, 2) }}
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="created_at"
-        label="创建时间"
-        width="180"
-        sortable
-      >
-        <template #default="{ row }">
-          {{ formatDate(row.created_at) }}
-        </template>
-      </el-table-column>
-      <el-table-column
-        label="操作"
-        width="200"
-        fixed="right"
-      >
-        <template #default="{ row }">
-          <el-button
-            type="primary"
-            size="small"
-            @click="handleViewStock(row)"
-          >
-            查看详情
-          </el-button>
-          <el-button
-            type="success"
-            size="small"
-            @click="handleViewChart(row)"
-          >
-            查看图表
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        <!-- 表格列定义 -->
+        <el-table-column
+          prop="stock_code"
+          label="股票代码"
+          width="120"
+          sortable
+        />
+        <el-table-column
+          prop="stock_name"
+          label="股票名称"
+          min-width="150"
+          sortable
+        />
+        <!-- AI 分析列 -->
+        <el-table-column
+          prop="potential_rating"
+          label="AI评级"
+          width="100"
+          sortable
+          :sort-method="sortByRating"
+        >
+          <template #default="{ row }">
+            <el-tag
+              v-if="row.potential_rating"
+              size="small"
+              :class="['rating-tag', getRatingColorClass(row.potential_rating)]"
+            >
+              {{ row.potential_rating }}
+            </el-tag>
+            <span
+              v-else
+              class="text-gray-400"
+            >-</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="confidence_score"
+          label="置信度"
+          width="100"
+          sortable
+        >
+          <template #default="{ row }">
+            <span
+              v-if="row.confidence_score !== undefined"
+              :class="getConfidenceClass(row.confidence_score)"
+            >
+              {{ formatConfidenceScore(row.confidence_score) }}
+            </span>
+            <span
+              v-else
+              class="text-gray-400"
+            >-</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-if="showFullAI"
+          prop="recommendation_reason"
+          label="推荐理由"
+          min-width="200"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            <span
+              v-if="row.recommendation_reason"
+              class="recommendation-text"
+            >
+              {{ row.recommendation_reason }}
+            </span>
+            <span
+              v-else
+              class="text-gray-400"
+            >-</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-if="showFullAI"
+          prop="buy_point"
+          label="买入点"
+          width="100"
+          sortable
+        >
+          <template #default="{ row }">
+            <span
+              v-if="row.buy_point"
+              class="buy-point"
+            >
+              ¥{{ row.buy_point }}
+            </span>
+            <span
+              v-else
+              class="text-gray-400"
+            >-</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-if="showFullAI"
+          prop="sell_point"
+          label="卖出点"
+          width="100"
+          sortable
+        >
+          <template #default="{ row }">
+            <span
+              v-if="row.sell_point"
+              class="sell-point"
+            >
+              ¥{{ row.sell_point }}
+            </span>
+            <span
+              v-else
+              class="text-gray-400"
+            >-</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-if="showFullAI"
+          prop="risks"
+          label="风险提示"
+          min-width="180"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            <span
+              v-if="row.risks"
+              class="risk-text"
+            >
+              {{ row.risks }}
+            </span>
+            <span
+              v-else
+              class="text-gray-400"
+            >-</span>
+          </template>
+        </el-table-column>
+        <!-- 策略和回测指标列 -->
+        <el-table-column
+          prop="strategy_name"
+          label="策略名称"
+          min-width="150"
+          sortable
+        />
+        <el-table-column
+          prop="total_return"
+          label="总收益率"
+          width="120"
+          sortable
+        >
+          <template #default="{ row }">
+            <span :class="getReturnClass(row.total_return)">
+              {{ formatPercentage(row.total_return) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="win_rate"
+          label="胜率"
+          width="100"
+          sortable
+        >
+          <template #default="{ row }">
+            <span :class="getWinRateClass(row.win_rate)">
+              {{ formatPercentage(row.win_rate) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="profit_factor"
+          label="盈亏比"
+          width="100"
+          sortable
+        >
+          <template #default="{ row }">
+            <span :class="getProfitFactorClass(row.profit_factor)">
+              {{ formatNumber(row.profit_factor, 2) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="max_drawdown"
+          label="最大回撤"
+          width="120"
+          sortable
+        >
+          <template #default="{ row }">
+            <span :class="getDrawdownClass(row.max_drawdown)">
+              {{ formatPercentage(row.max_drawdown) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="sharpe_ratio"
+          label="夏普比率"
+          width="120"
+          sortable
+        >
+          <template #default="{ row }">
+            <span :class="getSharpeClass(row.sharpe_ratio)">
+              {{ formatNumber(row.sharpe_ratio, 2) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="created_at"
+          label="创建时间"
+          width="180"
+          sortable
+        >
+          <template #default="{ row }">
+            {{ formatDate(row.created_at) }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          width="200"
+          fixed="right"
+        >
+          <template #default="{ row }">
+            <el-button
+              type="primary"
+              size="small"
+              @click="handleViewStock(row)"
+            >
+              查看详情
+            </el-button>
+            <el-button
+              type="success"
+              size="small"
+              @click="handleViewChart(row)"
+            >
+              查看图表
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
     <!-- 分页 -->
@@ -412,6 +443,44 @@ const handleStrategyFilter = () => {
 const handleSortChange = (config: { prop: string; order: string | null }) => {
   // Element Plus 的排序已经自动处理，这里可以添加额外逻辑
   console.log('排序变化:', config)
+}
+
+/**
+ * AI评级自定义排序方法
+ * 按照 高 > 中 > 低 的顺序排序
+ */
+const sortByRating = (a: any, b: any) => {
+  const getRatingValue = (rating: string) => {
+    if (!rating) return 0
+    const ratingLower = rating.toLowerCase()
+
+    // 高/A级/优秀/Strong
+    if (ratingLower.includes('高') || ratingLower.includes('a') ||
+      ratingLower.includes('优秀') || ratingLower.includes('strong')) {
+      return 3
+    }
+    // 中/B级/良好/Good
+    if (ratingLower.includes('中') || ratingLower.includes('b') ||
+      ratingLower.includes('良好') || ratingLower.includes('good')) {
+      return 2
+    }
+    // 低/C级/一般/Neutral
+    if (ratingLower.includes('低') || ratingLower.includes('c') ||
+      ratingLower.includes('一般') || ratingLower.includes('neutral')) {
+      return 1
+    }
+    // 很差/D级/较差/Weak
+    if (ratingLower.includes('很差') || ratingLower.includes('d') ||
+      ratingLower.includes('较差') || ratingLower.includes('weak')) {
+      return 0
+    }
+    return 0
+  }
+
+  const aValue = getRatingValue(a.potential_rating)
+  const bValue = getRatingValue(b.potential_rating)
+
+  return bValue - aValue // 降序排列：高 > 中 > 低
 }
 
 /**

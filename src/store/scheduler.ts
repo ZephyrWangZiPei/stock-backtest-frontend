@@ -20,6 +20,7 @@ export interface SchedulerState {
   last_update_times: {
     daily_data?: string
     stock_list?: string
+    smart_data?: string
   }
 }
 
@@ -42,19 +43,31 @@ export const useSchedulerStore = defineStore('scheduler', {
   
   actions: {
     connect() {
-      if (this.wsManager?.isConnected) return;
+      // 如果已经连接，先断开
+      if (this.wsManager?.isConnected) {
+        this.disconnect();
+      }
+
+      // 重置任务状态，确保页面刷新后不会保留旧状态
+      this.taskStatus = {};
 
       this.wsManager = createWebSocketManager({
-        url: `${VITE_API_BASE_URL}/scheduler`,
+        url: VITE_API_BASE_URL,
         path: '/socket.io/',
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 5,
         connectionName: 'scheduler',
+        namespace: '/scheduler',
         onConnect: (socket) => {
           this.socket = socket;
           this.isConnected = true;
           console.log('[SchedulerStore] Socket connected:', socket.id);
+          
+          // 在连接成功后设置事件监听器
+          this.setupEventListeners(socket);
+          
           this.requestStatusUpdate(); // Request initial status on connect
+          this.checkRunningTasks(); // Check for running tasks
         },
         onDisconnect: () => {
           this.isConnected = false;
@@ -63,10 +76,43 @@ export const useSchedulerStore = defineStore('scheduler', {
         onConnectError: (err) => {
           console.error('[SchedulerStore] Connection error:', err);
           this.isConnected = false;
+        },
+        onReconnect: (attemptNumber) => {
+          console.log(`[SchedulerStore] Socket reconnected after ${attemptNumber} attempts`);
+          // 重连成功后，重新设置事件监听器
+          if (this.socket) {
+            this.setupEventListeners(this.socket);
+            this.requestStatusUpdate();
+            this.checkRunningTasks();
+          }
+        },
+        onReconnectAttempt: (attemptNumber) => {
+          console.log(`[SchedulerStore] Socket reconnection attempt ${attemptNumber}`);
+        },
+        onReconnectFailed: () => {
+          console.error('[SchedulerStore] Socket reconnection failed');
+          // 重连失败时，尝试强制重新连接
+          setTimeout(() => {
+            if (this.wsManager) {
+              this.wsManager.forceReconnect();
+            }
+          }, 2000);
         }
       });
 
-      const socket = this.wsManager.connect();
+      this.wsManager.connect();
+    },
+
+    // 设置事件监听器
+    setupEventListeners(socket: any) {
+      // 先移除所有现有的事件监听器，防止重复监听
+      socket.off('scheduler_status');
+      socket.off('update_logs');
+      socket.off('update_progress');
+      socket.off('update_complete');
+      socket.off('update_error');
+      socket.off('job_status');
+      socket.off('job_progress');
 
       socket.on('scheduler_status', (data: SchedulerStatus) => {
         console.log('[SchedulerStore] Received status update:', data);
@@ -81,6 +127,8 @@ export const useSchedulerStore = defineStore('scheduler', {
               this.last_update_times.daily_data = log.last_update;
             } else if (log.task_name === 'update_stock_list') {
               this.last_update_times.stock_list = log.last_update;
+            } else if (log.task_name === 'update_daily_data_smart') {
+              this.last_update_times.smart_data = log.last_update;
             }
           });
         }
@@ -88,13 +136,32 @@ export const useSchedulerStore = defineStore('scheduler', {
 
       socket.on('update_progress', (data: any) => {
         if (data && data.task) {
-          this.taskStatus[data.task] = { ...this.taskStatus[data.task], ...data };
+          // 将 progress 字段映射到 current_date_progress
+          const mappedData = {
+            ...data,
+            current_date_progress: data.progress || data.current_date_progress || 0
+          };
+          
+          // 更新任务状态，保留现有数据
+          this.taskStatus[data.task] = { 
+            ...this.taskStatus[data.task], 
+            ...mappedData 
+          };
+          
+          console.log(`[SchedulerStore] Progress update for ${data.task}:`, mappedData);
         }
       });
 
       socket.on('update_complete', (data: any) => {
         if (data && data.task) {
-          this.taskStatus[data.task] = { ...this.taskStatus[data.task], ...data };
+          // 将 progress 字段映射到 current_date_progress
+          const mappedData = {
+            ...data,
+            current_date_progress: data.progress || data.current_date_progress || 100,
+            success: data.success !== undefined ? data.success : true // 确保设置成功状态
+          };
+          this.taskStatus[data.task] = { ...this.taskStatus[data.task], ...mappedData };
+          console.log(`[SchedulerStore] Task completed: ${data.task}`, mappedData);
         }
       });
       
@@ -172,6 +239,16 @@ export const useSchedulerStore = defineStore('scheduler', {
         this.socket.emit('request_status_update');
       } else {
         console.warn('[SchedulerStore] Cannot request status update, socket not connected.');
+      }
+    },
+
+    checkRunningTasks() {
+      if (this.socket?.connected) {
+        // 请求检查正在运行的任务
+        this.socket.emit('check_running_tasks');
+        console.log('[SchedulerStore] Requested check for running tasks');
+      } else {
+        console.warn('[SchedulerStore] Cannot check running tasks, socket not connected.');
       }
     }
   },

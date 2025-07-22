@@ -4,6 +4,26 @@
 
 基于 Vue 3 + TypeScript + Vite 构建的现代化股票分析前端应用，提供策略回测、实时行情、AI分析等功能的可视化界面，具备完整的WebSocket自动重连机制和实时状态监控。
 
+## 🚀 最新更新 (v2.0)
+
+### 🔄 重构版任务调度器界面
+- **组件化设计**: 将大型组件拆分为多个小组件，提高代码可维护性
+- **实时进度监控**: 智能数据更新和股票列表更新的实时进度显示
+- **状态同步优化**: 页面刷新后自动恢复任务状态和WebSocket连接
+- **按钮状态管理**: 任务运行期间自动禁用相关按钮，防止重复操作
+
+### 📡 增强的WebSocket连接管理
+- **自动重连机制**: 指数退避算法的智能重连策略
+- **连接状态监控**: 实时监控所有WebSocket连接状态
+- **页面可见性检测**: 页面切换时自动检查连接状态
+- **定期连接检查**: 每30秒自动检查连接状态，确保连接稳定
+
+### 🎯 智能数据更新界面
+- **实时进度条**: 显示扫描进度和更新进度的详细进度条
+- **阶段指示器**: 清晰显示当前处于扫描阶段还是更新阶段
+- **详细状态信息**: 显示当前处理的股票、缺失日期数量等详细信息
+- **时间格式化**: 统一的时间显示格式 `yyyy-mm-dd HH:MM:SS`
+
 ![image](https://github.com/user-attachments/assets/8b89ddff-295e-4fbd-bde1-b5750b4489a4)
 ![image](https://github.com/user-attachments/assets/df33ba6b-f4d7-4098-a8d2-562ebf9144e1)
 ![image](https://github.com/user-attachments/assets/b6b04fa5-6f67-4e44-826e-8c8becf4bc6a)
@@ -23,6 +43,8 @@
 - **页面级连接管理**: 根据页面路径自动建立相应的WebSocket连接，页面进入时自动测试连接状态。
 - **全局连接监控**: 应用启动时自动建立必要的WebSocket连接，定期检查连接状态并自动重连。
 - **详细状态显示**: 导航栏和侧边栏显示详细的WebSocket连接状态，支持hover查看具体连接信息。
+- **任务状态同步**: 页面刷新后自动恢复任务状态和WebSocket连接。
+- **定期连接检查**: 每30秒自动检查连接状态，确保连接稳定。
 
 ### 📊 数据可视化
 - **专业K线图表**: 采用LightweightCharts库构建专业级金融图表，确保数据展示的清晰度与专业性。
@@ -33,6 +55,14 @@
 - **现代化UI**: 基于Element Plus组件库，打造响应式、美观且用户友好的界面设计。
 - **深色主题**: 使用Element Plus官方暗黑主题，提供舒适的视觉体验。
 - **交互优化**: 支持多种视图模式切换、搜索过滤、排序等功能。
+- **组件化设计**: 将大型组件拆分为多个小组件，提高代码可维护性。
+- **状态管理**: 智能的按钮状态管理，任务运行期间自动禁用相关按钮。
+
+### 🎯 任务调度器界面
+- **实时进度监控**: 智能数据更新和股票列表更新的实时进度显示。
+- **调度器状态**: 显示调度器运行状态、任务数量、当前时间等信息。
+- **任务管理**: 支持查看定时任务列表、修改任务配置、重置任务等操作。
+- **手动触发**: 支持手动触发智能数据更新和股票列表更新任务。
 
 ## 🛠️ 技术栈
 
@@ -76,8 +106,30 @@ stock-backtest-frontend/
 ├── src/
 │   ├── assets/             # 静态资源文件 (图片、字体、全局样式等)
 │   ├── components/         # 可复用的Vue组件
-│   │   ├── TaskStatusMonitor.vue    # 任务状态监控组件
-│   │   └── TopStrategyChart.vue     # Top策略图表组件
+│   │   ├── common/                 # 通用组件
+│   │   │   ├── ProgressCard.vue    # 进度卡片组件
+│   │   │   ├── StockSearch.vue     # 股票搜索组件
+│   │   │   └── StockSelector.vue   # 股票选择器组件
+│   │   ├── scheduler/              # 调度器相关组件
+│   │   │   ├── SchedulerStatus.vue # 调度器状态组件
+│   │   │   ├── QuickActions.vue    # 快速操作组件
+│   │   │   ├── TaskStatus.vue      # 任务状态组件
+│   │   │   ├── JobList.vue         # 任务列表组件
+│   │   │   └── ControlPanel.vue    # 控制面板组件
+│   │   ├── news-analysis/          # 新闻分析组件
+│   │   │   ├── NewsAnalysisConfig.vue      # 新闻分析配置
+│   │   │   ├── NewsAnalysisControlPanel.vue # 新闻分析控制面板
+│   │   │   ├── NewsAnalysisHeader.vue      # 新闻分析头部
+│   │   │   ├── NewsAnalysisLayout.vue      # 新闻分析布局
+│   │   │   ├── NewsAnalysisResultPanel.vue # 新闻分析结果面板
+│   │   │   ├── NewsList.vue                # 新闻列表
+│   │   │   └── SentimentSummary.vue        # 情感摘要
+│   │   ├── top-backtest/           # Top回测组件
+│   │   │   ├── TopBacktestHeader.vue       # Top回测头部
+│   │   │   ├── TopBacktestProgress.vue     # Top回测进度
+│   │   │   ├── TopBacktestStats.vue        # Top回测统计
+│   │   │   └── TopBacktestTable.vue        # Top回测表格
+│   │   └── TopStrategyChart.vue    # Top策略图表组件
 │   ├── layout/             # 页面布局组件
 │   │   ├── components/
 │   │   │   ├── NavBar.vue           # 导航栏组件（含WebSocket状态显示）
@@ -100,6 +152,10 @@ stock-backtest-frontend/
 │   │   ├── TopBacktestView.vue      # Top策略回测视图
 │   │   ├── BacktestView.vue         # 策略回测视图（含AI分析）
 │   │   ├── BacktestHistoryView.vue  # 回测历史视图
+│   │   ├── NewsAnalysisView.vue     # 新闻分析视图
+│   │   ├── NotFoundView.vue         # 404页面
+│   │   └── scheduler/               # 调度器相关页面
+│   │       └── Scheduler.vue        # 任务调度器页面
 │   │   ├── WebSocketTestView.vue    # WebSocket测试页面
 │   │   └── scheduler/
 │   │       └── Scheduler.vue        # 任务调度视图
