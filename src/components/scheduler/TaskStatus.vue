@@ -4,7 +4,7 @@
       <div class="w-1 h-6 bg-gradient-to-b from-green-400 to-blue-400 rounded-md mr-3"></div>
       任务状态
     </h3>
-    
+
     <div class="space-y-4">
       <!-- 智能数据更新状态 -->
       <div class="task-status-card">
@@ -14,11 +14,15 @@
             <span class="font-medium text-gray-200">智能数据更新</span>
           </div>
           <div class="text-xs text-gray-400">
-            上次更新: {{ lastUpdateTimes.smart_data ? formatDate(lastUpdateTimes.smart_data, 'YYYY-MM-DD HH:mm:ss') : '从未' }}
+            上次更新: {{ lastUpdateTimes.smart_data ? formatDate(lastUpdateTimes.smart_data, 'YYYY-MM-DD HH:mm:ss') : '从未'
+            }}
           </div>
         </div>
-        
-        <div v-if="smartUpdateTask" class="space-y-3">
+
+        <div
+          v-if="smartUpdateTask"
+          class="space-y-3"
+        >
           <!-- 总体进度 -->
           <div class="progress-layer">
             <div class="flex justify-between items-center mb-2">
@@ -135,7 +139,10 @@
         </div>
 
         <!-- 状态消息 -->
-        <div v-if="smartUpdateTask?.message" class="mt-3 p-2 bg-gray-700/50 rounded text-sm text-gray-300">
+        <div
+          v-if="smartUpdateTask?.message"
+          class="mt-3 p-2 bg-gray-700/50 rounded text-sm text-gray-300"
+        >
           {{ smartUpdateTask.message }}
         </div>
       </div>
@@ -148,11 +155,15 @@
             <span class="font-medium text-gray-200">股票列表更新</span>
           </div>
           <div class="text-xs text-gray-400">
-            上次更新: {{ lastUpdateTimes.stock_list ? formatDate(lastUpdateTimes.stock_list, 'YYYY-MM-DD HH:mm:ss') : '从未' }}
+            上次更新: {{ lastUpdateTimes.stock_list ? formatDate(lastUpdateTimes.stock_list, 'YYYY-MM-DD HH:mm:ss') : '从未'
+            }}
           </div>
         </div>
-        
-        <div v-if="stockListTask" class="space-y-3">
+
+        <div
+          v-if="stockListTask"
+          class="space-y-3"
+        >
           <!-- 进度条 -->
           <div class="progress-layer">
             <div class="flex justify-between items-center mb-2">
@@ -173,8 +184,57 @@
           </div>
 
           <!-- 状态消息 -->
-          <div v-if="stockListTask?.message" class="mt-3 p-2 bg-gray-700/50 rounded text-sm text-gray-300">
+          <div
+            v-if="stockListTask?.message"
+            class="mt-3 p-2 bg-gray-700/50 rounded text-sm text-gray-300"
+          >
             {{ stockListTask.message }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 潜力股海选状态 -->
+      <div class="task-status-card">
+        <div class="flex justify-between items-start mb-3">
+          <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 bg-cyan-400 rounded-full"></div>
+            <span class="font-medium text-gray-200">潜力股海选</span>
+          </div>
+          <div class="text-xs text-gray-400">
+            上次更新: {{ lastUpdateTimes.candidate_pool ? formatDate(lastUpdateTimes.candidate_pool, 'YYYY-MM-DD HH:mm:ss')
+              : '从未' }}
+          </div>
+        </div>
+
+        <div
+          v-if="candidatePoolTask"
+          class="space-y-3"
+        >
+          <!-- 进度条 -->
+          <div class="progress-layer">
+            <div class="flex justify-between items-center mb-2">
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-cyan-400 rounded-full mr-2"></div>
+                <span class="text-sm text-gray-300">海选进度</span>
+              </div>
+              <span class="text-sm font-medium text-cyan-400">{{
+                (candidatePoolTask?.current_date_progress || 0).toFixed(1) }}%</span>
+            </div>
+            <div class="progress-bg">
+              <div
+                class="progress-fill progress-fill-cyan"
+                :style="{ width: `${candidatePoolTask?.current_date_progress || 0}%` }"
+                :class="candidatePoolTask?.success === false ? 'progress-fill-error' : ''"
+              ></div>
+            </div>
+          </div>
+
+          <!-- 状态消息 -->
+          <div
+            v-if="candidatePoolTask?.message"
+            class="mt-3 p-2 bg-gray-700/50 rounded text-sm text-gray-300"
+          >
+            {{ candidatePoolTask.message }}
           </div>
         </div>
       </div>
@@ -195,9 +255,9 @@ const lastUpdateTimes = computed(() => store.last_update_times)
 const smartUpdateTask = computed(() => {
   const task = store.taskStatus['update_daily_data_smart']
   if (!task) return null
-  
+
   const isRunning = task.success === undefined
-  
+
   return {
     isRunning,
     current_date_progress: task.current_date_progress || 0,
@@ -216,9 +276,23 @@ const smartUpdateTask = computed(() => {
 const stockListTask = computed(() => {
   const task = store.taskStatus['update_stock_list']
   if (!task) return null
-  
+
   const isRunning = task.success === undefined
-  
+
+  return {
+    isRunning,
+    current_date_progress: task.current_date_progress || 0,
+    message: task.message || (isRunning ? '正在执行...' : '已完成'),
+    success: task.success
+  }
+})
+
+const candidatePoolTask = computed(() => {
+  const task = store.taskStatus['candidate_pool']
+  if (!task) return null
+
+  const isRunning = task.success === undefined
+
   return {
     isRunning,
     current_date_progress: task.current_date_progress || 0,
@@ -271,6 +345,9 @@ const getPhaseText = (phase: string) => {
   @apply bg-gradient-to-r from-orange-400 to-orange-500;
 }
 
+.progress-fill-cyan {
+  @apply bg-gradient-to-r from-cyan-400 to-cyan-500;
+}
 .progress-fill-error {
   @apply bg-gradient-to-r from-red-400 to-red-500;
 }

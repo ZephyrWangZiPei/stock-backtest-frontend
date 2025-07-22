@@ -21,6 +21,7 @@ export interface SchedulerState {
     daily_data?: string
     stock_list?: string
     smart_data?: string
+    candidate_pool?: string
   }
 }
 
@@ -129,6 +130,8 @@ export const useSchedulerStore = defineStore('scheduler', {
               this.last_update_times.stock_list = log.last_update;
             } else if (log.task_name === 'update_daily_data_smart') {
               this.last_update_times.smart_data = log.last_update;
+            } else if (log.task_name === 'candidate_pool') {
+              this.last_update_times.candidate_pool = log.last_update;
             }
           });
         }

@@ -48,6 +48,27 @@
       </button>
 
       <button
+        @click="handleCandidatePool"
+        :disabled="loading.candidatePool"
+        class="action-button action-button-info group"
+      >
+        <div class="flex items-center justify-center space-x-3">
+          <div
+            class="w-10 h-10 bg-cyan-500/20 rounded-sm flex items-center justify-center group-hover:bg-cyan-500/30 transition-colors"
+          >
+            <div class="w-5 h-5 bg-cyan-400 rounded-xs"></div>
+          </div>
+          <span class="font-medium">
+            {{ loading.candidatePool ? '海选中...' : '潜力股海选' }}
+          </span>
+        </div>
+        <div
+          v-if="loading.candidatePool"
+          class="absolute inset-0 bg-cyan-500/10 rounded-md animate-pulse"
+        ></div>
+      </button>
+
+      <button
         @click="handleResetJobs"
         :disabled="loading.reset"
         class="action-button action-button-danger group"
@@ -82,11 +103,13 @@ const store = useSchedulerStore()
 const loading = computed(() => {
   const smartTask = store.taskStatus['update_daily_data_smart']
   const stockListTask = store.taskStatus['update_stock_list']
-  
+  const candidatePoolTask = store.taskStatus['candidate_pool']
+
   return {
     // 只有当任务存在且有进度更新时才显示loading状态
     smartData: smartTask && smartTask.success === undefined && smartTask.current_date_progress !== undefined,
     stockList: stockListTask && stockListTask.success === undefined && stockListTask.current_date_progress !== undefined,
+    candidatePool: candidatePoolTask && candidatePoolTask.success === undefined && candidatePoolTask.current_date_progress !== undefined,
     reset: false // 重置任务通常很快，不需要长时间禁用
   }
 })
@@ -96,14 +119,14 @@ const handleSmartUpdateDailyData = () => {
     ElMessage.error('实时服务未连接，无法启动任务。')
     return
   }
-  
+
   // 检查任务是否正在运行
   const smartTask = store.taskStatus['update_daily_data_smart']
   if (smartTask && smartTask.success === undefined) {
     ElMessage.warning('智能数据更新任务正在运行中，请稍候...')
     return
   }
-  
+
   store.socket.emit('manual_smart_update_daily_data', {})
   ElMessage.info('已发送智能数据更新请求')
 }
@@ -113,16 +136,33 @@ const handleUpdateStockList = () => {
     ElMessage.error('实时服务未连接，无法启动任务。')
     return
   }
-  
+
   // 检查任务是否正在运行
   const stockListTask = store.taskStatus['update_stock_list']
   if (stockListTask && stockListTask.success === undefined) {
     ElMessage.warning('股票列表更新任务正在运行中，请稍候...')
     return
   }
-  
+
   store.socket.emit('manual_update_stock_list', {})
   ElMessage.info('已发送股票列表更新请求')
+}
+
+const handleCandidatePool = () => {
+  if (!store.socket?.connected) {
+    ElMessage.error('实时服务未连接，无法启动任务。')
+    return
+  }
+
+  // 检查任务是否正在运行
+  const candidatePoolTask = store.taskStatus['candidate_pool']
+  if (candidatePoolTask && candidatePoolTask.success === undefined) {
+    ElMessage.warning('潜力股海选任务正在运行中，请稍候...')
+    return
+  }
+
+  store.socket.emit('run_job_manually', { job_id: 'candidate_pool' })
+  ElMessage.info('已发送潜力股海选请求')
 }
 
 const handleResetJobs = () => {
@@ -157,5 +197,9 @@ const handleResetJobs = () => {
 
 .action-button-danger {
   @apply hover:border-red-500/50 hover:bg-red-500/10;
+}
+
+.action-button-info {
+  @apply hover:border-cyan-500/50 hover:bg-cyan-500/10;
 }
 </style> 
