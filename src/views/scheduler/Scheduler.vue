@@ -1,32 +1,25 @@
 <template>
   <div class="scheduler-container">
     <!-- 调度器状态 -->
-    <SchedulerStatus />
+    <div class="status-section">
+      <SchedulerStatus />
+    </div>
 
     <div class="scheduler-content">
-      <el-row
-        :gutter="24"
-        class="h-full"
-      >
+      <el-row :gutter="24">
         <!-- 左侧控制面板 -->
-        <el-col
-          :span="8"
-          class="h-full"
-        >
-          <ControlPanel />
+        <el-col :span="12">
+          <TaskControlPanel />
         </el-col>
 
         <!-- 右侧任务列表 -->
-        <el-col
-          :span="16"
-          class="h-full"
-        >
-          <div class="relative group h-full">
+        <el-col :span="12">
+          <div class="relative group">
             <div
               class="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-300"
             ></div>
             <el-card
-              class="relative h-full border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-purple-500/10 transition-all duration-300"
+              class="relative border border-gray-700/50 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl hover:shadow-purple-500/10 transition-all duration-300"
             >
               <template #header>
                 <div class="flex justify-between items-center">
@@ -39,7 +32,7 @@
                 </div>
               </template>
 
-              <div class="h-full">
+              <div>
                 <JobList />
               </div>
             </el-card>
@@ -54,7 +47,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useSchedulerStore } from '@/store/scheduler'
 import SchedulerStatus from '@/components/scheduler/SchedulerStatus.vue'
-import ControlPanel from '@/components/scheduler/ControlPanel.vue'
+import TaskControlPanel from '@/components/scheduler/TaskControlPanel.vue'
 import JobList from '@/components/scheduler/JobList.vue'
 
 const store = useSchedulerStore()
@@ -107,14 +100,26 @@ onUnmounted(() => {
 
 <style scoped>
 .scheduler-container {
-  @apply p-6 h-full bg-gray-900;
+  @apply p-6 bg-gray-900;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.status-section {
+  @apply flex-shrink-0 mb-6;
 }
 
 .scheduler-content {
-  @apply h-full;
+  @apply flex-1;
 }
 
 :deep(.el-card__body) {
-  @apply h-full;
+  @apply overflow-auto;
+}
+
+:deep(.el-card) {
+  @apply overflow-hidden;
 }
 </style>

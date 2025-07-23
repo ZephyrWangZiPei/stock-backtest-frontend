@@ -221,10 +221,10 @@ export const useSchedulerStore = defineStore('scheduler', {
           // 检查progress是否已经是百分比（大于1）
           if (data.progress > 1) {
             // progress已经是百分比，直接使用
-            status.current_date_progress = Math.round(data.progress);
+            status.current_date_progress = Number(data.progress.toFixed(2));
           } else if (data.total > 0) {
             // progress是分子，需要计算百分比
-            status.current_date_progress = Math.round((data.progress / data.total) * 100);
+            status.current_date_progress = Number(((data.progress / data.total) * 100).toFixed(2));
           }
           
           status.message = data.message;

@@ -2,6 +2,7 @@ import service from './request'
 import type {
   BacktestRequest,
   BacktestResult,
+  BacktestTrade,
   Strategy,
   Stock,
   DailyData,
@@ -205,4 +206,22 @@ export const clearBacktestHistory = (stock_code?: string) => {
 // Top策略相关API
 export const getTopStrategyStocks = () => service.get('/top-strategy/')
 export const getTopStrategyStocksByStrategy = (strategyId: number) => service.get(`/top-strategy/${strategyId}`)
-export const getTopStrategyScoreDetails = () => service.get('/top-strategy/score-details') 
+export const getTopStrategyScoreDetails = () => service.get('/top-strategy/score-details')
+
+/**
+ * 获取回测详情
+ * @param id 回测ID
+ * @returns 回测详情数据
+ */
+export const getBacktestDetail = (id: number): Promise<ApiResponse<BacktestResult>> => {
+  return service.get(`/backtests/${id}`)
+}
+
+/**
+ * 获取回测交易记录
+ * @param id 回测ID
+ * @returns 交易记录列表
+ */
+export const getBacktestTrades = (id: number): Promise<ApiResponse<BacktestTrade[]>> => {
+  return service.get(`/backtests/${id}/trades`)
+} 

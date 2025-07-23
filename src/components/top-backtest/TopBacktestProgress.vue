@@ -1,5 +1,8 @@
 <template>
-  <div v-if="show" class="top-backtest-progress">
+  <div
+    v-if="show"
+    class="top-backtest-progress"
+  >
     <div class="progress-header">
       <div class="progress-title">
         <el-icon class="progress-icon">
@@ -9,10 +12,10 @@
       </div>
       <div class="progress-status">
         <span class="status-text">{{ statusText }}</span>
-        <span class="progress-percentage">{{ Math.round(progress) }}%</span>
+        <span class="progress-percentage">{{ Number(progress.toFixed(2)) }}%</span>
       </div>
     </div>
-    
+
     <div class="progress-bar-container">
       <el-progress
         :percentage="progress"
@@ -22,19 +25,28 @@
         class="progress-bar"
       />
     </div>
-    
-    <div v-if="currentStep" class="progress-details">
+
+    <div
+      v-if="currentStep"
+      class="progress-details"
+    >
       <div class="step-info">
         <span class="step-label">当前步骤:</span>
         <span class="step-text">{{ currentStep }}</span>
       </div>
-      <div v-if="stepProgress !== null" class="step-progress">
+      <div
+        v-if="stepProgress !== null"
+        class="step-progress"
+      >
         <span class="step-label">步骤进度:</span>
-        <span class="step-text">{{ Math.round(stepProgress) }}%</span>
+        <span class="step-text">{{ Number(stepProgress.toFixed(2)) }}%</span>
       </div>
     </div>
-    
-    <div v-if="message" class="progress-message">
+
+    <div
+      v-if="message"
+      class="progress-message"
+    >
       <el-icon class="message-icon">
         <InfoFilled />
       </el-icon>

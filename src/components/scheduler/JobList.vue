@@ -25,14 +25,14 @@
               <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
               <span class="font-medium text-gray-200">{{ job.name }}</span>
             </div>
-            
+
             <div class="text-xs text-gray-400 space-y-1">
               <div>任务ID: {{ job.id }}</div>
               <div>下次执行: {{ formatNextRunTime(job.next_run_time) }}</div>
               <div>触发器: {{ formatTrigger(job.trigger) }}</div>
             </div>
           </div>
-          
+
           <div class="flex items-center space-x-2 ml-4">
             <button
               @click="handleRunJob(job.id)"
@@ -55,8 +55,11 @@
           </div>
         </div>
       </div>
-      
-      <div v-if="jobs.length === 0" class="text-center py-8 text-gray-400">
+
+      <div
+        v-if="jobs.length === 0"
+        class="text-center py-8 text-gray-400"
+      >
         暂无定时任务
       </div>
     </div>
@@ -83,7 +86,7 @@ const handleRunJob = (jobId: string) => {
     ElMessage.error('实时服务未连接，无法执行任务。')
     return
   }
-  
+
   store.socket.emit('run_job_manually', { job_id: jobId })
   ElMessage.info(`已发送执行任务请求: ${jobId}`)
 }

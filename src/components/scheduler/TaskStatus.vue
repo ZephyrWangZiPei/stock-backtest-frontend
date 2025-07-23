@@ -53,7 +53,7 @@
                 <span class="text-sm text-gray-300">扫描进度</span>
               </div>
               <span class="text-sm font-medium text-blue-400">{{
-                smartUpdateTask.scan_progress.toFixed(1) }}%</span>
+  smartUpdateTask.scan_progress.toFixed(2) }}%</span>
             </div>
             <div class="progress-bg">
               <div
@@ -74,7 +74,7 @@
                 <span class="text-sm text-gray-300">更新进度</span>
               </div>
               <span class="text-sm font-medium text-yellow-400">{{
-                smartUpdateTask.update_progress.toFixed(1) }}%</span>
+                smartUpdateTask.update_progress.toFixed(2) }}%</span>
             </div>
             <div class="progress-bg">
               <div
@@ -172,7 +172,7 @@
                 <span class="text-sm text-gray-300">更新进度</span>
               </div>
               <span class="text-sm font-medium text-orange-400">{{
-                (stockListTask?.current_date_progress || 0).toFixed(1) }}%</span>
+                (stockListTask?.current_date_progress || 0).toFixed(2) }}%</span>
             </div>
             <div class="progress-bg">
               <div
@@ -218,7 +218,7 @@
                 <span class="text-sm text-gray-300">海选进度</span>
               </div>
               <span class="text-sm font-medium text-cyan-400">{{
-                (candidatePoolTask?.current_date_progress || 0).toFixed(1) }}%</span>
+                (candidatePoolTask?.current_date_progress || 0).toFixed(2) }}%</span>
             </div>
             <div class="progress-bg">
               <div

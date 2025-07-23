@@ -142,6 +142,15 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 回测详情弹窗 -->
+    <BacktestDetailDialog
+      v-model="showChartDialog"
+      :backtest-id="selectedBacktestId"
+      :stock-code="selectedStockCode"
+      title="回测详情"
+      :show-news-analysis="true"
+    />
   </div>
 </template>
 
@@ -151,6 +160,7 @@ import { ElMessage } from 'element-plus'
 import TopBacktestHeader from '@/components/top-backtest/TopBacktestHeader.vue'
 import TopBacktestStats from '@/components/top-backtest/TopBacktestStats.vue'
 import TopBacktestTable from '@/components/top-backtest/TopBacktestTable.vue'
+import BacktestDetailDialog from '@/components/common/BacktestDetailDialog.vue'
 import { formatPercentage, formatNumber } from '@/utils/formatters'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useTopBacktest } from '@/composables/useTopBacktest'
@@ -163,6 +173,9 @@ import type { TopStrategyStock } from '@/types/api'
 
 const showStockDialog = ref(false)
 const selectedStock = ref<TopStrategyStock | null>(null)
+const showChartDialog = ref(false)
+const selectedBacktestId = ref<number | undefined>(undefined)
+const selectedStockCode = ref<string | undefined>(undefined)
 
 // =============================================================================
 // 使用 Top 回测 Composable
@@ -506,8 +519,14 @@ const handleViewStock = (stock: TopStrategyStock) => {
  * 处理查看图表
  */
 const handleViewChart = (stock: TopStrategyStock) => {
-  // TODO: 实现图表查看功能
-  ElMessage.info('图表功能开发中...')
+  if (!stock.backtest_result_id) {
+    ElMessage.warning('该股票暂无回测历史数据')
+    return
+  }
+
+  selectedBacktestId.value = stock.backtest_result_id
+  selectedStockCode.value = stock.stock_code
+  showChartDialog.value = true
 }
 
 /**

@@ -196,19 +196,29 @@ const breadcrumbLabel = computed(() => {
   return pageTagline.value ? `${pageTitle.value}（${pageTagline.value}）` : pageTitle.value;
 });
 
-const dailyUpdateTask = computed(() => store.taskStatus['update_daily_data'] || null);
+// 检查所有正在运行的任务
+const runningTasks = computed(() => {
+  const tasks = ['update_daily_data', 'update_stock_list', 'update_stock_details', 'update_stock_fundamentals', 'update_daily_data_smart', 'candidate_pool'];
+  return tasks.map(taskName => store.taskStatus[taskName]).filter(task =>
+    task && task.current_date_progress < 100 && task.success === undefined
+  );
+});
+
+const currentTask = computed(() => {
+  return runningTasks.value[0] || null;
+});
 
 const isInProgress = computed(() => {
-  return dailyUpdateTask.value && dailyUpdateTask.value.current_date_progress < 100 && dailyUpdateTask.value.success === undefined;
+  return runningTasks.value.length > 0;
 });
 
 const taskProgress = computed(() => {
-  return dailyUpdateTask.value ? dailyUpdateTask.value.current_date_progress : 0;
+  return currentTask.value ? currentTask.value.current_date_progress : 0;
 });
 
 const taskMessage = computed(() => {
-  if (dailyUpdateTask.value) {
-    return dailyUpdateTask.value.message || '数据更新中...';
+  if (currentTask.value) {
+    return currentTask.value.message || '数据更新中...';
   }
   return '数据更新中...';
 });

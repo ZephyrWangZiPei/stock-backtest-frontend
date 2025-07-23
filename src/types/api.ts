@@ -88,6 +88,7 @@ export interface BacktestRequest {
 export interface BacktestResult {
   id: number
   strategy_id: number
+  strategy_name?: string
   start_date: string
   end_date: string
   initial_capital: number
@@ -98,13 +99,16 @@ export interface BacktestResult {
   sharpe_ratio: number
   win_rate: number
   total_trades: number
+  profit_factor?: number
   status: 'pending' | 'running' | 'completed' | 'failed'
   created_at: string
   updated_at?: string
   error_message?: string
-  selected_stocks?: string[]
+  selected_stocks?: Array<string | { code: string; name: string }>
   parameters_used?: string
   ai_analysis_report?: string
+  portfolio_history?: Array<{ date: string; total: number }>
+  trades?: BacktestTrade[]
 }
 
 export interface BacktestTrade {
@@ -137,6 +141,7 @@ export interface TopStrategyStock {
   expectancy?: number
   profit_factor?: number
   rank: number
+  backtest_result_id?: number
   backtest_period_days?: number
   initial_capital?: number
   created_at?: string

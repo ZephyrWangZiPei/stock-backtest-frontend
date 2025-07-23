@@ -43,6 +43,6 @@ const schedulerStatus = computed(() => store.status)
 
 <style scoped>
 .scheduler-status {
-  margin-bottom: 1.5rem;
+  /* 移除底部边距，由父容器控制间距 */
 }
 </style> 
