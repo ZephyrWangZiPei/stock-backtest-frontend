@@ -66,10 +66,13 @@ const isConnected = computed(() => store.socket?.connected)
 const taskStatus = computed(() => {
   const taskMap = {
     '智能数据更新': 'update_daily_data_smart',
-    '股票列表更新': 'update_stock_list',
+    '股票基础信息': 'update_stock_basic_info',
     '股票详细信息': 'update_stock_details',
     '基本面数据': 'update_stock_fundamentals',
-    '潜力股海选': 'candidate_pool'
+    '潜力股海选': 'candidate_pool',
+      '资金流向数据': 'collect_fund_flow_data',
+  '机构持股数据': 'collect_multi_period_institute_hold_data',
+  '分析师评级': 'collect_analyst_rating_data'
   }
   
   const taskKey = taskMap[props.title as keyof typeof taskMap]
