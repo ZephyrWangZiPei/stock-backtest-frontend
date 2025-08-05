@@ -1,226 +1,173 @@
 <template>
-  <div class="news-analysis-view">
-    <!-- 页面头部 -->
-    <NewsAnalysisHeader :is-connected="isConnected" />
+  <div class="news-analysis-container">
+    <div class="news-analysis-header">
+      <h1 class="news-analysis-title">新闻分析</h1>
+      <p class="news-analysis-subtitle">新闻数据采集与情感分析</p>
+    </div>
 
-    <!-- 主要内容区域 -->
-    <NewsAnalysisLayout>
-      <!-- 左侧控制面板 -->
-      <template #left>
-        <NewsAnalysisControlPanel
-          :is-connected="isConnected"
-          :is-analyzing="isAnalyzing"
-          :selected-stock="selectedStock"
-          :analysis-date="analysisDate"
-          :progress="progress"
-          :analysis-logs="analysisLogs"
-          :analysis-result="analysisResult"
-          @start-analysis="handleStartAnalysis"
-          @stock-select="handleStockSelect"
-          @stock-clear="handleStockClear"
-        />
-      </template>
+    <div class="news-analysis-content">
+      <!-- 新闻搜索 -->
+      <el-card class="news-search-card">
+        <template #header>
+          <div class="card-header">
+            <span>新闻搜索</span>
+          </div>
+        </template>
+        <el-form
+          :model="searchForm"
+          label-width="120px"
+        >
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="搜索关键词">
+                <el-input
+                  v-model="searchForm.keywords"
+                  placeholder="输入搜索关键词"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="时间范围">
+                <el-date-picker
+                  v-model="searchForm.dateRange"
+                  type="daterange"
+                  range-separator="至"
+                  start-placeholder="开始日期"
+                  end-placeholder="结束日期"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item>
+            <el-button
+              type="primary"
+              @click="searchNews"
+            >搜索新闻</el-button>
+            <el-button @click="resetSearch">重置搜索</el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
 
-      <!-- 右侧结果面板 -->
-      <template #right>
-        <NewsAnalysisResultPanel
-          :analysis-result="analysisResult"
-          :show-all-news="showAllNews"
-          @toggle-show-all="toggleShowAllNews"
-          @export="handleExportNews"
-        />
-      </template>
-    </NewsAnalysisLayout>
+      <!-- 新闻列表 -->
+      <el-card class="news-list-card">
+        <template #header>
+          <div class="card-header">
+            <span>新闻列表</span>
+          </div>
+        </template>
+        <div class="news-content">
+          <div class="news-placeholder">
+            <el-icon>
+              <Document />
+            </el-icon>
+            <p>新闻列表将在这里显示</p>
+          </div>
+        </div>
+      </el-card>
+
+      <!-- 情感分析 -->
+      <el-card class="sentiment-analysis-card">
+        <template #header>
+          <div class="card-header">
+            <span>情感分析</span>
+          </div>
+        </template>
+        <div class="sentiment-content">
+          <div class="sentiment-placeholder">
+            <el-icon>
+              <DataAnalysis />
+            </el-icon>
+            <p>情感分析结果将在这里显示</p>
+          </div>
+        </div>
+      </el-card>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { useWebSocket } from '@/composables/useWebSocket'
-import NewsAnalysisLayout from '@/components/news-analysis/NewsAnalysisLayout.vue'
-import NewsAnalysisHeader from '@/components/news-analysis/NewsAnalysisHeader.vue'
-import NewsAnalysisControlPanel from '@/components/news-analysis/NewsAnalysisControlPanel.vue'
-import NewsAnalysisResultPanel from '@/components/news-analysis/NewsAnalysisResultPanel.vue'
-import type { Stock } from '@/types/api'
+import { ref, reactive } from 'vue'
+import { Document, DataAnalysis } from '@element-plus/icons-vue'
 
-// 定义日志项类型
-interface LogItem {
-  id: string
-  message: string
-  type: 'info' | 'success' | 'warning' | 'error'
-  timestamp: Date
-  details?: string
-}
-
-interface RelatedStock {
-  code: string
-  name: string
-}
-
-interface AnalysisResult {
-  relatedStocks: RelatedStock[]
-  news: any[]
-  sentimentSummary: any
-}
-
-// 响应式数据
-const selectedStock = ref<Stock | null>(null)
-const analysisDate = ref('')
-const isAnalyzing = ref(false)
-const progress = ref(0)
-const analysisLogs = ref<LogItem[]>([])
-const analysisResult = ref<AnalysisResult | null>(null)
-const showAllNews = ref(false)
-
-// WebSocket连接
-const { isConnected, emit, on, destroy } = useWebSocket(
-  {
-    url: 'http://127.0.0.1:5000',
-    path: '/socket.io/',
-    transports: ['websocket'],
-    namespace: '/news_analysis',
-    autoConnect: true
-  },
-  {
-    onConnect: () => {
-      // WebSocket连接成功
-    },
-    onDisconnect: () => {
-      // WebSocket连接断开
-    },
-    onConnectError: (error) => {
-      console.error('WebSocket连接错误:', error)
-      ElMessage.error('WebSocket连接失败')
-    }
-  }
-)
-
-// 方法
-const handleStockSelect = (stock: Stock) => {
-  selectedStock.value = stock
-}
-
-const handleStockClear = () => {
-  selectedStock.value = null
-}
-
-const handleStartAnalysis = (data: { stockCode: string; analysisDate: string }) => {
-  if (!isConnected.value) {
-    ElMessage.error('WebSocket未连接，请刷新页面重试')
-    return
-  }
-
-  // 重置状态
-  isAnalyzing.value = true
-  progress.value = 0
-  analysisLogs.value = []
-  analysisResult.value = null
-
-  // 添加初始日志
-  addLog('开始分析', '开始股票新闻分析流程', 'info')
-
-  // 发送分析请求
-  emit('start_news_analysis', {
-    stock_code: data.stockCode,
-    analysis_date: data.analysisDate
-  })
-}
-
-const addLog = (step: string, message: string, type: 'info' | 'success' | 'error' | 'warning', details?: string) => {
-  analysisLogs.value.push({
-    id: Date.now().toString(),
-    message: `${step}: ${message}`,
-    type,
-    timestamp: new Date(),
-    details
-  })
-}
-
-const toggleShowAllNews = () => {
-  showAllNews.value = !showAllNews.value
-}
-
-const handleExportNews = () => {
-  if (!analysisResult.value?.news) return
-
-  const newsData = analysisResult.value.news.map(news => ({
-    标题: news.title,
-    内容: news.content,
-    来源: news.source,
-    发布时间: news.publish_time,
-    情感: getSentimentText(news.sentiment),
-    情感得分: news.sentiment_score
-  }))
-
-  const csvContent = [
-    Object.keys(newsData[0]).join(','),
-    ...newsData.map(row => Object.values(row).map(value => `"${value}"`).join(','))
-  ].join('\n')
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-  link.setAttribute('href', url)
-  link.setAttribute('download', `新闻分析结果_${selectedStock.value?.code}_${analysisDate.value}.csv`)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-
-  ElMessage.success('新闻数据导出成功')
-}
-
-const getSentimentText = (sentiment: string) => {
-  switch (sentiment) {
-    case 'positive': return '正面'
-    case 'negative': return '负面'
-    default: return '中性'
-  }
-}
-
-// WebSocket事件监听
-const setupWebSocketListeners = () => {
-  // 分析进度更新
-  on('news_analysis_progress', (data: { step: string; message: string; progress: number; details?: string }) => {
-    progress.value = data.progress
-    addLog(data.step, data.message, 'info', data.details)
-  })
-
-  // 分析完成
-  on('news_analysis_success', (data: AnalysisResult) => {
-    isAnalyzing.value = false
-    progress.value = 100
-    analysisResult.value = data
-    addLog('分析完成', '新闻分析已完成', 'success')
-    ElMessage.success('新闻分析完成')
-  })
-
-  // 分析错误
-  on('news_analysis_error', (data: { error: string }) => {
-    isAnalyzing.value = false
-    addLog('分析失败', data.error, 'error')
-    ElMessage.error(`分析失败: ${data.error}`)
-  })
-}
-
-// 生命周期
-onMounted(() => {
-  setupWebSocketListeners()
+// 基础数据 - 清理业务逻辑，保留框架
+const searchForm = reactive({
+  keywords: '',
+  dateRange: null
 })
 
-onUnmounted(() => {
-  destroy()
-})
+// 基础事件处理 - 保留框架
+const searchNews = () => {
+  console.log('搜索新闻:', searchForm)
+}
+
+const resetSearch = () => {
+  console.log('重置搜索')
+  searchForm.keywords = ''
+  searchForm.dateRange = null
+}
 </script>
 
-<style lang="scss" scoped>
-.news-analysis-view {
-  height: 100vh;
+<style scoped>
+.news-analysis-container {
+  padding: 20px;
+}
+
+.news-analysis-header {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.news-analysis-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 10px;
+}
+
+.news-analysis-subtitle {
+  font-size: 1rem;
+  color: #909399;
+  margin: 0;
+}
+
+.news-analysis-content {
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: var(--el-bg-color);
-  overflow: hidden;
-    /* 防止整体出现滚动条 */
+  gap: 20px;
+}
+
+.news-search-card,
+.news-list-card,
+.sentiment-analysis-card {
+  margin-bottom: 20px;
+}
+
+.news-content,
+.sentiment-content {
+  min-height: 300px;
+}
+
+.news-placeholder,
+.sentiment-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #909399;
+}
+
+.news-placeholder .el-icon,
+.sentiment-placeholder .el-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

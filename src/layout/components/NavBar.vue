@@ -1,598 +1,482 @@
 <template>
   <div class="navbar">
-    <!-- Left side: Breadcrumbs and page info -->
     <div class="navbar-left">
-      <div class="page-info">
-        <h2 class="page-title">{{ pageTitle }}</h2>
-        <div class="breadcrumb">
-          <span class="breadcrumb-item">系统</span>
-          <span class="breadcrumb-separator">/</span>
-          <span class="breadcrumb-item current">{{ breadcrumbLabel }}</span>
-        </div>
+      <div class="logo">
+        <el-icon>
+          <TrendCharts />
+        </el-icon>
+        <span class="logo-text">股票扫描系统</span>
       </div>
     </div>
 
-    <!-- Right side: Status & User Info -->
+    <div class="navbar-center">
+      <el-breadcrumb separator="/">
+        <el-breadcrumb-item
+          v-for="item in breadcrumbs"
+          :key="item.path"
+        >
+          {{ item.title }}
+        </el-breadcrumb-item>
+      </el-breadcrumb>
+    </div>
+
     <div class="navbar-right">
-      <!-- System Status -->
-      <div class="status-section">
-        <!-- Connection Status -->
-        <div class="status-item">
-          <div class="status-indicator connection-tooltip-container">
+      <!-- 连接状态指示器 -->
+      <div
+        class="status-indicator"
+        @click="showStatusDetail = !showStatusDetail"
+      >
+        <div
+          class="status-dot"
+          :class="getConnectionStatusClass()"
+        ></div>
+        <span class="status-text">{{ getConnectionStatusText() }}</span>
+        <el-icon>
+          <ArrowDown />
+        </el-icon>
+      </div>
+
+      <!-- 连接状态详情 -->
+      <el-popover
+        v-model:visible="showStatusDetail"
+        placement="bottom-end"
+        :width="300"
+        trigger="click"
+      >
+        <template #reference>
+          <div class="status-indicator">
             <div
               class="status-dot"
-              :class="{
-                'status-dot-success': allConnected && !isInProgress,
-                'status-dot-warning': allConnected && isInProgress,
-                'status-dot-error': !allConnected
-              }"
+              :class="getConnectionStatusClass()"
             ></div>
-            <div class="status-content">
-              <span class="status-label">数据服务</span>
-              <span class="status-value">{{ connectionStatusText }}</span>
-              <span class="status-detail">{{ connectionStats.connected }}/{{ connectionStats.total }} ({{
-                connectionStats.rate }}%)</span>
-            </div>
+            <span class="status-text">{{ getConnectionStatusText() }}</span>
+            <el-icon>
+              <ArrowDown />
+            </el-icon>
+          </div>
+        </template>
 
-            <!-- Hover Tooltip -->
+        <div class="status-detail">
+          <h4>服务连接状态</h4>
+          <div class="service-status">
             <div
-              class="connection-tooltip"
-              @click="goToWebSocketTest"
+              v-for="(status, service) in connectionStatus"
+              :key="service"
+              class="service-item"
             >
-              <div class="tooltip-header">
-                <span class="tooltip-title">WebSocket 连接状态</span>
-                <span class="tooltip-summary">{{ connectionStats.connected }}/{{ connectionStats.total }} 已连接</span>
-              </div>
-              <div class="tooltip-content">
-                <div
-                  v-for="(isConnected, name) in connectionStatus"
-                  :key="name"
-                  class="connection-item"
-                  :class="{ 'connected': isConnected, 'disconnected': !isConnected }"
-                >
-                  <div
-                    class="connection-dot"
-                    :class="{ 'connected': isConnected, 'disconnected': !isConnected }"
-                  ></div>
-                  <span class="connection-name">{{ getConnectionDisplayName(name) }}</span>
-                  <span class="connection-status">{{ isConnected ? '已连接' : '未连接' }}</span>
-                </div>
-              </div>
-              <div class="tooltip-footer">
-                <span class="tooltip-tip">点击查看详细测试页面</span>
-              </div>
+              <span class="service-name">{{ getServiceDisplayName(service) }}</span>
+              <el-tag
+                :type="status ? 'success' : 'danger'"
+                size="small"
+              >
+                {{ status ? '已连接' : '未连接' }}
+              </el-tag>
             </div>
+          </div>
+          <div class="status-summary">
+            <p>连接率: {{ getConnectionStatusDetail() }}</p>
+            <p>任务: {{ runningTasks }}/{{ totalTasks }}</p>
           </div>
         </div>
+      </el-popover>
 
-        <!-- Task Progress -->
-        <div
-          v-if="isInProgress"
-          class="status-item"
-        >
-          <div class="progress-container">
-            <div class="progress-info">
-              <span class="progress-label">{{ taskMessage }}</span>
-              <span class="progress-percentage">{{ taskProgress }}%</span>
-            </div>
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{ width: taskProgress + '%' }"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Divider -->
-      <div class="navbar-divider"></div>
-
-      <!-- User Section -->
-      <div class="user-section">
-        <div class="user-info">
-          <div class="user-avatar">
-            <div class="avatar-content">
-              <span class="avatar-text">U</span>
-            </div>
-            <div class="avatar-status"></div>
-          </div>
-          <div class="user-details">
-            <span class="user-name">管理员</span>
-            <span class="user-role">系统管理员</span>
-          </div>
-        </div>
-
-        <!-- User Menu -->
+      <!-- 用户菜单 -->
+      <el-dropdown>
         <div class="user-menu">
-          <button class="menu-button">
-            <svg
-              class="w-4 h-4"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                clip-rule="evenodd"
-              ></path>
-            </svg>
-          </button>
+          <el-avatar
+            :size="32"
+            icon="UserFilled"
+          />
+          <span class="username">管理员</span>
+          <el-icon>
+            <ArrowDown />
+          </el-icon>
         </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="quick-actions">
-        <button
-          class="action-btn"
-          title="通知"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-            ></path>
-          </svg>
-          <span class="notification-badge">3</span>
-        </button>
-
-        <button
-          class="action-btn"
-          title="设置"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-              clip-rule="evenodd"
-            ></path>
-          </svg>
-        </button>
-      </div>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item @click="showSettings">
+              <el-icon>
+                <Setting />
+              </el-icon>
+              系统设置
+            </el-dropdown-item>
+            <el-dropdown-item @click="showAbout">
+              <el-icon>
+                <InfoFilled />
+              </el-icon>
+              关于系统
+            </el-dropdown-item>
+            <el-dropdown-item
+              divided
+              @click="logout"
+            >
+              <el-icon>
+                <SwitchButton />
+              </el-icon>
+              退出登录
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useSchedulerStore } from '@/store/scheduler';
-import { connectionStatus } from '@/utils/connectionStatus';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElDropdown, ElDropdownMenu, ElDropdownItem, ElDialog } from 'element-plus'
+import {
+  Bell,
+  Setting,
+  User,
+  SwitchButton,
+  QuestionFilled,
+  Connection,
+  DataAnalysis,
+  Document,
+  Calendar,
+  TrendCharts,
+  ArrowDown,
+  InfoFilled
+} from '@element-plus/icons-vue'
+import unifiedWebSocketManager from '@/utils/unifiedWebSocketManager'
 
-const route = useRoute();
-const router = useRouter();
-const store = useSchedulerStore();
+// 响应式数据
+const showStatusDetail = ref(false)
+const route = useRoute()
+const router = useRouter()
 
-const pageTitles: Record<string, string> = {
-  '/dashboard': '仪表盘',
-  '/backtest': '策略回测',
-  '/scheduler': '任务调度',
-  '/top-backtest': 'Top回测'
+// 连接状态
+const connectionStatus = ref({
+  dataCollection: false,
+  aiAnalysis: false,
+  newsAnalysis: false,
+  scheduler: false
+})
+
+// 任务状态
+const taskStatus = ref({
+  dataCollection: { running: 0, completed: 0, failed: 0 },
+  aiAnalysis: { running: 0, completed: 0, failed: 0 },
+  newsAnalysis: { running: 0, completed: 0, failed: 0 },
+  scheduler: { running: 0, completed: 0, failed: 0 }
+})
+
+// 重连相关
+const reconnectAttempts = ref(0)
+const reconnectInterval = ref<NodeJS.Timeout | null>(null)
+
+// 任务统计
+const runningTasks = ref(0)
+const totalTasks = ref(0)
+
+// 面包屑导航
+const breadcrumbs = computed(() => {
+  const matched = route.matched.filter(item => item.meta && item.meta.title)
+  return matched.map(item => ({
+    path: item.path,
+    title: item.meta?.title as string
+  }))
+})
+
+// 获取连接状态样式类
+const getConnectionStatusClass = () => {
+  const connectedCount = Object.values(connectionStatus.value).filter(Boolean).length
+  const totalCount = Object.keys(connectionStatus.value).length
+
+  if (connectedCount === totalCount) return 'status-dot-success'
+  if (connectedCount > 0) return 'status-dot-warning'
+  return 'status-dot-error'
 }
 
-const pageDescriptions: Record<string, string> = {
-  '/dashboard': '系统状态监控与数据总览',
-  '/backtest': '历史数据回测与策略验证',
-  '/scheduler': '定时任务管理与监控',
-  '/top-backtest': '筛选结果与潜力股回测分析'
+// 获取连接状态文本
+const getConnectionStatusText = () => {
+  const connectedCount = Object.values(connectionStatus.value).filter(Boolean).length
+  const totalCount = Object.keys(connectionStatus.value).length
+
+  if (connectedCount === totalCount) return '已连接'
+  if (connectedCount > 0) return '部分连接'
+  return '未连接'
 }
 
-const pageTitle = computed(() => {
-  return pageTitles[route.path] || '系统';
-});
+// 获取连接状态详情
+const getConnectionStatusDetail = () => {
+  const connectedCount = Object.values(connectionStatus.value).filter(Boolean).length
+  const totalCount = Object.keys(connectionStatus.value).length
+  return `${connectedCount}/${totalCount} (${Math.round(connectedCount / totalCount * 100)}%)`
+}
 
-const pageTagline = computed(() => {
-  return pageDescriptions[route.path] || '';
-});
-
-const breadcrumbLabel = computed(() => {
-  return pageTagline.value ? `${pageTitle.value}（${pageTagline.value}）` : pageTitle.value;
-});
-
-// 检查所有正在运行的任务
-const runningTasks = computed(() => {
-  const tasks = ['update_daily_data', 'update_stock_list', 'update_stock_details', 'update_stock_fundamentals', 'update_daily_data_smart', 'candidate_pool'];
-  return tasks.map(taskName => store.taskStatus[taskName]).filter(task =>
-    task && task.current_date_progress < 100 && task.success === undefined
-  );
-});
-
-const currentTask = computed(() => {
-  return runningTasks.value[0] || null;
-});
-
-const isInProgress = computed(() => {
-  return runningTasks.value.length > 0;
-});
-
-const taskProgress = computed(() => {
-  return currentTask.value ? currentTask.value.current_date_progress : 0;
-});
-
-const taskMessage = computed(() => {
-  if (currentTask.value) {
-    return currentTask.value.message || '数据更新中...';
+// 获取服务显示名称
+const getServiceDisplayName = (service: string) => {
+  const names: Record<string, string> = {
+    dataCollection: '数据采集',
+    aiAnalysis: 'AI分析',
+    newsAnalysis: '新闻分析',
+    scheduler: '调度服务'
   }
-  return '数据更新中...';
-});
+  return names[service] || service
+}
 
-// 多 WebSocket 连接汇总状态
-const allConnected = computed(() => {
-  const values = Object.values(connectionStatus);
-  return values.length > 0 && values.every(v => v);
-});
+// 更新任务状态
+const updateTaskStatus = async () => {
+  try {
+    // 通过WebSocket获取任务状态，避免频繁的HTTP请求
+    // 这里可以设置默认值，或者通过WebSocket事件更新
+    if (connectionStatus.value.dataCollection) {
+      // 如果数据采集服务已连接，可以设置默认值
+    } else {
+      // 如果未连接，使用默认值
+    }
+  } catch (error) {
+    console.error('更新任务状态失败:', error)
+    // 使用默认值
+  }
+}
 
-const hasDisconnected = computed(() => {
-  return Object.values(connectionStatus).some(v => !v);
-});
+// WebSocket事件处理
+const handleConnectionStatus = (service: string, connected: boolean) => {
+  const wasConnected = connectionStatus.value[service as keyof typeof connectionStatus.value]
+  connectionStatus.value[service as keyof typeof connectionStatus.value] = connected
 
-const connectionStatusText = computed(() => {
-  if (hasDisconnected.value || !allConnected.value) return '未连接';
-  if (isInProgress.value) return '更新中';
-  return '已连接';
-});
+  // 检测连接断开
+  if (wasConnected && !connected) {
+    console.log(`🔌 ${service} 连接断开`)
+    ElMessage.warning(`${service} 服务连接断开`)
 
-// 计算连接率
-const connectionRate = computed(() => {
-  const values = Object.values(connectionStatus);
-  if (values.length === 0) return 0;
-  const connectedCount = values.filter(v => v).length;
-  return Math.round((connectedCount / values.length) * 100);
-});
+    // 启动重连机制
+    if (reconnectAttempts.value === 0) {
+      startReconnect()
+    }
+  }
 
-// 计算连接统计
-const connectionStats = computed(() => {
-  const values = Object.values(connectionStatus);
-  const totalConnections = values.length;
-  const connectedCount = values.filter(v => v).length;
-  return {
-    total: totalConnections,
-    connected: connectedCount,
-    rate: connectionRate.value
-  };
-});
+  // 检测连接恢复
+  if (!wasConnected && connected) {
+    console.log(`🔗 ${service} 连接恢复`)
+    ElMessage.success(`${service} 服务连接恢复`)
 
-// 获取连接显示名称
-const getConnectionDisplayName = (name: string): string => {
-  const nameMap: Record<string, string> = {
-    'scheduler': '调度器',
-    'task_monitor': '任务监控',
-    'top_backtest': 'Top回测',
-    'ai_analysis': 'AI分析'
-  };
-  return nameMap[name] || name;
-};
+    // 停止重连
+    if (reconnectAttempts.value > 0) {
+      stopReconnect()
+    }
+  }
+}
 
-// 跳转到WebSocket测试页面
-const goToWebSocketTest = () => {
-  router.push('/websocket-test');
-};
+// 开始重连
+const startReconnect = () => {
+  if (reconnectAttempts.value >= 5) {
+    ElMessage.error('重连次数已达上限，请手动刷新页面')
+    return
+  }
 
-// 定时更新连接状态
-let statusInterval: ReturnType<typeof setInterval> | null = null;
+  reconnectAttempts.value++
+  console.log(`🔄 开始重连... (${reconnectAttempts.value}/5)`)
 
+  reconnectInterval.value = setInterval(() => {
+    console.log(`🔄 尝试重连... (${reconnectAttempts.value}/5)`)
+    unifiedWebSocketManager.initEnhancedWebSockets()
+  }, 3000) // 3秒尝试一次
+}
+
+// 停止重连
+const stopReconnect = () => {
+  if (reconnectInterval.value) {
+    clearInterval(reconnectInterval.value)
+    reconnectInterval.value = null
+  }
+  reconnectAttempts.value = 0
+}
+
+// 用户操作
+const showSettings = () => {
+  ElMessage.info('系统设置功能开发中...')
+}
+
+const showAbout = () => {
+  ElMessage.info('关于系统功能开发中...')
+}
+
+const logout = () => {
+  ElMessage.info('退出登录功能开发中...')
+}
+
+// 生命周期
 onMounted(() => {
-  // 每500ms更新一次连接状态
-  statusInterval = setInterval(() => {
-    // 触发响应式更新
-    const _ = connectionStatus;
-  }, 500);
-});
+  console.log('导航栏组件已挂载')
+
+  // 初始化WebSocket连接
+  unifiedWebSocketManager.initEnhancedWebSockets()
+
+  // 监听连接状态变化
+  unifiedWebSocketManager.addUnifiedEventListener('dataCollectionConnected', (connected: boolean) => {
+    handleConnectionStatus('dataCollection', connected)
+  })
+
+  unifiedWebSocketManager.addUnifiedEventListener('aiAnalysisConnected', (connected: boolean) => {
+    handleConnectionStatus('aiAnalysis', connected)
+  })
+
+  unifiedWebSocketManager.addUnifiedEventListener('newsAnalysisConnected', (connected: boolean) => {
+    handleConnectionStatus('newsAnalysis', connected)
+  })
+
+  unifiedWebSocketManager.addUnifiedEventListener('schedulerConnected', (connected: boolean) => {
+    handleConnectionStatus('scheduler', connected)
+  })
+
+  // 初始更新任务状态
+  updateTaskStatus()
+})
 
 onUnmounted(() => {
-  if (statusInterval) {
-    clearInterval(statusInterval);
-    statusInterval = null;
-  }
-});
+  // 清理重连定时器
+  stopReconnect()
+
+  // 移除事件监听器
+  unifiedWebSocketManager.removeUnifiedEventListener('dataCollectionConnected', handleConnectionStatus)
+  unifiedWebSocketManager.removeUnifiedEventListener('aiAnalysisConnected', handleConnectionStatus)
+  unifiedWebSocketManager.removeUnifiedEventListener('newsAnalysisConnected', handleConnectionStatus)
+  unifiedWebSocketManager.removeUnifiedEventListener('schedulerConnected', handleConnectionStatus)
+})
 </script>
 
 <style scoped>
 .navbar {
-  @apply h-20 flex items-center justify-between px-6;
-  background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(75, 85, 99, 0.3);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  position: relative;
-  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  padding: 0 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e4e7ed;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Left Section */
 .navbar-left {
-  @apply flex items-center;
+  display: flex;
+  align-items: center;
 }
 
-.page-info {
-  @apply flex flex-col space-y-1;
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
 }
 
-.page-title {
-  @apply text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400;
+.logo-text {
+  margin-left: 8px;
 }
 
-.breadcrumb {
-  @apply flex items-center text-sm text-gray-400;
+.navbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
 }
 
-.breadcrumb-item {
-  @apply transition-colors duration-200;
-}
-
-.breadcrumb-item.current {
-  @apply text-gray-200 font-medium;
-}
-
-.breadcrumb-separator {
-  @apply mx-2 text-gray-500;
-}
-
-/* Right Section */
 .navbar-right {
-  @apply flex items-center space-x-6;
-}
-
-/* Status Section */
-.status-section {
-  @apply flex items-center space-x-4;
-}
-
-.status-item {
-  @apply flex items-center;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .status-indicator {
-  @apply flex items-center space-x-3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.status-indicator:hover {
+  background-color: #f5f7fa;
 }
 
 .status-dot {
-  @apply w-3 h-3 rounded-md transition-all duration-300;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
 .status-dot-success {
-  @apply bg-green-400;
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+  background-color: #67c23a;
 }
 
 .status-dot-warning {
-  @apply bg-yellow-400 animate-pulse;
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+  background-color: #e6a23c;
 }
 
 .status-dot-error {
-  @apply bg-red-400;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  background-color: #f56c6c;
 }
 
-.status-content {
-  @apply flex flex-col;
-}
-
-.status-label {
-  @apply text-xs text-gray-400 font-medium;
-}
-
-.status-value {
-  @apply text-sm text-gray-200;
-}
-
-.status-detail {
-  @apply text-xs text-gray-500;
-}
-
-/* Connection Tooltip */
-.connection-tooltip-container {
-  @apply relative;
-}
-
-.connection-tooltip {
-  @apply absolute top-full left-0 mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl opacity-0 invisible transition-all duration-200 cursor-pointer;
-  transform: translateY(-10px);
-  z-index: 9999;
-}
-
-.connection-tooltip-container:hover .connection-tooltip {
-  @apply opacity-100 visible;
-  transform: translateY(0);
-}
-
-.tooltip-header {
-  @apply p-3 border-b border-gray-600;
-}
-
-.tooltip-title {
-  @apply text-sm font-semibold text-white block;
-}
-
-.tooltip-summary {
-  @apply text-xs text-gray-400 block mt-1;
-}
-
-.tooltip-content {
-  @apply p-3 space-y-2 max-h-48 overflow-y-auto;
-}
-
-.connection-item {
-  @apply flex items-center justify-between py-1;
-}
-
-.connection-dot {
-  @apply w-2 h-2 rounded-full mr-2;
-}
-
-.connection-dot.connected {
-  @apply bg-green-400;
-}
-
-.connection-dot.disconnected {
-  @apply bg-red-400;
-}
-
-.connection-name {
-  @apply text-sm text-gray-200 flex-1;
-}
-
-.connection-status {
-  @apply text-xs px-2 py-1 rounded;
-}
-
-.connection-item.connected .connection-status {
-  @apply bg-green-500/20 text-green-400;
-}
-
-.connection-item.disconnected .connection-status {
-  @apply bg-red-500/20 text-red-400;
-}
-
-.tooltip-footer {
-  @apply p-3 border-t border-gray-600 bg-gray-700/50;
-}
-
-.tooltip-tip {
-  @apply text-xs text-gray-400;
-}
-/* Progress */
-.progress-container {
-  @apply space-y-2;
-}
-
-.progress-info {
-  @apply flex items-center justify-between;
-}
-
-.progress-label {
-  @apply text-sm text-gray-300;
-}
-
-.progress-percentage {
-  @apply text-xs text-gray-400 font-mono;
-}
-
-.progress-bar {
-  @apply w-32 h-2 bg-gray-700 rounded-md overflow-hidden;
-}
-
-.progress-fill {
-  @apply h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 ease-out;
-  animation: progressPulse 2s ease-in-out infinite;
-}
-
-@keyframes progressPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-}
-
-/* Divider */
-.navbar-divider {
-  @apply w-px h-8 bg-gray-600;
-}
-
-/* User Section */
-.user-section {
-  @apply flex items-center space-x-3;
-}
-
-.user-info {
-  @apply flex items-center space-x-3;
-}
-
-.user-avatar {
-  @apply relative;
-}
-
-.avatar-content {
-  @apply w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center;
-}
-
-.avatar-text {
-  @apply text-white font-semibold text-sm;
-}
-
-.avatar-status {
-  @apply absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-md border-2 border-gray-800;
-}
-
-.user-details {
-  @apply flex flex-col;
-}
-
-.user-name {
-  @apply text-sm font-medium text-gray-200;
-}
-
-.user-role {
-  @apply text-xs text-gray-400;
+.status-text {
+  font-size: 14px;
+  color: #606266;
 }
 
 .user-menu {
-  @apply flex items-center;
-}
-
-.menu-button {
-  @apply p-1 rounded-sm text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-all duration-200;
-}
-
-/* Quick Actions */
-.quick-actions {
-  @apply flex items-center space-x-2;
-}
-
-.action-btn {
-  @apply relative p-2 rounded-sm text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-all duration-200;
-}
-
-.action-btn:hover {
-  transform: translateY(-1px);
-}
-
-.notification-badge {
-  @apply absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-md flex items-center justify-center font-medium;
-  animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-  0%, 20%, 53%, 80%, 100% {
-    transform: translate3d(0, 0, 0);
-  }
-  40%, 43% {
-    transform: translate3d(0, -3px, 0);
-  }
-  70% {
-    transform: translate3d(0, -2px, 0);
-  }
-  90% {
-    transform: translate3d(0, -1px, 0);
-  }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .navbar {
-    @apply px-4;
+  display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
   }
   
-  .user-details,
-  .status-content {
-    @apply hidden;
+  .user-menu:hover {
+    background-color: #f5f7fa;
   }
   
-  .status-section {
-    @apply space-x-2;
+  .username {
+    font-size: 14px;
+    color: #303133;
   }
   
-  .navbar-right {
-    @apply space-x-3;
+  .status-detail {
+    padding: 16px;
   }
-}
-
-.page-tagline {
-  @apply text-sm text-gray-400;
-}
-</style> 
+  
+  .status-detail h4 {
+    margin: 0 0 16px 0;
+    color: #303133;
+    font-size: 16px;
+  }
+  
+  .service-status {
+    margin-bottom: 16px;
+  }
+  
+  .service-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .service-item:last-child {
+    border-bottom: none;
+  }
+  
+    .service-name {
+      font-size: 14px;
+      color: #606266;
+    }
+  
+    .status-summary {
+      padding-top: 12px;
+      border-top: 1px solid #f0f0f0;
+    }
+  
+    .status-summary p {
+      margin: 4px 0;
+      font-size: 12px;
+      color: #909399;
+    }
+</style>

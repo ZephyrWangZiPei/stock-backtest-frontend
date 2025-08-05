@@ -1,89 +1,12 @@
 // =============================================================================
-// 全局样式变量定义
+// SCSS 变量定义
 // =============================================================================
 
-// =============================================================================
-// 颜色主题
-// =============================================================================
+// 字体相关变量
+$font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+$font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
 
-// 主色调
-$primary-color: #a855f7;
-$primary-light: #c084fc;
-$primary-dark: #7c3aed;
-$primary-bg: rgba(168, 85, 247, 0.1);
-
-// 辅助色
-$secondary-color: #3b82f6;
-$secondary-light: #60a5fa;
-$secondary-dark: #2563eb;
-$secondary-bg: rgba(59, 130, 246, 0.1);
-
-// 成功色
-$success-color: #10b981;
-$success-light: #4ade80;
-$success-dark: #16a34a;
-$success-bg: rgba(34, 197, 94, 0.1);
-
-// 警告色
-$warning-color: #f59e0b;
-$warning-light: #fbbf24;
-$warning-dark: #d97706;
-$warning-bg: rgba(245, 158, 11, 0.1);
-
-// 危险色
-$danger-color: #ef4444;
-$danger-light: #f87171;
-$danger-dark: #dc2626;
-$danger-bg: rgba(239, 68, 68, 0.1);
-
-// 信息色
-$info-color: #3b82f6;
-$info-light: #22d3ee;
-$info-dark: #0891b2;
-$info-bg: rgba(6, 182, 212, 0.1);
-
-// =============================================================================
-// 背景色系
-// =============================================================================
-
-// 深色主题背景
-$bg-primary: #0f172a;
-$bg-secondary: #1e293b;
-$bg-tertiary: #334155;
-$bg-quaternary: #475569;
-
-// 卡片背景
-$card-bg: rgba(31, 41, 55, 0.8);
-$card-bg-hover: rgba(31, 41, 55, 0.9);
-$card-border: rgba(75, 85, 99, 0.3);
-$card-border-hover: rgba(75, 85, 99, 0.5);
-
-// 模态框背景
-$modal-bg: rgba(26, 32, 44, 0.95);
-$modal-overlay: rgba(0, 0, 0, 0.5);
-
-// =============================================================================
-// 文字颜色
-// =============================================================================
-
-// 主要文字
-$text-primary: #f3f4f6;
-$text-secondary: #6b7280;
-$text-tertiary: #9ca3af;
-$text-quaternary: #6b7280;
-
-// 链接文字
-$link-color: #60a5fa;
-$link-hover: #93c5fd;
-
-// 禁用文字
-$text-disabled: #6b7280;
-
-// =============================================================================
-// 字体大小层级
-// =============================================================================
-
-// 标题字体
+// 字体大小
 $font-size-xs: 0.75rem;    // 12px
 $font-size-sm: 0.875rem;   // 14px
 $font-size-base: 1rem;     // 16px
@@ -92,270 +15,58 @@ $font-size-xl: 1.25rem;    // 20px
 $font-size-2xl: 1.5rem;    // 24px
 $font-size-3xl: 1.875rem;  // 30px
 $font-size-4xl: 2.25rem;   // 36px
-$font-size-5xl: 3rem;      // 48px
 
-// 字体权重
+// 行高
+$line-height-tight: 1.25;
+$line-height-base: 1.5;
+$line-height-relaxed: 1.75;
+
+// 字体粗细
 $font-weight-light: 300;
 $font-weight-normal: 400;
 $font-weight-medium: 500;
 $font-weight-semibold: 600;
 $font-weight-bold: 700;
-$font-weight-extrabold: 800;
 
-// 字体族
-$font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-$font-family-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+// 间距变量
+$spacing-1: 0.25rem;   // 4px
+$spacing-2: 0.5rem;    // 8px
+$spacing-3: 0.75rem;   // 12px
+$spacing-4: 1rem;      // 16px
+$spacing-6: 1.5rem;    // 24px
+$spacing-8: 2rem;      // 32px
+$spacing-12: 3rem;     // 48px
+$spacing-16: 4rem;     // 64px
 
-// 行高
-$line-height-tight: 1.25;
-$line-height-normal: 1.5;
-$line-height-relaxed: 1.75;
-$line-height-base: $line-height-normal; // 基础行高
+// 过渡动画
+$transition-fast: 0.15s ease-in-out;
+$transition-normal: 0.3s ease-in-out;
+$transition-slow: 0.5s ease-in-out;
 
-// =============================================================================
-// 间距规范
-// =============================================================================
-
-// 基础间距单位
-$spacing-unit: 0.25rem; // 4px
-
-// 间距值
-$spacing-0: 0;
-$spacing-1: $spacing-unit;     // 4px
-$spacing-2: 0.5rem;   // 8px
-$spacing-3: $spacing-unit * 3; // 12px
-$spacing-4: 1rem;     // 16px
-$spacing-5: $spacing-unit * 5; // 20px
-$spacing-6: 1.5rem;   // 24px
-$spacing-8: 2rem;     // 32px
-$spacing-10: $spacing-unit * 10; // 40px
-$spacing-12: $spacing-unit * 12; // 48px
-$spacing-16: $spacing-unit * 16; // 64px
-$spacing-20: $spacing-unit * 20; // 80px
-$spacing-24: $spacing-unit * 24; // 96px
-
-// 内边距
-$padding-xs: $spacing-2;
-$padding-sm: $spacing-3;
-$padding-md: $spacing-4;
-$padding-lg: $spacing-6;
-$padding-xl: $spacing-8;
-
-// 外边距
-$margin-xs: $spacing-2;
-$margin-sm: $spacing-3;
-$margin-md: $spacing-4;
-$margin-lg: $spacing-6;
-$margin-xl: $spacing-8;
-
-// =============================================================================
-// 断点规范（响应式设计）
-// =============================================================================
-
-// 移动端优先
-$breakpoint-sm: 640px;   // 小屏幕
-$breakpoint-md: 768px;   // 中等屏幕
-$breakpoint-lg: 1024px;  // 大屏幕
-$breakpoint-xl: 1280px;  // 超大屏幕
-$breakpoint-2xl: 1536px; // 2倍超大屏幕
-
-// 媒体查询变量
-$mobile: "max-width: #{$breakpoint-sm - 1px}";
-$tablet: "min-width: #{$breakpoint-sm} and max-width: #{$breakpoint-lg - 1px}";
-$desktop: "min-width: #{$breakpoint-lg}";
-
-// =============================================================================
-// 圆角规范
-// =============================================================================
-
-$border-radius-none: 0;
-$border-radius-sm: 0.125rem;   // 2px
-$border-radius-md: 0.375rem;   // 6px
-$border-radius-lg: 0.5rem;     // 8px
-$border-radius-xl: 0.75rem;    // 12px
-$border-radius-2xl: 1rem;      // 16px
+// 边框圆角
+$border-radius-sm: 0.25rem;   // 4px
+$border-radius-base: 0.375rem; // 6px
+$border-radius-lg: 0.5rem;    // 8px
+$border-radius-xl: 0.75rem;   // 12px
 $border-radius-full: 9999px;
 
-// =============================================================================
-// 阴影规范
-// =============================================================================
-
+// 阴影
 $shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 $shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-$shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
-// 通用阴影变量
-$box-shadow: $shadow-md;
-$box-shadow-dark: $shadow-lg;
+// 断点
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
 
-// 彩色阴影
-$shadow-primary: 0 10px 25px -5px rgba(168, 85, 247, 0.3);
-$shadow-secondary: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
-$shadow-success: 0 10px 25px -5px rgba(34, 197, 94, 0.3);
-$shadow-warning: 0 10px 25px -5px rgba(245, 158, 11, 0.3);
-$shadow-danger: 0 10px 25px -5px rgba(239, 68, 68, 0.3);
-
-// =============================================================================
-// 过渡动画
-// =============================================================================
-
-$transition-fast: 150ms ease-in-out;
-$transition-normal: 0.3s;
-$transition-slow: 500ms ease-in-out;
-
-// 缓动函数
-$ease-in: cubic-bezier(0.4, 0, 1, 1);
-$ease-out: cubic-bezier(0, 0, 0.2, 1);
-$ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-
-// =============================================================================
-// Z-index层级
-// =============================================================================
-
+// Z-index 层级
 $z-index-dropdown: 1000;
 $z-index-sticky: 1020;
 $z-index-fixed: 1030;
 $z-index-modal-backdrop: 1040;
 $z-index-modal: 1050;
 $z-index-popover: 1060;
-$z-index-tooltip: 1070;
-
-// =============================================================================
-// 组件特定变量
-// =============================================================================
-
-// 按钮
-$button-height-sm: 2rem;    // 32px
-$button-height-md: 2.5rem;  // 40px
-$button-height-lg: 3rem;    // 48px
-
-// 输入框
-$input-height-sm: 2rem;     // 32px
-$input-height-md: 2.5rem;   // 40px
-$input-height-lg: 3rem;     // 48px
-
-// 表格
-$table-row-height: 3rem;    // 48px
-$table-header-height: 3.5rem; // 56px
-
-// 卡片
-$card-padding: $spacing-6;
-$card-border-radius: $border-radius-xl;
-
-// 导航栏
-$navbar-height: 4rem;       // 64px
-$sidebar-width: 16rem;      // 256px
-$sidebar-collapsed-width: 4rem; // 64px
-
-// =============================================================================
-// 功能类映射
-// =============================================================================
-
-// 颜色映射
-$color-map: (
-  'primary': $primary-color,
-  'secondary': $secondary-color,
-  'success': $success-color,
-  'warning': $warning-color,
-  'danger': $danger-color,
-  'info': $info-color,
-);
-
-// 背景色映射
-$bg-color-map: (
-  'primary': $bg-primary,
-  'secondary': $bg-secondary,
-  'tertiary': $bg-tertiary,
-  'card': $card-bg,
-);
-
-// 文字颜色映射
-$text-color-map: (
-  'primary': $text-primary,
-  'secondary': $text-secondary,
-  'tertiary': $text-tertiary,
-  'disabled': $text-disabled,
-);
-
-// 间距映射
-$spacing-map: (
-  'xs': $spacing-2,
-  'sm': $spacing-3,
-  'md': $spacing-4,
-  'lg': $spacing-6,
-  'xl': $spacing-8,
-);
-
-// 字体大小映射
-$font-size-map: (
-  'xs': $font-size-xs,
-  'sm': $font-size-sm,
-  'base': $font-size-base,
-  'lg': $font-size-lg,
-  'xl': $font-size-xl,
-  '2xl': $font-size-2xl,
-  '3xl': $font-size-3xl,
-  '4xl': $font-size-4xl,
-  '5xl': $font-size-5xl,
-);
-
-// =============================================================================
-// 额外补全的全局变量
-// =============================================================================
-
-// 间距（兼容类名）
-$spacing-xs: 0.25rem; // 4px
-$spacing-sm: 0.5rem;  // 8px
-$spacing-md: 1rem;    // 16px
-$spacing-lg: 1.5rem;  // 24px
-$spacing-xl: 2rem;    // 32px
-$spacing-2: 0.5rem;   // 8px
-$spacing-4: 1rem;     // 16px
-$spacing-6: 1.5rem;   // 24px
-$spacing-8: 2rem;     // 32px
-$spacing-xxl: 2.5rem; // 40px
-$spacing-xxxl: 3rem;  // 48px
-
-// 文字色（兼容性变量，应该使用上面定义的主要文字颜色）
-$text-regular: $text-primary; // 修复：使用主要文字颜色而不是深色
-$text-placeholder: #a0aec0;
-$text-secondary: #6b7280;
-
-// 边框色
-$border-color: #e5e7eb;
-$border-light: #f3f4f6;
-$border-lighter: #f9fafb;
-
-// 背景色
-$bg-light: #f8fafc;
-
-// 断点
-$wide: 1536px;
-
-// 容器
-$container-max-width: 1200px;
-$container-padding: 1rem;
-
-// 字体大小
-$font-size-small: 0.75rem;
-$font-size-sm: 0.875rem;
-$font-size-medium: 1rem;
-$font-size-large: 1.25rem;
-$font-size-extra-large: 1.5rem;
-
-// 字体粗细
-$font-weight-medium: 500;
-$font-weight-semibold: 600;
-
-// 颜色（兼容性变量，已在上面定义）
-// $success-color: #10b981;  // 已在上面定义
-// $warning-color: #f59e0b;  // 已在上面定义
-// $info-color: #3b82f6;     // 已在上面定义
-// $danger-color: #ef4444;   // 已在上面定义
-
-// 过渡
-$transition-normal: 0.3s;
-$transition-base: 0.3s;
-$ease-in-out: ease-in-out; 
+$z-index-tooltip: 1070; 

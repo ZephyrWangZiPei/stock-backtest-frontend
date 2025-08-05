@@ -6,17 +6,17 @@
     <!-- Logo Section -->
     <div class="logo-section">
       <div class="logo-container">
-        <img
-          src="/favicon.svg"
-          alt="Logo"
-          class="w-8 h-8 mr-2"
-        />
-        <h1
+        <div class="logo-icon">
+          <el-icon :size="24">
+            <TrendCharts />
+          </el-icon>
+        </div>
+        <div
           v-if="!isCollapse"
-          class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400"
+          class="logo-text"
         >
           Stock Scan
-        </h1>
+        </div>
       </div>
     </div>
 
@@ -35,7 +35,7 @@
         <el-icon>
           <component :is="route.meta.icon" />
         </el-icon>
-        <template #title>{{ route.meta.title }}</template>
+        <template #title>{{ (route.meta as any).title }}</template>
       </el-menu-item>
     </el-menu>
 
@@ -44,38 +44,19 @@
       <el-button
         @click="toggleCollapse"
         link
+        class="collapse-button"
       >
-        <el-icon :size="20">
+        <el-icon :size="16">
           <component :is="isCollapse ? ArrowRightBold : ArrowLeftBold" />
         </el-icon>
       </el-button>
-    </div>
-
-    <!-- Footer Section -->
-    <div class="sidebar-footer">
-      <div class="status-indicator connection-tooltip-container">
-        <div
-          class="w-2 h-2 rounded-full animate-pulse"
-          :class="allConnected ? 'bg-green-400' : 'bg-red-400'"
-        ></div>
-        <span
-          v-if="!isCollapse"
-          class="text-xs text-gray-400"
-        >
-          {{ allConnected ? '系统正常' : '连接异常' }}
-          <span class="text-gray-500">({{ connectionStats.connected }}/{{ connectionStats.total }})</span>
-        </span>
-
-
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRoute } from 'vue-router';
-import { connectionStatus } from '@/utils/connectionStatus';
+import { useRoute, useRouter } from 'vue-router';
 import {
   ElMenu,
   ElMenuItem,
@@ -85,118 +66,116 @@ import {
 import {
   Odometer,
   TrendCharts,
-  Histogram,
   DataAnalysis,
-  Refresh,
   ArrowLeftBold,
   ArrowRightBold,
   Document,
+  Filter,
+  Cpu,
+  Select,
+  Star,
 } from '@element-plus/icons-vue';
 
 const currentRoute = useRoute();
+const router = useRouter();
 const isCollapse = ref(false);
 
 const toggleCollapse = () => {
   isCollapse.value = !isCollapse.value;
 };
 
-// 模拟的路由列表，实际项目中应从 Vue Router 实例中获取并筛选
-// 假设路由配置中包含 meta: { title: '菜单标题', icon: 'ElementPlusIconName', showInSidebar: true }
-const allAppRoutes = [
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    meta: { title: '仪表盘', icon: Odometer, showInSidebar: true },
-  },
-  {
-    path: '/backtest',
-    name: 'Backtest',
-    meta: { title: '策略回测', icon: TrendCharts, showInSidebar: true },
-  },
-  {
-    path: '/backtest-history',
-    name: 'BacktestHistory',
-    meta: { title: '回测历史', icon: Histogram, showInSidebar: true },
-  },
-  {
-    path: '/top-backtest',
-    name: 'TopBacktest',
-    meta: { title: 'Top回测', icon: DataAnalysis, showInSidebar: true },
-  },
-  {
-    path: '/scheduler',
-    name: 'Scheduler',
-    meta: { title: '任务调度', icon: Refresh, showInSidebar: true },
-  },
+// 图标映射
+const iconMap: Record<string, any> = {
+  'Odometer': Odometer,
+  'TrendCharts': TrendCharts,
+  'DataAnalysis': DataAnalysis,
+  'Document': Document,
+  'Filter': Filter,
+  'Cpu': Cpu,
+  'Select': Select,
+  'Star': Star,
+};
 
-  {
-    path: '/news-analysis',
-    name: 'NewsAnalysis',
-    meta: { title: '新闻分析', icon: Document, showInSidebar: true },
-  },
-  // 您可以在这里添加更多路由，只要有 showInSidebar: true 就会自动显示
-];
-
+// 从路由配置中获取菜单�?
 const menuRoutes = computed(() => {
-  return allAppRoutes.filter(route => route.meta && route.meta.showInSidebar);
+  const routes = router.getRoutes();
+  return routes
+    .filter(route => route.meta && (route.meta as any).title && route.path !== '/')
+    .map(route => ({
+      ...route,
+      meta: {
+        ...route.meta,
+        icon: iconMap[(route.meta as any).icon as string] || Document
+      }
+    }));
 });
-
-// 全局连接状态
-const allConnected = computed(() => {
-  const values = Object.values(connectionStatus);
-  return values.length > 0 && values.every(v => v);
-});
-
-// 计算连接统计
-const connectionStats = computed(() => {
-  const values = Object.values(connectionStatus);
-  const totalConnections = values.length;
-  const connectedCount = values.filter(v => v).length;
-  return {
-    total: totalConnections,
-    connected: connectedCount
-  };
-});
-
-
-
-
-
-
 </script>
-
-<!-- 移除所有 Element Plus 组件样式覆盖，使用原生样式 -->
 
 <style scoped>
 .sidebar-container {
   @apply h-full flex flex-col;
-  background: linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%);
+  background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(75, 85, 99, 0.3);
-  transition: width 0.3s ease; /* For collapse transition */
-  width: 256px; /* Default width (w-64) */
+  border-right: 1px solid rgba(148, 163, 184, 0.1);
+  transition: width 0.3s ease;
+  width: 240px;
 }
 
 .sidebar-container.is-collapsed {
-  width: 64px; /* Collapsed width (w-16) */
+  width: 64px;
 }
 
 .logo-section {
-  @apply p-4 border-b border-gray-700/30;
+  @apply p-4 border-b;
+  border-color: rgba(148, 163, 184, 0.1);
 }
 
 .logo-container {
-  @apply flex items-center justify-center space-x-2;
+  @apply flex items-center;
+  min-height: 40px;
+  transition: justify-content 0.3s ease;
+  padding: 4px 0;
 }
 
-/* Ensure logo text hides/shows with collapse */
-.logo-section h1 {
-  transition: opacity 0.3s ease, width 0.3s ease;
+.sidebar-container.is-collapsed .logo-container {
+  @apply justify-center;
+}
+
+.sidebar-container:not(.is-collapsed) .logo-container {
+  @apply justify-start;
+}
+
+.logo-icon {
+  @apply flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  color: white;
+  transition: transform 0.3s ease;
+  margin: 0;
+}
+
+.sidebar-container.is-collapsed .logo-icon {
+  transform: scale(1.1);
+}
+
+.logo-text {
+  @apply text-lg font-bold ml-3;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: opacity 0.3s ease, width 0.3s ease, margin 0.3s ease;
   overflow: hidden;
   white-space: nowrap;
+  line-height: 1;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  margin: 0;
+  padding: 0;
 }
 
-.sidebar-container.is-collapsed .logo-section h1 {
+.sidebar-container.is-collapsed .logo-text {
   opacity: 0;
   width: 0;
   padding: 0;
@@ -206,23 +185,66 @@ const connectionStats = computed(() => {
 .el-menu-vertical-demo {
   flex-grow: 1;
   padding: 1rem 0;
+  background-color: transparent;
+  border: none;
 }
 
 .collapse-button-container {
-  @apply flex justify-end p-2 border-t border-gray-700/30;
+  @apply flex justify-center p-3 border-t;
+  border-color: rgba(148, 163, 184, 0.1);
 }
 
-.sidebar-footer {
-  @apply p-4 border-t border-gray-700/30;
+.collapse-button {
+  @apply w-8 h-8 rounded-lg;
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.1);
+  transition: all 0.2s ease;
 }
 
-.status-indicator {
-  @apply flex items-center space-x-2;
+.collapse-button:hover {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
 }
 
-/* Hide status text when collapsed */
-.sidebar-container.is-collapsed .status-indicator span {
-  display: none;
+/* Element Plus 菜单样式覆盖 */
+:deep(.el-menu) {
+  background-color: transparent;
+  border: none;
 }
 
+:deep(.el-menu-item) {
+  color: #94a3b8;
+  background-color: transparent;
+  border: none;
+  margin: 0.25rem 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  height: 44px;
+  line-height: 44px;
+}
+
+:deep(.el-menu-item:hover) {
+  color: #e2e8f0;
+  background-color: rgba(148, 163, 184, 0.1);
+}
+
+:deep(.el-menu-item.is-active) {
+  color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+  font-weight: 500;
+}
+
+:deep(.el-menu-item .el-icon) {
+  color: inherit;
+  margin-right: 12px;
+}
+
+:deep(.el-menu--collapse .el-menu-item) {
+  margin: 0.25rem;
+  padding: 0 12px;
+}
+
+:deep(.el-menu--collapse .el-menu-item .el-icon) {
+  margin-right: 0;
+}
 </style> 

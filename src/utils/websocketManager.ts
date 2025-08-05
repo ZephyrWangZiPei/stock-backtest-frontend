@@ -1,253 +1,244 @@
 import { io, Socket } from 'socket.io-client'
-import { connectionStatus } from './connectionStatus'
+import { ElMessage } from 'element-plus'
 
-// WebSocket 连接配置接口
-export interface WebSocketConfig {
-  url: string
-  path?: string
-  transports?: string[]
-  reconnectionAttempts?: number
-  reconnectionDelay?: number
-  reconnectionDelayMax?: number
-  connectionName: string
-  namespace?: string
-  onConnect?: (socket: Socket) => void
-  onDisconnect?: () => void
-  onConnectError?: (error: any) => void
-  onReconnect?: (attemptNumber: number) => void
-  onReconnectAttempt?: (attemptNumber: number) => void
-  onReconnectError?: (error: any) => void
-  onReconnectFailed?: () => void
-}
-
-// WebSocket 管理器类
-export class WebSocketManager {
-  private socket: Socket | null = null
-  private config: WebSocketConfig
-  private reconnectAttempts = 0
-  private maxReconnectAttempts: number
-  private reconnectDelay: number
-  private reconnectDelayMax: number
-  private reconnectTimer: NodeJS.Timeout | null = null
-  private isManualDisconnect = false
-
-  constructor(config: WebSocketConfig) {
-    this.config = {
-      path: '/socket.io/',
+// WebSocket连接配置
+const WEBSOCKET_CONFIG = {
+  dataCollection: {
+    url: 'http://127.0.0.1:5000',
+    namespace: '/data_collection',
+    options: {
       transports: ['websocket', 'polling'],
+      timeout: 20000,
+      reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      ...config
+      reconnectionDelayMax: 5000
     }
-    this.maxReconnectAttempts = this.config.reconnectionAttempts!
-    this.reconnectDelay = this.config.reconnectionDelay!
-    this.reconnectDelayMax = this.config.reconnectionDelayMax!
-  }
-
-  // 连接状态
-  get isConnected(): boolean {
-    return this.socket?.connected || false
-  }
-
-  // 获取 socket 实例
-  getSocket(): Socket | null {
-    return this.socket
-  }
-
-  // 建立连接
-  connect(): Socket {
-    if (this.socket?.connected) {
-      console.log(`[WebSocketManager] ${this.config.connectionName} 已经连接，返回现有连接`)
-      return this.socket
+  },
+  scheduler: {
+    url: 'http://127.0.0.1:5000',
+    namespace: '/scheduler',
+    options: {
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
     }
-
-    // 如果存在旧的socket实例，先清理
-    if (this.socket) {
-      console.log(`[WebSocketManager] ${this.config.connectionName} 清理旧的socket实例`)
-      this.socket.removeAllListeners()
-      this.socket.disconnect()
-      this.socket = null
-    }
-
-    console.log(`[WebSocketManager] 连接 ${this.config.connectionName}: ${this.config.url}`)
-
-    // 创建 socket 连接
-    const socketOptions: any = {
-      path: this.config.path,
-      transports: this.config.transports,
-      reconnection: false, // 我们手动处理重连
-      autoConnect: false
-    }
-    
-    if (this.config.namespace) {
-      this.socket = io(`${this.config.url}${this.config.namespace}`, socketOptions)
-    } else {
-      this.socket = io(this.config.url, socketOptions)
-    }
-
-    // 设置事件监听器
-    this.setupEventListeners()
-
-    // 连接
-    this.socket.connect()
-
-    return this.socket
-  }
-
-  // 设置事件监听器
-  private setupEventListeners() {
-    if (!this.socket) return
-
-    this.socket.on('connect', () => {
-      console.log(`[WebSocketManager] ${this.config.connectionName} 连接成功`)
-      this.reconnectAttempts = 0
-      this.isManualDisconnect = false
-      
-      // 更新连接状态
-      connectionStatus[this.config.connectionName] = true
-      
-      // 调用用户回调
-      this.config.onConnect?.(this.socket!)
-    })
-
-    this.socket.on('disconnect', (reason) => {
-      console.log(`[WebSocketManager] ${this.config.connectionName} 连接断开: ${reason}`)
-      
-      // 更新连接状态
-      connectionStatus[this.config.connectionName] = false
-      
-      // 调用用户回调
-      this.config.onDisconnect?.()
-
-      // 如果不是手动断开，尝试重连
-      if (!this.isManualDisconnect && reason !== 'io client disconnect') {
-        this.scheduleReconnect()
-      }
-    })
-
-    this.socket.on('connect_error', (error) => {
-      console.error(`[WebSocketManager] ${this.config.connectionName} 连接错误:`, error)
-      
-      // 更新连接状态
-      connectionStatus[this.config.connectionName] = false
-      
-      // 调用用户回调
-      this.config.onConnectError?.(error)
-
-      // 尝试重连
-      if (!this.isManualDisconnect) {
-        this.scheduleReconnect()
-      }
-    })
-  }
-
-  // 安排重连
-  private scheduleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error(`[WebSocketManager] ${this.config.connectionName} 重连失败，已达到最大尝试次数`)
-      this.config.onReconnectFailed?.()
-      return
-    }
-
-    this.reconnectAttempts++
-    
-    // 计算重连延迟（指数退避）
-    const delay = Math.min(
-      this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
-      this.reconnectDelayMax
-    )
-
-    console.log(`[WebSocketManager] ${this.config.connectionName} 计划重连，尝试 ${this.reconnectAttempts}/${this.maxReconnectAttempts}，延迟 ${delay}ms`)
-
-    // 调用重连尝试回调
-    this.config.onReconnectAttempt?.(this.reconnectAttempts)
-
-    this.reconnectTimer = setTimeout(() => {
-      if (!this.isManualDisconnect) {
-        console.log(`[WebSocketManager] ${this.config.connectionName} 开始重连`)
-        // 重新创建socket实例以确保正确的连接
-        this.connect()
-      }
-    }, delay)
-  }
-
-  // 手动断开连接
-  disconnect() {
-    console.log(`[WebSocketManager] ${this.config.connectionName} 手动断开连接`)
-
-    this.isManualDisconnect = true
-
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
-    }
-
-    if (this.socket) {
-      // 移除所有事件监听器防止内存泄漏
-      this.socket.removeAllListeners()
-      this.socket.disconnect()
-      this.socket = null
-    }
-
-    // 更新连接状态
-    connectionStatus[this.config.connectionName] = false
-  }
-
-  // 销毁连接管理器
-  destroy() {
-    console.log(`[WebSocketManager] ${this.config.connectionName} 销毁连接管理器`)
-
-    this.disconnect()
-
-    // 清理所有定时器
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
-    }
-  }
-
-  // 强制重连
-  forceReconnect() {
-    console.log(`[WebSocketManager] ${this.config.connectionName} 强制重连`)
-    
-    this.reconnectAttempts = 0
-    this.isManualDisconnect = false
-    
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
-    }
-
-    if (this.socket) {
-      this.socket.disconnect()
-    }
-
-    // 立即重连
-    setTimeout(() => {
-      if (!this.isManualDisconnect) {
-        this.connect()
-      }
-    }, 100)
-  }
-
-  // 添加事件监听器
-  on(event: string, callback: (...args: any[]) => void) {
-    this.socket?.on(event, callback)
-  }
-
-  // 移除事件监听器
-  off(event: string, callback?: (...args: any[]) => void) {
-    this.socket?.off(event, callback)
-  }
-
-  // 发送事件
-  emit(event: string, ...args: any[]) {
-    this.socket?.emit(event, ...args)
   }
 }
 
-// 创建 WebSocket 管理器的工厂函数
-export function createWebSocketManager(config: WebSocketConfig): WebSocketManager {
-  return new WebSocketManager(config)
+// 全局WebSocket实例
+let dataCollectionSocket: Socket | null = null
+let schedulerSocket: Socket | null = null
+
+// 连接状态
+let dataCollectionConnected = false
+let schedulerConnected = false
+
+// 事件监听器
+const eventListeners: Map<string, Function[]> = new Map()
+
+// 初始化WebSocket连接
+export const initWebSockets = () => {
+  console.log('全局WebSocket管理器：初始化连接...')
+  
+  // 数据采集WebSocket
+  if (!dataCollectionSocket) {
+    dataCollectionSocket = io(WEBSOCKET_CONFIG.dataCollection.url, {
+      ...WEBSOCKET_CONFIG.dataCollection.options,
+      path: '/socket.io'
+    })
+    
+    dataCollectionSocket.on('connect', () => {
+      dataCollectionConnected = true
+      console.log('全局WebSocket管理器：数据采集连接成功')
+      emitEvent('dataCollectionConnected', true)
+    })
+    
+    dataCollectionSocket.on('disconnect', (reason) => {
+      dataCollectionConnected = false
+      console.log('全局WebSocket管理器：数据采集连接断开:', reason)
+      emitEvent('dataCollectionConnected', false)
+    })
+    
+    dataCollectionSocket.on('connect_error', (error) => {
+      console.error('全局WebSocket管理器：数据采集连接错误:', error)
+      dataCollectionConnected = false
+      emitEvent('dataCollectionConnected', false)
+    })
+    
+    dataCollectionSocket.on('reconnect', (attemptNumber) => {
+      console.log(`全局WebSocket管理器：数据采集重连成功，第${attemptNumber}次尝试`)
+      dataCollectionConnected = true
+      emitEvent('dataCollectionConnected', true)
+    })
+    
+    // 转发所有数据采集事件
+    const dataCollectionEvents = [
+      'connected', 'collection_status', 'collection_started', 
+      'collection_complete', 'collection_error', 'database_stats'
+    ]
+    
+    dataCollectionEvents.forEach(event => {
+      dataCollectionSocket!.on(event, (data) => {
+        emitEvent(event, data)
+      })
+    })
+  }
+  
+  // 调度器WebSocket - 使用命名空间
+  if (!schedulerSocket) {
+    schedulerSocket = io(WEBSOCKET_CONFIG.scheduler.url + '/scheduler', {
+      ...WEBSOCKET_CONFIG.scheduler.options,
+      path: '/socket.io'
+    })
+    
+    schedulerSocket.on('connect', () => {
+      schedulerConnected = true
+      console.log('全局WebSocket管理器：调度器连接成功')
+      emitEvent('schedulerConnected', true)
+    })
+    
+    schedulerSocket.on('disconnect', (reason) => {
+      schedulerConnected = false
+      console.log('全局WebSocket管理器：调度器连接断开:', reason)
+      emitEvent('schedulerConnected', false)
+    })
+    
+    schedulerSocket.on('connect_error', (error) => {
+      console.error('全局WebSocket管理器：调度器连接错误', error)
+      schedulerConnected = false
+      emitEvent('schedulerConnected', false)
+    })
+    
+    schedulerSocket.on('reconnect', (attemptNumber) => {
+      console.log(`全局WebSocket管理器：调度器重连成功，第${attemptNumber}次尝试`)
+      schedulerConnected = true
+      emitEvent('schedulerConnected', true)
+    })
+    
+    // 转发所有调度器事件
+    const schedulerEvents = [
+      'connected', 'scheduler_status', 'update_progress', 
+      'update_complete', 'update_error', 'update_logs_response'
+    ]
+    
+    schedulerEvents.forEach(event => {
+      schedulerSocket!.on(event, (data) => {
+        emitEvent(event, data)
+      })
+    })
+  }
+}
+
+// 断开WebSocket连接
+export const disconnectWebSockets = () => {
+  console.log('全局WebSocket管理器：断开连接...')
+  
+  if (dataCollectionSocket) {
+    dataCollectionSocket.disconnect()
+    dataCollectionSocket = null
+  }
+  
+  if (schedulerSocket) {
+    schedulerSocket.disconnect()
+    schedulerSocket = null
+  }
+  
+  dataCollectionConnected = false
+  schedulerConnected = false
+}
+
+// 手动重连
+export const reconnectWebSockets = () => {
+  console.log('全局WebSocket管理器：手动重连...')
+  disconnectWebSockets()
+  setTimeout(() => {
+    initWebSockets()
+  }, 1000)
+}
+
+// 获取连接状态
+export const getConnectionStatus = () => {
+  return {
+    dataCollection: dataCollectionConnected,
+    scheduler: schedulerConnected
+  }
+}
+
+// 获取WebSocket实例
+export const getDataCollectionSocket = () => dataCollectionSocket
+export const getSchedulerSocket = () => schedulerSocket
+
+// 事件监听管理
+export const addEventListener = (event: string, listener: Function) => {
+  if (!eventListeners.has(event)) {
+    eventListeners.set(event, [])
+  }
+  eventListeners.get(event)!.push(listener)
+}
+
+export const removeEventListener = (event: string, listener: Function) => {
+  const listeners = eventListeners.get(event)
+  if (listeners) {
+    const index = listeners.indexOf(listener)
+    if (index > -1) {
+      listeners.splice(index, 1)
+    }
+  }
+}
+
+// 发送事件
+const emitEvent = (event: string, data: any) => {
+  const listeners = eventListeners.get(event)
+  if (listeners) {
+    listeners.forEach(listener => {
+      try {
+        listener(data)
+      } catch (error) {
+        console.error(`事件监听器执行错误(${event}):`, error)
+      }
+    })
+  }
+}
+
+// 页面可见性变化处理
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    console.log('页面变为可见，检查WebSocket连接状态...')
+    const status = getConnectionStatus()
+    if (!status.dataCollection || !status.scheduler) {
+      console.log('检测到连接断开，尝试重连...')
+      reconnectWebSockets()
+    }
+  }
+}
+
+// 页面加载完成时初始化
+if (typeof window !== 'undefined') {
+  // 监听页面可见性变化
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  
+  // 页面加载完成后初始化WebSocket
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWebSockets)
+  } else {
+    initWebSockets()
+  }
+  
+  // 页面卸载时清理
+  window.addEventListener('beforeunload', disconnectWebSockets)
+}
+
+export default {
+  initWebSockets,
+  disconnectWebSockets,
+  reconnectWebSockets,
+  getConnectionStatus,
+  getDataCollectionSocket,
+  getSchedulerSocket,
+  addEventListener,
+  removeEventListener
 } 

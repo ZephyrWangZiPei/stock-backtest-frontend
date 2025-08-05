@@ -1,5 +1,3 @@
-import './assets/main.css'
-
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
@@ -22,11 +20,11 @@ VMdEditor.use(githubTheme, {
 
 import App from './App.vue'
 import router from './router'
-import { useSchedulerStore } from './store/scheduler'
 
-// 初始化全局WebSocket连接
-import { initGlobalWebSockets } from './utils/globalWebSocketManager'
+// 引入全局样式
+import './assets/styles/global.scss'
 
+// 创建Vue应用实例
 const app = createApp(App)
 
 app.use(createPinia())
@@ -34,11 +32,5 @@ app.use(router)
 app.use(ElementPlus)
 app.use(VMdEditor)
 
-// 初始化全局WebSocket连接
-initGlobalWebSockets()
-
-// Connect to WebSocket (保持向后兼容)
-const schedulerStore = useSchedulerStore()
-schedulerStore.connect()
-
+// 挂载应用
 app.mount('#app') 

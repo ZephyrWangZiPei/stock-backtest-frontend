@@ -1,90 +1,112 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '@/layout/Layout.vue'
 
-const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      component: Layout,
-      redirect: '/dashboard',
-      children: [
-        {
-          path: 'dashboard',
-          name: 'Dashboard',
-          component: () => import('@/views/DashboardView.vue'),
-          meta: { title: '仪表盘' }
-        },
-        {
-          path: 'backtest',
-          name: 'Backtest',
-          component: () => import('@/views/BacktestView.vue'),
-          meta: { title: '策略回测' }
-        },
-        {
-          path: 'scheduler',
-          name: 'Scheduler',
-          component: () => import('@/views/scheduler/Scheduler.vue'),
-          meta: { title: '任务调度' }
-        },
-        {
-          path: 'top-backtest',
-          name: 'TopBacktest',
-          component: () => import('@/views/TopBacktestView.vue'),
-          meta: { title: 'Top 回测' }
-        },
-        {
-          path: 'backtest-history',
-          name: 'BacktestHistory',
-          component: () => import('@/views/BacktestHistoryView.vue'),
-          meta: { title: '回测历史' }
-        },
-        {
-          path: 'news-analysis',
-          name: 'NewsAnalysis',
-          component: () => import('@/views/NewsAnalysisView.vue'),
-          meta: { title: '新闻分析' }
+const routes = [
+  {
+    path: '/',
+    component: Layout,
+    redirect: '/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/DashboardView.vue'),
+        meta: { 
+          title: '仪表板', 
+          icon: 'Odometer',
+          description: '系统状态监控与数据总览'
         }
-      ]
-    },
-    // 404 页面
-    {
-      path: '/:pathMatch(.*)*',
-      name: 'NotFound',
-      component: () => import('@/views/NotFoundView.vue'),
-      meta: { title: '页面不存在' }
-    }
-  ]
-})
+      },
 
-// 全局前置守卫
-router.beforeEach((to, from, next) => {
-  // 设置页面标题
-  if (to.meta?.title) {
-    document.title = `${to.meta.title} - Stock Scan`
-  } else {
-    document.title = 'Stock Scan'
+      {
+        path: 'unified-data',
+        name: 'UnifiedDataManagement',
+        component: () => import('@/views/UnifiedDataManagementView.vue'),
+        meta: { 
+          title: '统一数据管理', 
+          icon: 'DataAnalysis',
+          description: '使用统一服务的数据管理'
+        }
+      },
+      {
+        path: 'screening',
+        name: 'StockScreening',
+        component: () => import('@/views/StockScreeningView.vue'),
+        meta: { 
+          title: '股票筛选', 
+          icon: 'Filter',
+          description: '技术面、基本面、综合筛选'
+        }
+      },
+
+      {
+        path: 'candidate',
+        name: 'CandidateSelection',
+        component: () => import('@/views/CandidateSelectionView.vue'),
+        meta: { 
+          title: '海选中心', 
+          icon: 'Select',
+          description: '完整的海选流程，从筛选到AI分析'
+        }
+      },
+      {
+        path: 'recommendation',
+        name: 'SmartRecommendation',
+        component: () => import('@/views/SmartRecommendationView.vue'),
+        meta: { 
+          title: '智能推荐', 
+          icon: 'Star',
+          description: '智能推荐和买入卖出点位分析'
+        }
+      },
+      {
+        path: 'ai-analysis',
+        name: 'UnifiedAIAnalysis',
+        component: () => import('@/views/UnifiedAIAnalysisView.vue'),
+        meta: { 
+          title: 'AI分析', 
+          icon: 'Cpu',
+          description: '使用统一服务的AI分析'
+        }
+      },
+      
+      {
+        path: 'news',
+        name: 'NewsCenter',
+        component: () => import('@/views/NewsCenterView.vue'),
+        meta: { 
+          title: '新闻中心', 
+          icon: 'Document',
+          description: '多源新闻获取和情感分析'
+        }
+      },
+      {
+        path: 'backtest',
+        name: 'BacktestCenter',
+        component: () => import('@/views/BacktestCenterView.vue'),
+        meta: { 
+          title: '回测中心', 
+          icon: 'TrendCharts',
+          description: '策略回测与性能分析'
+        }
+      },
+      {
+        path: 'websocket-monitor',
+        name: 'WebSocketMonitor',
+        component: () => import('@/views/WebSocketMonitorView.vue'),
+        meta: { 
+          title: 'WebSocket监控', 
+          icon: 'Connection',
+          description: 'WebSocket连接状态监控与测试'
+        }
+      }
+    ]
   }
+]
 
-  // 这里可以添加权限检查逻辑
-  // if (to.meta?.requiresAuth && !isAuthenticated()) {
-  //   next('/login')
-  //   return
-  // }
-
-  next()
+const router = createRouter({
+  history: createWebHistory(),
+  routes
 })
 
-// 全局后置钩子
-router.afterEach((to, from) => {
-  // 页面切换后的处理
-      // 路由导航日志
-})
-
-// 路由错误处理
-router.onError((error) => {
-  console.error('Router error:', error)
-  // 可以在这里添加错误上报逻辑
-})
-
-export default router
+export default router 

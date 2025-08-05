@@ -180,12 +180,7 @@ p {
 
 // 页面容器
 .page-container {
-  @include container;
-  padding: $spacing-6;
-  
-  @include mobile {
-    padding: $spacing-4;
-  }
+  @include page-container;
 }
 
 // 卡片容器
