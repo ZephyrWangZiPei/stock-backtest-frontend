@@ -198,46 +198,63 @@ const initChart = () => {
 const addTradeMarkers = () => {
   if (!chartInstance.value || !props.trades.length) return
   
-  props.trades.forEach(trade => {
+  console.log('🔍 开始添加交易标记，交易数量:', props.trades.length)
+  console.log('🔍 交易数据:', props.trades)
+  
+  // 收集所有标记
+  const candlestickMarkers: any[] = []
+  const portfolioMarkers: any[] = []
+  
+  props.trades.forEach((trade, index) => {
+    console.log(`🔍 处理第 ${index + 1} 条交易:`, trade)
+    
     const time = new Date(trade.trade_date).getTime() / 1000 as Time
     const color = trade.trade_type === 'buy' ? '#26a69a' : '#ef5350'
     const shape = trade.trade_type === 'buy' ? 'arrowUp' : 'arrowDown'
     const text = trade.trade_type === 'buy' ? '买入' : '卖出'
     
-    // 在K线图上添加标记
-    if (candlestickSeries.value) {
-      candlestickSeries.value.setMarkers([
-        {
-          time,
-          position: trade.trade_type === 'buy' ? 'belowBar' : 'aboveBar',
-          color,
-          shape,
-          text: `${text} ${trade.price}`,
-          size: 1,
-        },
-      ])
-    }
+    console.log(`🔍 交易时间: ${trade.trade_date} -> ${time}`)
     
-    // 在投资组合价值线上添加标记
-    if (portfolioSeries.value) {
-      const portfolioItem = props.portfolioHistory.find(item => 
-        new Date(item.date).getTime() / 1000 === time
-      )
-      
-      if (portfolioItem) {
-        portfolioSeries.value.setMarkers([
-          {
-            time,
-            position: 'inBar',
-            color,
-            shape: 'circle',
-            text: `${text} ${trade.quantity}股`,
-            size: 1,
-          },
-        ])
-      }
+    // 添加到K线图标记数组
+    candlestickMarkers.push({
+      time,
+      position: trade.trade_type === 'buy' ? 'belowBar' : 'aboveBar',
+      color,
+      shape,
+      text: `${text} ${trade.quantity}股`,
+      size: 1,
+    })
+    
+    // 添加到投资组合价值线标记数组
+    const portfolioItem = props.portfolioHistory.find(item => 
+      new Date(item.date).getTime() / 1000 === time
+    )
+    
+    if (portfolioItem) {
+      portfolioMarkers.push({
+        time,
+        position: 'inBar',
+        color,
+        shape: 'circle',
+        text: `${text} ${trade.quantity}股`,
+        size: 1,
+      })
+    } else {
+      console.log(`⚠️ 未找到对应的投资组合数据: ${trade.trade_date}`)
     }
   })
+  
+  console.log('🔍 K线图标记数量:', candlestickMarkers.length)
+  console.log('🔍 投资组合标记数量:', portfolioMarkers.length)
+  
+  // 一次性设置所有标记
+  if (candlestickSeries.value) {
+    candlestickSeries.value.setMarkers(candlestickMarkers)
+  }
+  
+  if (portfolioSeries.value) {
+    portfolioSeries.value.setMarkers(portfolioMarkers)
+  }
 }
 
 // 重置缩放

@@ -236,6 +236,8 @@ export function useBacktestWebSocket() {
 
   const handleComplete = (data: { result: BacktestResult; trades: TradeRecord[] }) => {
     console.log('✅ 回测完成:', data)
+    console.log('🔍 交易数据详情:', data.trades)
+    console.log('🔍 交易数量:', data.trades?.length || 0)
     
     const now = Date.now()
     // 防抖：避免重复显示完成消息
@@ -246,6 +248,9 @@ export function useBacktestWebSocket() {
     
     currentResult.value = data.result
     currentTrades.value = data.trades || []
+    console.log('🔍 设置后的交易数据:', currentTrades.value)
+    console.log('🔍 设置后的交易数量:', currentTrades.value.length)
+    
     currentProgress.value = {
       progress: 100,
       message: '回测完成',
