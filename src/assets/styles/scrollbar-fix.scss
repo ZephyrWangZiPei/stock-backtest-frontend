@@ -1,0 +1,149 @@
+// 全局滚动条修复样式
+
+// 页面容器滚动
+.page-container {
+  min-height: calc(100vh - 70px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// 长内容区域滚动
+.scrollable-content {
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.scrollable-content-sm {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.scrollable-content-lg {
+  max-height: 700px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// 表格滚动
+.scrollable-table {
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+// 对话框内容滚动
+.dialog-scrollable {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// 卡片内容滚动
+.card-scrollable {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// 自定义滚动条样式
+.custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+  }
+}
+
+// 应用自定义滚动条到所有滚动容器
+.scrollable-content,
+.scrollable-content-sm,
+.scrollable-content-lg,
+.scrollable-table,
+.dialog-scrollable,
+.card-scrollable,
+.page-container {
+  @extend .custom-scrollbar;
+}
+
+// Element Plus 组件滚动修复
+.el-table__body-wrapper {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+}
+
+.el-dialog__body {
+  max-height: 60vh;
+  overflow-y: auto;
+  @extend .custom-scrollbar;
+}
+
+.el-card__body {
+  &.scrollable {
+    max-height: 400px;
+    overflow-y: auto;
+    @extend .custom-scrollbar;
+  }
+}
+
+// 时间线组件滚动
+.el-timeline {
+  max-height: 400px;
+  overflow-y: auto;
+  @extend .custom-scrollbar;
+}
+
+// 折叠面板滚动
+.el-collapse-item__content {
+  max-height: 300px;
+  overflow-y: auto;
+  @extend .custom-scrollbar;
+}
+
+// 选项卡内容滚动
+.el-tab-pane {
+  &.scrollable {
+    max-height: 500px;
+    overflow-y: auto;
+    @extend .custom-scrollbar;
+  }
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .scrollable-content,
+  .scrollable-content-sm,
+  .scrollable-content-lg {
+    max-height: 400px;
+  }
+  
+  .scrollable-table {
+    max-height: 400px;
+  }
+  
+  .dialog-scrollable {
+    max-height: 50vh;
+  }
+  
+  .card-scrollable {
+    max-height: 300px;
+  }
+} 

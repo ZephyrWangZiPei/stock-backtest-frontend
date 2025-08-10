@@ -83,16 +83,6 @@ export const dataCollectionTasks = ref([
     status: 'idle',
     loading: false,
     message: ''
-  },
-  {
-    id: 'stock_score',
-    name: '股票评分计算',
-    description: '计算股票综合评分',
-    data_type: 'stock_score',
-    progress: 0,
-    status: 'idle',
-    loading: false,
-    message: ''
   }
 ])
 
@@ -103,24 +93,11 @@ export const useDataCollection = () => {
   const refreshTasks = async () => {
     try {
       loading.value = true
-      const response = await unifiedHttpClient.dataCollection.getRunningTasks()
-      // 更新现有任务的运行状态
-      const runningTasks = response.data || []
-      dataCollectionTasks.value.forEach(task => {
-        const runningTask = runningTasks.find((rt: any) => rt.data_type === task.data_type)
-        if (runningTask) {
-          task.progress = runningTask.progress || 0
-          task.status = runningTask.status || 'idle'
-          task.loading = runningTask.status === 'running'
-        } else {
-          task.progress = 0
-          task.status = 'idle'
-          task.loading = false
-        }
-      })
+      // 不再通过HTTP API获取任务状态，而是通过WebSocket事件更新
+      // 这里只显示刷新成功的消息，实际状态更新通过WebSocket事件
       ElMessage.success('任务列表已刷新')
     } catch (error) {
-      console.error('获取任务列表失败:', error)
+      console.error('刷新任务列表失败:', error)
       ElMessage.error('刷新任务列表失败')
     } finally {
       loading.value = false
@@ -159,7 +136,7 @@ export const useDataCollection = () => {
         end_date: endDate
       })
       
-      if (response.data?.success) {
+      if (response.data?.id) {
         ElMessage.success(`${task.name}已启动`)
       } else {
         task.status = 'idle'

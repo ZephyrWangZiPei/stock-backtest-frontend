@@ -1,296 +1,590 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 
-// HTTP API配置
-const API_CONFIG = {
-  baseURL: 'http://127.0.0.1:5000',
-  timeout: 60000, // 增加超时时间到60秒
-  headers: {
-    'Content-Type': 'application/json'
-  }
+// API响应类型
+export interface ApiResponse<T = any> {
+  success?: boolean
+  message?: string
+  data: T
+  error?: string
 }
 
-// 创建axios实例
-const apiClient: AxiosInstance = axios.create(API_CONFIG)
+// 数据采集相关类型
+export interface DatabaseStats {
+  total_stocks: number
+  stocks_with_daily_data: number
+  daily_data_completeness: number
+  last_daily_update: string
+  stocks_with_fund_flow: number
+  fund_flow_coverage: number
+  last_fund_flow_update: string
+  stocks_with_institute_hold: number
+  institute_hold_coverage: number
+  last_institute_hold_update: string
+  stocks_with_analyst_rating: number
+  analyst_rating_coverage: number
+  last_analyst_rating_update: string
+  total_stock_scores: number
+  total_strategies: number
+  total_backtest_results: number
+  total_candidate_stocks: number
+  total_top_strategy_stocks: number
+  // 兼容后端新增字段（全部可选）
+  overall_completeness?: number
+  daily_data_coverage?: number
+  today_daily_count?: number
+  today_fund_flow_count?: number
+  today_analyst_rating_count?: number
+  score_coverage?: number
+  stocks_with_score?: number
+  last_score_update?: string
+  technical_indicators_coverage?: number
+  stocks_with_technical_indicators?: number
+  total_backtests?: number
+  completed_backtests?: number
+  backtest_completion_rate?: number
+  today_updated?: boolean
+}
 
-// 请求拦截器
-apiClient.interceptors.request.use(
-  (config) => {
-    console.log(`HTTP API请求: ${config.method?.toUpperCase()} ${config.url}`)
-    return config
-  },
-  (error) => {
-    console.error('HTTP API请求错误:', error)
-    return Promise.reject(error)
-  }
-)
+export interface DataCollectionTask {
+  id: string
+  data_source: string
+  data_type: string
+  stock_codes?: string[]
+  start_date?: string
+  end_date?: string
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'paused'
+  progress: number
+  message?: string
+  start_time?: string
+  end_time?: string
+  result?: any
+  error_message?: string
+  // 详细进度信息
+  current_count?: number
+  total_count?: number
+  success_count?: number
+  error_count?: number
+}
 
-// 响应拦截器
-apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    console.log(`HTTP API响应: ${response.status} ${response.config.url}`)
-    return response
-  },
-  (error) => {
-    console.error('HTTP API响应错误:', error)
+export interface RunningTask {
+  id: string
+  name: string
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'paused'
+  progress: number
+  message?: string
+  start_time?: string
+  end_time?: string
+  result?: any
+  error_message?: string
+  // 详细进度信息
+  current_count?: number
+  total_count?: number
+  success_count?: number
+  error_count?: number
+}
+
+// 股票筛选相关类型
+export interface ScreeningCondition {
+  field: string
+  operator: 'gt' | 'lt' | 'gte' | 'lte' | 'eq' | 'ne' | 'in' | 'between'
+  value: any
+  label?: string
+}
+
+export interface ScreeningRequest {
+  conditions: ScreeningCondition[]
+  sort_by?: string
+  sort_order?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
+}
+
+export interface ScreeningResult {
+  stock_code: string
+  stock_name: string
+  price: number
+  change_pct: number
+  volume: number
+  market_cap?: number
+  pe?: number
+  pb?: number
+  roe?: number
+  [key: string]: any
+}
+
+// 回测相关类型
+export interface BacktestConfig {
+  strategy_id: number
+  stock_codes: string[]
+  start_date: string
+  end_date: string
+  initial_capital: number
+  parameters?: Record<string, any>
+}
+
+export interface BacktestResult {
+  id: string
+  strategy_name: string
+  total_return: number
+  annual_return: number
+  max_drawdown: number
+  sharpe_ratio: number
+  win_rate: number
+  total_trades: number
+  start_date: string
+  end_date: string
+  initial_capital: number
+  final_capital: number
+  status: string
+  created_at: string
+  [key: string]: any
+}
+
+// AI分析相关类型
+export interface AIAnalysisRequest {
+  analysis_type: string
+  stock_codes: string[]
+  parameters?: Record<string, any>
+}
+
+export interface AIAnalysisResult {
+  id: string
+  analysis_type: string
+  status: string
+  progress: number
+  result?: any
+  message?: string
+  start_time?: string
+  end_time?: string
+  error_message?: string
+}
+
+// 候选池相关类型
+export interface CandidateStock {
+  id?: number
+  stock_code: string
+  stock_name: string
+  price: number
+  change_pct: number
+  volume: number
+  pe?: number
+  pb?: number
+  roe?: number
+  score: number
+  recommendation: string
+  added_date: string
+  notes?: string
+  [key: string]: any
+}
+
+// 调度任务相关类型
+export interface ScheduledJob {
+  id: string
+  name: string
+  job_type: string
+  enabled: boolean
+  cron_expression: string
+  parameters?: Record<string, any>
+  next_run_time?: string
+  last_run_time?: string
+  status: string
+  description?: string
+}
+
+class UnifiedHttpClient {
+  private instance: AxiosInstance
+  private baseURL: string
+
+  constructor() {
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1'
     
-    // 处理连接中断错误
-    if (error.code === 'ECONNABORTED' || error.message.includes('aborted')) {
-      console.warn('连接被中断，可能是客户端主动关闭')
-      return Promise.reject(error)
-    }
-    
-    // 处理网络错误
-    if (error.code === 'NETWORK_ERROR' || !error.response) {
-      ElMessage.error('网络连接失败，请检查网络状态')
-      return Promise.reject(error)
-    }
-    
-    // 显示错误消息
-    const message = error.response?.data?.error || error.message || '请求失败'
-    ElMessage.error(message)
-    
-    return Promise.reject(error)
-  }
-)
-
-// 通用API方法
-const api = {
-  get: (url: string, params?: any) => apiClient.get(url, { params }),
-  post: (url: string, data?: any) => apiClient.post(url, data),
-  put: (url: string, data?: any) => apiClient.put(url, data),
-  delete: (url: string) => apiClient.delete(url)
-}
-
-// 数据采集API
-export const dataCollectionAPI = {
-  // 获取服务状态
-  getStatus: () => api.get('/api/v1/data-collection/status'),
-  
-  // 获取数据库统计信息
-  getDatabaseStats: () => api.get('/api/v1/data-collection/database-stats'),
-  
-  // 获取运行中的任务
-  getRunningTasks: () => api.get('/api/v1/data-collection/tasks'),
-  
-  // 获取任务详情
-  getTaskStatus: (taskId: string) => api.get(`/api/v1/data-collection/tasks/${taskId}`),
-  
-  // 启动数据采集任务
-  startCollection: (data: {
-    data_source: string
-    data_type: string
-    stock_codes: string[]
-    start_date: string
-    end_date: string
-    parameters?: any
-  }) => api.post('/api/v1/data-collection/collect', data),
-  
-  // 计算股票评分
-  calculateStockScores: () => api.post('/api/v1/data-collection/calculate-scores')
-}
-
-// AI分析API
-export const aiAnalysisAPI = {
-  // 获取服务状态
-  getStatus: () => api.get('/api/v1/ai-analysis/status'),
-  
-  // 获取运行中的任务
-  getRunningTasks: () => api.get('/api/v1/ai-analysis/tasks'),
-  
-  // 获取任务详情
-  getTaskStatus: (taskId: string) => api.get(`/api/v1/ai-analysis/tasks/${taskId}`),
-  
-  // 启动AI分析任务
-  startAnalysis: (data: {
-    analysis_type: string
-    stock_codes: string[]
-    parameters?: any
-  }) => api.post('/api/v1/ai-analysis/analyze', data)
-}
-
-// 新闻分析API
-export const newsAnalysisAPI = {
-  // 获取服务状态
-  getStatus: () => api.get('/api/v1/news-analysis/status'),
-  
-  // 获取运行中的任务
-  getRunningTasks: () => api.get('/api/v1/news-analysis/tasks'),
-  
-  // 获取任务详情
-  getTaskStatus: (taskId: string) => api.get(`/api/v1/news-analysis/tasks/${taskId}`),
-  
-  // 启动新闻分析任务
-  startAnalysis: (data: {
-    analysis_type: string
-    stock_codes: string[]
-    parameters?: any
-  }) => api.post('/api/v1/news-analysis/analyze', data)
-}
-
-// 回测API
-export const backtestAPI = {
-  // 获取可用策略
-  getAvailableStrategies: () => api.get('/api/v1/backtest/strategies'),
-  
-  // 获取策略参数
-  getStrategyParameters: (strategyId: string) => api.get(`/api/v1/backtest/strategies/${strategyId}/parameters`),
-  
-  // 获取可用股票
-  getAvailableStocks: () => api.get('/api/v1/backtest/stocks'),
-  
-  // 获取股票日线数据
-  getStockDailyData: (stockCode: string, startDate?: string, endDate?: string) => 
-    api.get(`/api/v1/backtest/stocks/${stockCode}/daily`, { 
-      params: { start_date: startDate, end_date: endDate } 
-    }),
-  
-  // 开始回测
-  startBacktest: (config: {
-    strategy_id: string
-    stock_code: string
-    start_date: string
-    end_date: string
-    initial_capital: number
-    parameters?: any
-  }) => api.post('/api/v1/backtest/start', config),
-  
-  // 停止回测
-  stopBacktest: (taskId: string) => api.post(`/api/v1/backtest/stop/${taskId}`),
-  
-  // 获取回测状态
-  getBacktestStatus: (taskId: string) => api.get(`/api/v1/backtest/status/${taskId}`),
-  
-  // 获取回测结果
-  getBacktestResult: (taskId: string) => api.get(`/api/v1/backtest/result/${taskId}`),
-  
-  // 获取运行中的任务
-  getRunningTasks: () => api.get('/api/v1/backtest/running-tasks'),
-  
-  // 获取历史回测记录
-  getBacktestHistory: (params?: {
-    page?: number
-    size?: number
-    strategy_id?: string
-    stock_code?: string
-    start_date?: string
-    end_date?: string
-  }) => api.get('/api/v1/backtest/history', { params }),
-  
-  // 删除回测记录
-  deleteBacktestResult: (resultId: string) => api.delete(`/api/v1/backtest/results/${resultId}`),
-  
-  // 导出回测结果
-  exportBacktestResult: (resultId: string, format: 'json' | 'csv' | 'excel' = 'json') => 
-    api.get(`/api/v1/backtest/results/${resultId}/export`, { 
-      params: { format },
-      responseType: 'blob'
+    this.instance = axios.create({
+      baseURL: this.baseURL,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
-}
 
-// 调度器API
-export const schedulerAPI = {
-  // 获取调度器状态
-  getStatus: () => api.get('/api/v1/scheduler/status'),
-  
-  // 获取定时任务列表
-  getScheduledJobs: () => api.get('/api/v1/scheduler/jobs'),
-  
-  // 创建定时任务
-  createScheduledJob: (data: {
-    name: string
-    description?: string
-    task_type: string
-    execution_time: string
-    frequency: string
-    parameters?: any
-  }) => api.post('/api/v1/scheduler/jobs', data),
-  
-  // 删除定时任务
-  deleteScheduledJob: (jobId: string) => api.delete(`/api/v1/scheduler/jobs/${jobId}`),
-  
-  // 暂停定时任务
-  pauseScheduledJob: (jobId: string) => api.post(`/api/v1/scheduler/jobs/${jobId}/pause`),
-  
-  // 恢复定时任务
-  resumeScheduledJob: (jobId: string) => api.post(`/api/v1/scheduler/jobs/${jobId}/resume`)
-}
+    // 请求拦截器
+    this.instance.interceptors.request.use(
+      (config) => {
+        console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, config.data)
+        return config
+      },
+      (error) => {
+        console.error('❌ Request Error:', error)
+        return Promise.reject(error)
+      }
+    )
 
-// 股票筛选API
-export const screeningAPI = {
-  // 综合筛选
-  comprehensiveFilter: (data: {
-    min_score: number
-    max_results: number
-    config: any
-  }) => api.post('/api/v1/screening/comprehensive', data),
-  
-  // 技术面筛选
-  technicalFilter: (data: {
-    min_score: number
-    max_results: number
-    config: any
-  }) => api.post('/api/v1/screening/technical', data),
-  
-  // 基本面筛选
-  fundamentalFilter: (data: {
-    min_score: number
-    max_results: number
-    config: any
-  }) => api.post('/api/v1/screening/fundamental', data),
-  
-  // 获取筛选配置
-  getFilterConfig: () => api.get('/api/v1/screening/config'),
-  
-  // 获取可用股票列表
-  getAvailableStocks: () => api.get('/api/v1/screening/stocks')
-}
+    // 响应拦截器
+    this.instance.interceptors.response.use(
+      (response) => {
+        console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data)
+        return response
+      },
+      (error) => {
+        console.error('❌ Response Error:', error)
+        
+        if (error.response) {
+          const { status, data } = error.response
+          let message = data?.message || data?.error || '请求失败'
+          
+          switch (status) {
+            case 400:
+              message = `请求参数错误: ${message}`
+              break
+            case 401:
+              message = '未授权访问'
+              break
+            case 403:
+              message = '访问被拒绝'
+              break
+            case 404:
+              message = '接口不存在'
+              break
+            case 500:
+              message = `服务器内部错误: ${message}`
+              break
+            default:
+              message = `请求失败 (${status}): ${message}`
+          }
+          
+          ElMessage.error(message)
+        } else if (error.request) {
+          ElMessage.error('网络连接失败，请检查网络设置')
+        } else {
+          ElMessage.error('请求配置错误')
+        }
+        
+        return Promise.reject(error)
+      }
+    )
+  }
 
-// 工作流API
-export const workflowAPI = {
-  // 执行工作流
-  executeWorkflow: (workflowType: string, parameters: any) => 
-    api.post('/api/v1/workflow/execute', { workflow_type: workflowType, parameters }),
-  
-  // 获取工作流状态
-  getWorkflowStatus: (workflowId: string) => api.get(`/api/v1/workflow/status/${workflowId}`),
-  
-  // 获取可用工作流列表
-  getAvailableWorkflows: () => api.get('/api/v1/workflow/list'),
-  
-  // 停止工作流
-  stopWorkflow: (workflowId: string) => api.post(`/api/v1/workflow/stop/${workflowId}`)
-}
+  // 健康检查
+  async healthCheck(): Promise<ApiResponse> {
+    const response = await this.instance.get('/health')
+    return response.data
+  }
 
-// 统一API客户端
-export const unifiedHttpClient = {
-  // 基础方法
-  get: api.get,
-  post: api.post,
-  put: api.put,
-  delete: api.delete,
-  
-  // 服务API
-  dataCollection: dataCollectionAPI,
-  aiAnalysis: aiAnalysisAPI,
-  newsAnalysis: newsAnalysisAPI,
-  backtest: backtestAPI,
-  scheduler: schedulerAPI,
-  screening: screeningAPI,
-  workflow: workflowAPI,
-  
-  // 工具方法
-  setBaseURL: (url: string) => {
-    apiClient.defaults.baseURL = url
-  },
-  
-  setToken: (token: string) => {
-    apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
-  },
-  
-  removeToken: () => {
-    delete apiClient.defaults.headers.common['Authorization']
+  // 数据采集模块API
+  dataCollection = {
+    // 获取数据采集状态
+    getStatus: (): Promise<ApiResponse<RunningTask>> =>
+      this.instance.get('/data-collection/status'),
+
+    // 获取数据库统计信息
+    getDatabaseStats: (): Promise<ApiResponse<DatabaseStats>> =>
+      this.instance.get('/data-collection/database-stats'),
+
+    // 获取运行中的任务
+    getRunningTasks: (): Promise<ApiResponse<RunningTask[]>> =>
+      this.instance.get('/data-collection/tasks'),
+
+    // 启动数据采集任务
+    startCollection: (params: {
+      data_source: string
+      data_type: string
+      stock_codes?: string[]
+      start_date?: string
+      end_date?: string
+    }): Promise<ApiResponse<DataCollectionTask>> =>
+      this.instance.post('/data-collection/start', params),
+
+    // 停止数据采集任务
+    stopCollection: (taskId: string): Promise<ApiResponse> =>
+      this.instance.post(`/data-collection/stop/${taskId}`),
+
+    // 获取任务详情
+    getTaskDetail: (taskId: string): Promise<ApiResponse<DataCollectionTask>> =>
+      this.instance.get(`/data-collection/task/${taskId}`),
+
+    // 计算股票评分
+    calculateScores: (): Promise<ApiResponse> =>
+      this.instance.post('/data-collection/calculate-scores'),
+
+    // 获取数据采集历史
+    getHistory: (params?: {
+      page?: number
+      limit?: number
+      status?: string
+    }): Promise<ApiResponse<{ tasks: DataCollectionTask[], total: number }>> =>
+      this.instance.get('/data-collection/history', { params }),
+
+    // 获取股票列表
+    getStocksList: (params?: {
+      limit?: number
+      search?: string
+    }): Promise<ApiResponse<{ stock_list: any[], total: number }>> =>
+      this.instance.get('/data-collection/stocks', { params })
+  }
+
+  // 股票筛选模块API
+  screening = {
+    // 技术指标筛选
+    technicalScreening: (request: ScreeningRequest): Promise<ApiResponse<{
+      results: ScreeningResult[]
+      total: number
+      summary: Record<string, any>
+    }>> =>
+      this.instance.post('/screening/technical', request),
+
+    // 基本面筛选
+    fundamentalScreening: (request: ScreeningRequest): Promise<ApiResponse<{
+      results: ScreeningResult[]
+      total: number
+      summary: Record<string, any>
+    }>> =>
+      this.instance.post('/screening/fundamental', request),
+
+    // 综合筛选
+    comprehensiveScreening: (request: ScreeningRequest): Promise<ApiResponse<{
+      results: ScreeningResult[]
+      total: number
+      summary: Record<string, any>
+    }>> =>
+      this.instance.post('/screening/comprehensive', request),
+
+    // 获取筛选模板
+    getTemplates: (): Promise<ApiResponse<any[]>> =>
+      this.instance.get('/screening/templates'),
+
+    // 保存筛选模板
+    saveTemplate: (template: {
+      name: string
+      description?: string
+      conditions: ScreeningCondition[]
+    }): Promise<ApiResponse> =>
+      this.instance.post('/screening/templates', template),
+
+    // 删除筛选模板
+    deleteTemplate: (templateId: string): Promise<ApiResponse> =>
+      this.instance.delete(`/screening/templates/${templateId}`),
+
+    // 获取可用股票列表
+    getAvailableStocks: (): Promise<ApiResponse<{ data: any[] }>> =>
+      this.instance.get('/screening/stocks')
+  }
+
+  // 回测中心模块API
+  backtest = {
+    // 获取回测状态
+    getStatus: (): Promise<ApiResponse> =>
+      this.instance.get('/backtest/status'),
+
+    // 启动回测
+    startBacktest: (config: BacktestConfig): Promise<ApiResponse<{ task_id: string }>> =>
+      this.instance.post('/backtest/start', config),
+
+    // 停止回测
+    stopBacktest: (taskId: string): Promise<ApiResponse> =>
+      this.instance.post(`/backtest/stop/${taskId}`),
+
+    // 获取回测结果
+    getResults: (params?: {
+      page?: number
+      limit?: number
+      strategy_id?: number
+    }): Promise<ApiResponse<{ results: BacktestResult[], total: number }>> =>
+      this.instance.get('/backtest/results', { params }),
+
+    // 获取回测详情
+    getResult: (resultId: string): Promise<ApiResponse<BacktestResult>> =>
+      this.instance.get(`/backtest/results/${resultId}`),
+
+    // 删除回测结果
+    deleteResult: (resultId: string): Promise<ApiResponse> =>
+      this.instance.delete(`/backtest/results/${resultId}`),
+
+    // 获取策略列表
+    getStrategies: (): Promise<ApiResponse<any[]>> =>
+      this.instance.get('/backtest/strategies'),
+
+    // 获取运行中的回测任务
+    getRunningTasks: (): Promise<ApiResponse<any[]>> =>
+      this.instance.get('/backtest/running-tasks')
+  }
+
+  // AI分析模块API
+  aiAnalysis = {
+    // 获取AI分析状态
+    getStatus: (): Promise<ApiResponse> =>
+      this.instance.get('/ai-analysis/status'),
+
+    // 启动AI分析
+    startAnalysis: (request: AIAnalysisRequest): Promise<ApiResponse<{ task_id: string }>> =>
+      this.instance.post('/ai-analysis/start', request),
+
+    // 停止AI分析
+    stopAnalysis: (taskId: string): Promise<ApiResponse> =>
+      this.instance.post(`/ai-analysis/stop/${taskId}`),
+
+    // 获取分析结果
+    getResults: (params?: {
+      page?: number
+      limit?: number
+      analysis_type?: string
+    }): Promise<ApiResponse<{ results: AIAnalysisResult[], total: number }>> =>
+      this.instance.get('/ai-analysis/results', { params }),
+
+    // 获取分析详情
+    getResult: (resultId: string): Promise<ApiResponse<AIAnalysisResult>> =>
+      this.instance.get(`/ai-analysis/results/${resultId}`),
+
+    // 获取运行中的分析任务
+    getRunningTasks: (): Promise<ApiResponse<AIAnalysisResult[]>> =>
+      this.instance.get('/ai-analysis/tasks'),
+
+    // 获取分析类型
+    getAnalysisTypes: (): Promise<ApiResponse<string[]>> =>
+      this.instance.get('/ai-analysis/types')
+  }
+
+  // 候选池管理模块API
+  candidates = {
+    // 获取候选股票列表
+    getCandidates: (params?: {
+      page?: number
+      limit?: number
+      sort_by?: string
+      sort_order?: 'asc' | 'desc'
+      filters?: Record<string, any>
+    }): Promise<ApiResponse<{ candidates: CandidateStock[], total: number }>> =>
+      this.instance.get('/data-collection/candidate-stocks', { params }),
+
+    // 添加候选股票
+    addCandidate: (candidate: Partial<CandidateStock>): Promise<ApiResponse<CandidateStock>> =>
+      this.instance.post('/candidates', candidate),
+
+    // 更新候选股票
+    updateCandidate: (id: number, candidate: Partial<CandidateStock>): Promise<ApiResponse<CandidateStock>> =>
+      this.instance.put(`/candidates/${id}`, candidate),
+
+    // 删除候选股票
+    deleteCandidate: (id: number): Promise<ApiResponse> =>
+      this.instance.delete(`/candidates/${id}`),
+
+    // 批量操作
+    batchOperation: (operation: 'delete' | 'update', ids: number[], data?: any): Promise<ApiResponse> =>
+      this.instance.post('/candidates/batch', { operation, ids, data }),
+
+    // 获取候选股票统计
+    getStats: (): Promise<ApiResponse<Record<string, any>>> =>
+      this.instance.get('/data-collection/candidate-stats'),
+
+    // 刷新候选股票数据
+    refreshData: (ids?: number[]): Promise<ApiResponse> =>
+      this.instance.post('/candidates/refresh', { ids }),
+
+    // 导出候选股票
+    exportCandidates: (format: 'csv' | 'excel' = 'csv'): Promise<Blob> =>
+      this.instance.get(`/candidates/export?format=${format}`, { responseType: 'blob' }).then(res => res.data)
+  }
+
+  // 调度器模块API
+  scheduler = {
+    // 获取调度器状态
+    getStatus: (): Promise<ApiResponse> =>
+      this.instance.get('/scheduler/status'),
+
+    // 获取定时任务列表
+    getScheduledJobs: (): Promise<ApiResponse<ScheduledJob[]>> =>
+      this.instance.get('/scheduler/jobs'),
+
+    // 创建定时任务
+    createScheduledJob: (job: Partial<ScheduledJob>): Promise<ApiResponse<ScheduledJob>> =>
+      this.instance.post('/scheduler/jobs', job),
+
+    // 更新定时任务
+    updateScheduledJob: (jobId: string, job: Partial<ScheduledJob>): Promise<ApiResponse<ScheduledJob>> =>
+      this.instance.put(`/scheduler/jobs/${jobId}`, job),
+
+    // 删除定时任务
+    deleteScheduledJob: (jobId: string): Promise<ApiResponse> =>
+      this.instance.delete(`/scheduler/jobs/${jobId}`),
+
+    // 启用/禁用定时任务
+    toggleScheduledJob: (jobId: string, enabled: boolean): Promise<ApiResponse> =>
+      this.instance.patch(`/scheduler/jobs/${jobId}/toggle`, { enabled }),
+
+    // 立即执行定时任务
+    executeJob: (jobId: string): Promise<ApiResponse> =>
+      this.instance.post(`/scheduler/jobs/${jobId}/execute`),
+
+    // 获取任务执行历史
+    getJobHistory: (jobId: string, params?: {
+      page?: number
+      limit?: number
+    }): Promise<ApiResponse<any[]>> =>
+      this.instance.get(`/scheduler/jobs/${jobId}/history`, { params })
+  }
+
+  // 新闻分析模块API
+  newsAnalysis = {
+    // 获取新闻分析状态
+    getStatus: (): Promise<ApiResponse> =>
+      this.instance.get('/news-analysis/status'),
+
+    // 获取新闻列表
+    getNews: (params?: {
+      page?: number
+      limit?: number
+      category?: string
+      sentiment?: string
+      keywords?: string
+      start_date?: string
+      end_date?: string
+    }): Promise<ApiResponse<{ news: any[], total: number }>> =>
+      this.instance.get('/news-analysis/news', { params }),
+
+    // 启动新闻分析
+    startAnalysis: (params: {
+      keywords?: string[]
+      sources?: string[]
+      start_date?: string
+      end_date?: string
+    }): Promise<ApiResponse<{ task_id: string }>> =>
+      this.instance.post('/news-analysis/start', params),
+
+    // 获取分析结果
+    getAnalysisResults: (params?: {
+      page?: number
+      limit?: number
+    }): Promise<ApiResponse<{ results: any[], total: number }>> =>
+      this.instance.get('/news-analysis/results', { params }),
+
+    // 导出新闻数据
+    exportNews: (format: 'csv' | 'excel' = 'csv'): Promise<Blob> =>
+      this.instance.get(`/news-analysis/export?format=${format}`, { responseType: 'blob' }).then(res => res.data)
+  }
+
+  // 工作流模块API
+  workflow = {
+    // 执行工作流
+    executeWorkflow: (params: {
+      workflow_type: string
+      parameters?: Record<string, any>
+    }): Promise<ApiResponse<{ workflow_id: string }>> =>
+      this.instance.post('/workflow/execute', params),
+
+    // 获取工作流状态
+    getWorkflowStatus: (workflowId: string): Promise<ApiResponse> =>
+      this.instance.get(`/workflow/status/${workflowId}`),
+
+    // 停止工作流
+    stopWorkflow: (workflowId: string): Promise<ApiResponse> =>
+      this.instance.post(`/workflow/stop/${workflowId}`),
+
+    // 获取工作流列表
+    getWorkflows: (): Promise<ApiResponse<any[]>> =>
+      this.instance.get('/workflow/list')
   }
 }
+
+// 创建并导出单例实例
+const unifiedHttpClient = new UnifiedHttpClient()
 
 export default unifiedHttpClient 

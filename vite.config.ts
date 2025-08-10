@@ -76,6 +76,15 @@ export default defineConfig(({ command, mode }) => {
       // 定义全局常量
       __VUE_OPTIONS_API__: true,
       __VUE_PROD_DEVTOOLS__: false
+    },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          // 配置 Sass 选项以减少警告
+          quietDeps: true, // 静默依赖警告
+          silenceDeprecations: ['legacy-js-api', 'import'] // 静默特定弃用警告
+        }
+      }
     }
   }
 })

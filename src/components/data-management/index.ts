@@ -1,3 +1,3 @@
-export { default as DataCollectionTasksTable } from './DataCollectionTasksTable.vue'
-export { default as ScheduledTasksTable } from './ScheduledTasksTable.vue'
-export { default as CreateScheduledTaskDialog } from './CreateScheduledTaskDialog.vue' 
+export { default as DataCollectionPanel } from './DataCollectionPanel.vue'
+export { default as DataStatsOverview } from './DataStatsOverview.vue'
+export { default as TaskMonitor } from './TaskMonitor.vue' 

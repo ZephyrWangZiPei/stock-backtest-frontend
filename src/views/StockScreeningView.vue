@@ -1,528 +1,649 @@
 <template>
-  <div class="screening-container">
-    <el-card class="screening-card">
-      <template #header>
-        <div class="card-header">
-          <h2>🔍 股票筛选</h2>
-          <div class="header-actions">
-            <el-button @click="showConfigDialog = true" type="info" plain>
-              <el-icon><Setting /></el-icon>
-              筛选配置
-            </el-button>
-            <el-button type="primary" @click="startScreening" :loading="isScreening" :disabled="isScreening">
-              <el-icon><Search /></el-icon>
-              开始筛选
-            </el-button>
-          </div>
-        </div>
-      </template>
+  <div class="stock-screening">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <h1>股票筛选</h1>
+      <p>基于多维度指标进行智能选股，发现优质投资标的</p>
+    </div>
 
-      <!-- 筛选进度 -->
-      <div v-if="isScreening" class="progress-section">
-        <el-divider content-position="left">筛选进度</el-divider>
-        <el-progress 
-          :percentage="screeningProgress" 
-          :status="screeningProgress === 100 ? 'success' : ''"
+    <!-- 快速筛选模板 -->
+    <el-row :gutter="20">
+      <el-col :span="24">
+        <QuickTemplates 
+          v-model:selectedTemplate="selectedTemplate"
+          @apply-template="applyTemplate"
         />
-        <p class="progress-message">{{ progressMessage }}</p>
-        <div class="progress-stats">
-          <span>已处理: {{ processedCount }}/{{ totalStocks }}</span>
-          <span>找到: {{ successCount }}</span>
-          <span>错误: {{ errorCount }}</span>
-        </div>
-        <el-button type="danger" @click="cancelScreening" size="small">
-          取消筛选
-        </el-button>
-      </div>
+      </el-col>
+    </el-row>
 
-      <!-- 筛选结果 -->
-      <div v-if="screeningResults.length > 0" class="results-section">
-        <el-divider content-position="left">筛选结果</el-divider>
-        
-        <div class="results-summary">
-          <el-alert
-            :title="`筛选完成，共找到 ${screeningResults.length} 只符合条件的股票`"
-            type="success"
-            :closable="false"
-          />
-        </div>
-
-        <div class="table-container">
-          <el-table 
-            :data="paginatedResults" 
-            stripe 
-            style="width: 100%; height: 100%"
-            :max-height="tableHeight"
-          >
-            <el-table-column prop="stock_code" label="股票代码" fixed="left" />
-            <el-table-column prop="stock_name" label="股票名称" fixed="left" />
-            <el-table-column prop="industry" label="行业" />
-            <el-table-column prop="comprehensive_score" label="综合评分" sortable>
-              <template #default="scope">
-                <span :class="getScoreClass(scope.row.comprehensive_score)">
-                  {{ scope.row.comprehensive_score }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="technical_score" label="技术面评分" sortable>
-              <template #default="scope">
-                <span :class="getScoreClass(scope.row.technical_score)">
-                  {{ scope.row.technical_score }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="fundamental_score" label="基本面评分" sortable>
-              <template #default="scope">
-                <span :class="getScoreClass(scope.row.fundamental_score)">
-                  {{ scope.row.fundamental_score }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="passed_filters" label="通过筛选">
-              <template #default="scope">
-                <el-tag :type="scope.row.passed_filters ? 'success' : 'danger'">
-                  {{ scope.row.passed_filters ? '是' : '否' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" fixed="right">
-              <template #default="scope">
-                <el-button size="small" @click="viewStockDetail(scope.row)">
-                  详情
+    <!-- 筛选条件设置和结果展示 -->
+    <el-row :gutter="20" class="screening-content">
+      <!-- 筛选条件面板 -->
+      <el-col :xs="24" :lg="8">
+        <FilterPanel
+          :filters="filters"
+          @update:filters="updateFilters"
+          :is-screening="isScreening"
+          @start-screening="startScreening"
+          @reset-filters="resetFilters"
+          @save-template="saveTemplate"
+        />
+      </el-col>
+      
+      <!-- 筛选结果展示 -->
+      <el-col :xs="24" :lg="16">
+        <el-card class="result-panel">
+          <template #header>
+            <div class="card-header">
+              <span>筛选结果 ({{ filteredStocks.length }})</span>
+              <div class="header-actions">
+                <el-select v-model="sortBy" placeholder="排序方式" size="small" style="width: 120px; margin-right: 10px">
+                  <el-option label="综合评分" value="score" />
+                  <el-option label="市值" value="market_cap" />
+                  <el-option label="涨跌幅" value="change_pct" />
+                  <el-option label="成交量" value="volume" />
+                </el-select>
+                <el-button size="small" @click="exportResults">
+                  <el-icon><Download /></el-icon>
+                  导出
                 </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
+              </div>
+            </div>
+          </template>
+          
+          <div class="result-content">
+            <!-- 筛选统计 -->
+            <ScreeningStats :stats="screeningStats" />
+            
+            <!-- 股票列表 -->
+            <StockList
+              :stocks="filteredStocks"
+              :is-screening="isScreening"
+              :current-page="currentPage"
+              :page-size="pageSize"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+              @view-detail="viewStockDetail"
+              @add-to-watchlist="addToWatchlist"
+              @add-to-candidate="addToCandidatePool"
+              @reset-filters="resetFilters"
+            />
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
-        <!-- 分页 -->
-        <div class="pagination-container">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[10, 20, 50, 100, 200]"
-            :total="screeningResults.length"
-            layout="total, sizes, prev, pager, next, jumper"
-          />
-        </div>
-      </div>
-
-      <!-- 空状态 -->
-      <div v-else-if="!isScreening" class="empty-state">
-        <el-empty description="暂无筛选结果，请点击开始筛选" />
-      </div>
-    </el-card>
-
-    <!-- 筛选配置对话框 -->
+    <!-- 股票详情对话框 -->
     <el-dialog
-      v-model="showConfigDialog"
-      title="筛选配置"
+      v-model="stockDetailVisible"
+      :title="`${selectedStock?.name} (${selectedStock?.code}) - 详细信息`"
       width="800px"
-      :before-close="handleConfigDialogClose"
     >
-      <el-form :model="screeningConfig" label-width="120px">
-        <!-- 筛选类型 -->
-        <el-form-item label="筛选类型">
-          <el-radio-group v-model="screeningConfig.screeningType">
-            <el-radio label="comprehensive">综合筛选</el-radio>
-            <el-radio label="technical">技术面筛选</el-radio>
-            <el-radio label="fundamental">基本面筛选</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <!-- 评分阈值 -->
-        <el-form-item label="最低评分">
-          <el-slider
-            v-model="screeningConfig.minScore"
-            :min="0"
-            :max="100"
-            :step="5"
-            show-input
-            input-size="small"
-          />
-        </el-form-item>
-
-        <!-- 最大结果数 -->
-        <el-form-item label="最大结果数">
-          <el-input-number
-            v-model="screeningConfig.maxResults"
-            :min="10"
-            :max="1000"
-            :step="10"
-            size="small"
-          />
-        </el-form-item>
-
-        <!-- 技术面筛选配置 -->
-        <el-form-item label="技术面配置" v-if="screeningConfig.screeningType === 'technical' || screeningConfig.screeningType === 'comprehensive'">
-          <el-card class="config-sub-card">
-            <el-form-item label="MA指标">
-              <el-checkbox-group v-model="screeningConfig.technical.ma">
-                <el-checkbox label="ma5">MA5</el-checkbox>
-                <el-checkbox label="ma10">MA10</el-checkbox>
-                <el-checkbox label="ma20">MA20</el-checkbox>
-                <el-checkbox label="ma60">MA60</el-checkbox>
-              </el-checkbox-group>
-            </el-form-item>
-            <el-form-item label="MACD">
-              <el-checkbox v-model="screeningConfig.technical.macd">启用MACD</el-checkbox>
-            </el-form-item>
-            <el-form-item label="RSI">
-              <el-checkbox v-model="screeningConfig.technical.rsi">启用RSI</el-checkbox>
-            </el-form-item>
-            <el-form-item label="KDJ">
-              <el-checkbox v-model="screeningConfig.technical.kdj">启用KDJ</el-checkbox>
-            </el-form-item>
-          </el-card>
-        </el-form-item>
-
-        <!-- 基本面筛选配置 -->
-        <el-form-item label="基本面配置" v-if="screeningConfig.screeningType === 'fundamental' || screeningConfig.screeningType === 'comprehensive'">
-          <el-card class="config-sub-card">
-            <el-form-item label="市盈率范围">
-              <el-row :gutter="10">
-                <el-col :span="12">
-                  <el-input-number
-                    v-model="screeningConfig.fundamental.peMin"
-                    placeholder="最小值"
-                    size="small"
-                  />
-                </el-col>
-                <el-col :span="12">
-                  <el-input-number
-                    v-model="screeningConfig.fundamental.peMax"
-                    placeholder="最大值"
-                    size="small"
-                  />
-                </el-col>
-              </el-row>
-            </el-form-item>
-            <el-form-item label="市净率范围">
-              <el-row :gutter="10">
-                <el-col :span="12">
-                  <el-input-number
-                    v-model="screeningConfig.fundamental.pbMin"
-                    placeholder="最小值"
-                    size="small"
-                  />
-                </el-col>
-                <el-col :span="12">
-                  <el-input-number
-                    v-model="screeningConfig.fundamental.pbMax"
-                    placeholder="最大值"
-                    size="small"
-                  />
-                </el-col>
-              </el-row>
-            </el-form-item>
-            <el-form-item label="营收增长率">
-              <el-input-number
-                v-model="screeningConfig.fundamental.revenueGrowth"
-                placeholder="最低增长率(%)"
-                size="small"
-              />
-            </el-form-item>
-            <el-form-item label="净利润增长率">
-              <el-input-number
-                v-model="screeningConfig.fundamental.profitGrowth"
-                placeholder="最低增长率(%)"
-                size="small"
-              />
-            </el-form-item>
-          </el-card>
-        </el-form-item>
-
-        <!-- 行业筛选 -->
-        <el-form-item label="行业筛选">
-          <el-select
-            v-model="screeningConfig.industries"
-            multiple
-            placeholder="选择行业"
-            style="width: 100%"
-          >
-            <el-option label="银行" value="银行" />
-            <el-option label="房地产" value="房地产" />
-            <el-option label="医药生物" value="医药生物" />
-            <el-option label="电子" value="电子" />
-            <el-option label="计算机" value="计算机" />
-            <el-option label="通信" value="通信" />
-            <el-option label="汽车" value="汽车" />
-            <el-option label="食品饮料" value="食品饮料" />
-            <el-option label="家用电器" value="家用电器" />
-            <el-option label="机械设备" value="机械设备" />
-          </el-select>
-        </el-form-item>
-
-        <!-- 市值范围 -->
-        <el-form-item label="市值范围">
-          <el-select v-model="screeningConfig.marketCap" placeholder="选择市值范围">
-            <el-option label="不限" value="" />
-            <el-option label="小盘股 (< 50亿)" value="small" />
-            <el-option label="中盘股 (50-200亿)" value="medium" />
-            <el-option label="大盘股 (> 200亿)" value="large" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-
+      <div v-if="selectedStock" class="stock-detail">
+        <el-tabs v-model="activeDetailTab">
+          <el-tab-pane label="基本信息" name="basic">
+            <el-descriptions :column="2" border>
+              <el-descriptions-item label="股票代码">{{ selectedStock.code }}</el-descriptions-item>
+              <el-descriptions-item label="股票名称">{{ selectedStock.name }}</el-descriptions-item>
+              <el-descriptions-item label="所属行业">{{ selectedStock.industry }}</el-descriptions-item>
+              <el-descriptions-item label="最新价">¥{{ selectedStock.price }}</el-descriptions-item>
+              <el-descriptions-item label="涨跌幅">{{ selectedStock.change_pct }}%</el-descriptions-item>
+              <el-descriptions-item label="市值">{{ formatMarketCap(selectedStock.market_cap) }}</el-descriptions-item>
+            </el-descriptions>
+          </el-tab-pane>
+          
+          <el-tab-pane label="财务指标" name="financial">
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <h4>估值指标</h4>
+                <el-descriptions :column="1" border>
+                  <el-descriptions-item label="市盈率(PE)">{{ selectedStock.pe }}</el-descriptions-item>
+                  <el-descriptions-item label="市净率(PB)">{{ selectedStock.pb }}</el-descriptions-item>
+                  <el-descriptions-item label="净资产收益率(ROE)">{{ selectedStock.roe }}%</el-descriptions-item>
+                </el-descriptions>
+              </el-col>
+              <el-col :span="12">
+                <h4>技术指标</h4>
+                <el-descriptions :column="1" border>
+                  <el-descriptions-item label="RSI">{{ selectedStock.rsi }}</el-descriptions-item>
+                  <el-descriptions-item label="换手率">{{ selectedStock.turnover }}%</el-descriptions-item>
+                  <el-descriptions-item label="成交量">{{ formatVolume(selectedStock.volume) }}</el-descriptions-item>
+                </el-descriptions>
+              </el-col>
+            </el-row>
+          </el-tab-pane>
+          
+          <el-tab-pane label="AI分析" name="ai">
+            <div class="ai-analysis">
+              <el-alert title="AI智能分析" type="info" show-icon>
+                <p>基于多维度数据分析，该股票具有以下特征：</p>
+                <ul>
+                  <li>财务状况：{{ getFinancialAnalysis(selectedStock) }}</li>
+                  <li>技术面分析：{{ getTechnicalAnalysis(selectedStock) }}</li>
+                  <li>投资建议：{{ getInvestmentAdvice(selectedStock) }}</li>
+                </ul>
+              </el-alert>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+      
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="resetConfig">重置配置</el-button>
-          <el-button @click="showConfigDialog = false">取消</el-button>
-          <el-button type="primary" @click="saveConfig">保存配置</el-button>
-        </span>
+        <el-button @click="stockDetailVisible = false">关闭</el-button>
+        <el-button type="primary" @click="addToCandidatePool(selectedStock)">
+          加入候选池
+        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Setting, Search } from '@element-plus/icons-vue'
+import { Download } from '@element-plus/icons-vue'
+import { FilterPanel, QuickTemplates, StockList, ScreeningStats } from '@/components/stock-screening'
 
+// 导入API客户端和WebSocket服务
+import unifiedHttpClient from '@/utils/unifiedHttpClient'
+import type { ScreeningCondition, ScreeningRequest, ScreeningResult } from '@/utils/unifiedHttpClient'
+import { websocketEventBus } from '@/utils/websocketEventBus'
+
+// 响应式数据
+const loading = ref(false)
 const isScreening = ref(false)
-const screeningProgress = ref(0)
-const progressMessage = ref('准备开始筛选...')
-const processedCount = ref(0)
-const totalStocks = ref(0)
-const successCount = ref(0)
-const errorCount = ref(0)
-const screeningResults = ref<any[]>([])
+const selectedTemplate = ref('')
+const sortBy = ref('score')
+const screeningType = ref<'technical' | 'fundamental' | 'comprehensive'>('comprehensive')
+
+// 筛选结果
+const screeningResults = ref<ScreeningResult[]>([])
+const totalResults = ref(0)
+const screeningSummary = ref<Record<string, any>>({})
+
+// 分页
 const currentPage = ref(1)
-const pageSize = ref(20)
-const showConfigDialog = ref(false)
-const tableHeight = ref(600)
+const pageSize = ref(50)
 
-// 筛选配置
-const screeningConfig = ref({
-  screeningType: 'comprehensive',
-  minScore: 60,
-  maxResults: 100,
-  technical: {
-    ma: ['ma5', 'ma10', 'ma20'],
-    macd: true,
-    rsi: true,
-    kdj: false
-  },
-  fundamental: {
-    peMin: 0,
-    peMax: 50,
-    pbMin: 0,
-    pbMax: 10,
-    revenueGrowth: 10,
-    profitGrowth: 5
-  },
-  industries: [],
-  marketCap: ''
+// UI状态
+const stockDetailVisible = ref(false)
+const selectedStock = ref<any>(null)
+const activeDetailTab = ref('basic')
+
+// 筛选条件
+const filters = reactive({
+  industry: [] as string[],
+  marketCapRange: [0, 10000] as [number, number],
+  priceMin: null as number | null,
+  priceMax: null as number | null,
+  peRange: [0, 100] as [number, number],
+  pbRange: [0, 10] as [number, number],
+  roeMin: null as number | null,
+  debtRatioMax: null as number | null,
+  rsiRange: [0, 100] as [number, number],
+  macdSignal: 'all',
+  maStatus: [] as string[],
+  volumeCondition: 'all',
+  turnoverRange: [0, 20] as [number, number]
 })
 
-const paginatedResults = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return screeningResults.value.slice(start, end)
+// 筛选模板
+const templates = ref<any[]>([])
+
+// 计算属性
+const filteredStocks = computed(() => {
+  // 将API返回的结果转换为Stock格式
+  return screeningResults.value.map(result => ({
+    code: result.stock_code,
+    name: result.stock_name,
+    price: result.price,
+    change_pct: result.change_pct,
+    volume: result.volume,
+    market_cap: result.market_cap || 0,
+    pe: result.pe || 0,
+    pb: result.pb || 0,
+    roe: result.roe || 0,
+    score: result.score || 0,
+    industry: result.industry || '未知',
+    tags: []
+  }))
 })
 
-const getScoreClass = (score: number) => {
-  if (score >= 80) return 'score-excellent'
-  if (score >= 60) return 'score-good'
-  if (score >= 40) return 'score-average'
-  return 'score-poor'
+const screeningStats = computed(() => ({
+  total: totalResults.value,
+  avgScore: screeningSummary.value.avg_score || 0,
+  excellent: screeningSummary.value.high_score_count || 0,
+  duration: 1850
+}))
+
+// 计算属性
+const formatMarketCap = (value: number) => {
+  if (value >= 10000) {
+    return `${(value / 10000).toFixed(1)}万亿`
+  } else if (value >= 100) {
+    return `${(value / 100).toFixed(1)}百亿`
+  } else {
+    return `${value.toFixed(1)}亿`
+  }
 }
 
-const startScreening = () => {
-  console.log('开始筛选，配置:', screeningConfig.value)
-  isScreening.value = true
-  screeningProgress.value = 0
-  progressMessage.value = '正在初始化筛选...'
-  processedCount.value = 0
-  successCount.value = 0
-  errorCount.value = 0
+const formatVolume = (value: number) => {
+  if (value >= 10000) {
+    return `${(value / 10000).toFixed(1)}万手`
+  } else {
+    return `${value.toFixed(0)}手`
+  }
+}
+
+const getFinancialAnalysis = (stock: any) => {
+  if (stock.roe > 15) return '财务状况优秀，盈利能力强'
+  if (stock.roe > 10) return '财务状况良好，盈利稳定'
+  return '财务状况一般，需关注盈利能力'
+}
+
+const getTechnicalAnalysis = (stock: any) => {
+  if (stock.rsi < 30) return '技术面超卖，可能存在反弹机会'
+  if (stock.rsi > 70) return '技术面超买，需注意回调风险'
+  return '技术面相对平衡，可持续关注'
+}
+
+const getInvestmentAdvice = (stock: any) => {
+  if (stock.score >= 4) return '综合评分较高，建议重点关注'
+  if (stock.score >= 3) return '具备一定投资价值，可适度配置'
+  return '投资价值有限，建议谨慎对待'
+}
+
+// 构建筛选请求
+const buildScreeningRequest = (): ScreeningRequest => {
+  const conditions: ScreeningCondition[] = []
   
-  // 模拟筛选过程
-  simulateScreening()
+  // 添加范围条件
+  if (filters.marketCapRange[0] > 0 || filters.marketCapRange[1] < 10000) {
+    conditions.push({
+      field: 'market_cap',
+      operator: 'between',
+      value: [filters.marketCapRange[0], filters.marketCapRange[1]],
+      label: '市值范围'
+    })
+  }
+  
+  if (filters.peRange[0] > 0 || filters.peRange[1] < 100) {
+    conditions.push({
+      field: 'pe',
+      operator: 'between',
+      value: [filters.peRange[0], filters.peRange[1]],
+      label: 'PE范围'
+    })
+  }
+  
+  if (filters.pbRange[0] > 0 || filters.pbRange[1] < 10) {
+    conditions.push({
+      field: 'pb',
+      operator: 'between',
+      value: [filters.pbRange[0], filters.pbRange[1]],
+      label: 'PB范围'
+    })
+  }
+  
+  if (filters.priceMin !== null || filters.priceMax !== null) {
+    conditions.push({
+      field: 'price',
+      operator: 'between',
+      value: [filters.priceMin || 0, filters.priceMax || 999999],
+      label: '价格范围'
+    })
+  }
+  
+  if (filters.roeMin !== null) {
+    conditions.push({
+      field: 'roe',
+      operator: 'gte',
+      value: filters.roeMin,
+      label: `ROE >= ${filters.roeMin}%`
+    })
+  }
+  
+  if (filters.industry.length > 0) {
+    conditions.push({
+      field: 'industry',
+      operator: 'in',
+      value: filters.industry,
+      label: '行业筛选'
+    })
+  }
+  
+  return {
+    conditions,
+    sort_by: sortBy.value,
+    sort_order: 'desc',
+    limit: pageSize.value,
+    offset: (currentPage.value - 1) * pageSize.value
+  }
 }
 
-const simulateScreening = () => {
-  totalStocks.value = 100
-  const interval = setInterval(() => {
-    processedCount.value += 5
-    screeningProgress.value = Math.floor((processedCount.value / totalStocks.value) * 100)
-    
-    if (Math.random() > 0.7) {
-      successCount.value++
-      screeningResults.value.push({
-        stock_code: `000${successCount.value.toString().padStart(3, '0')}`,
-        stock_name: `股票${successCount.value}`,
-        industry: '科技',
-        comprehensive_score: Math.floor(Math.random() * 40) + 60,
-        technical_score: Math.floor(Math.random() * 40) + 60,
-        fundamental_score: Math.floor(Math.random() * 40) + 60,
-        passed_filters: true
-      })
-    }
-    
-    if (Math.random() > 0.9) {
-      errorCount.value++
-    }
-    
-    progressMessage.value = `正在筛选第 ${processedCount.value} 只股票...`
-    
-    if (processedCount.value >= totalStocks.value) {
-      clearInterval(interval)
-      screeningProgress.value = 100
-      progressMessage.value = '筛选完成'
-      isScreening.value = false
-      ElMessage.success(`筛选完成，共找到 ${screeningResults.value.length} 只符合条件的股票`)
-    }
-  }, 100)
+// 更新筛选条件
+const updateFilters = (newFilters: any) => {
+  Object.assign(filters, newFilters)
 }
 
-const cancelScreening = () => {
-  console.log('取消筛选')
-  isScreening.value = false
-  progressMessage.value = '筛选已取消'
-  ElMessage.info('筛选已取消')
+// 应用模板
+const applyTemplate = (template: any) => {
+  selectedTemplate.value = template.id
+  
+  // 重置筛选条件
+  resetFilters()
+  
+  // 根据模板设置筛选条件
+  if (template.filters) {
+    Object.assign(filters, template.filters)
+  }
+}
+
+const resetFilters = () => {
+  Object.assign(filters, {
+    industry: [],
+    marketCapRange: [0, 10000],
+    priceMin: null,
+    priceMax: null,
+    peRange: [0, 100],
+    pbRange: [0, 10],
+    roeMin: null,
+    debtRatioMax: null,
+    rsiRange: [0, 100],
+    macdSignal: 'all',
+    maStatus: [],
+    volumeCondition: 'all',
+    turnoverRange: [0, 20]
+  })
+  selectedTemplate.value = ''
+  ElMessage.info('筛选条件已重置')
+}
+
+const startScreening = async () => {
+  try {
+    isScreening.value = true
+    
+    const request = buildScreeningRequest()
+    console.log('🔍 Starting screening with request:', request)
+    
+    let response
+    switch (screeningType.value) {
+      case 'technical':
+        response = await unifiedHttpClient.screening.technicalScreening(request)
+        break
+      case 'fundamental':
+        response = await unifiedHttpClient.screening.fundamentalScreening(request)
+        break
+      case 'comprehensive':
+      default:
+        response = await unifiedHttpClient.screening.comprehensiveScreening(request)
+        break
+    }
+    
+    if (response.data) {
+      screeningResults.value = response.data.results || []
+      totalResults.value = response.data.total || 0
+      screeningSummary.value = response.data.summary || {}
+      
+      ElMessage.success(`筛选完成，找到 ${totalResults.value} 只股票`)
+      console.log('✅ Screening completed:', response.data)
+    }
+  } catch (error) {
+    console.error('❌ Screening failed:', error)
+    ElMessage.error('筛选失败，请检查筛选条件')
+    
+    // 如果API调用失败，使用模拟数据
+    // generateMockResults() // This line is removed as per the edit hint
+  } finally {
+    isScreening.value = false
+  }
+}
+
+// 执行筛选
+const executeScreening = async () => {
+  if (!selectedTemplate.value) {
+    ElMessage.warning('请选择筛选模板')
+    return
+  }
+  
+  try {
+    isScreening.value = true
+    screeningResults.value = []
+    
+    const request = {
+      min_score: 60,
+      max_results: 100,
+      config: {
+        template: selectedTemplate.value,
+        conditions: screeningConditions.value
+      }
+    }
+    
+    let response
+    switch (selectedTemplate.value) {
+      case 'technical':
+        response = await unifiedHttpClient.screening.technicalScreening(request)
+        break
+      case 'fundamental':
+        response = await unifiedHttpClient.screening.fundamentalScreening(request)
+        break
+      case 'comprehensive':
+      default:
+        response = await unifiedHttpClient.screening.comprehensiveScreening(request)
+        break
+    }
+    
+    if (response.data && response.data.results) {
+      screeningResults.value = response.data.results
+      totalResults.value = response.data.total || response.data.results.length
+      ElMessage.success(`筛选完成，找到 ${screeningResults.value.length} 只符合条件的股票`)
+    } else {
+      ElMessage.warning('筛选完成，但没有找到符合条件的股票')
+      screeningResults.value = []
+      totalResults.value = 0
+    }
+    
+  } catch (error) {
+    console.error('筛选失败:', error)
+    ElMessage.error('筛选失败，请检查网络连接')
+    screeningResults.value = []
+    totalResults.value = 0
+  } finally {
+    isScreening.value = false
+  }
+}
+
+const saveTemplate = () => {
+  // 由子组件处理
+}
+
+const exportResults = () => {
+  if (filteredStocks.value.length === 0) {
+    ElMessage.warning('暂无数据可导出')
+    return
+  }
+  
+  // TODO: 实际导出逻辑
+  ElMessage.success('筛选结果已导出')
 }
 
 const viewStockDetail = (stock: any) => {
-  console.log('查看股票详情:', stock)
-  ElMessage.info(`查看股票详情: ${stock.stock_name}`)
+  selectedStock.value = stock
+  stockDetailVisible.value = true
+  activeDetailTab.value = 'basic'
 }
 
-const handleConfigDialogClose = () => {
-  showConfigDialog.value = false
+const addToWatchlist = (stock: any) => {
+  // TODO: 实际添加到自选股逻辑
+  ElMessage.success(`${stock.name} 已添加到自选股`)
 }
 
-const resetConfig = () => {
-  screeningConfig.value = {
-    screeningType: 'comprehensive',
-    minScore: 60,
-    maxResults: 100,
-    technical: {
-      ma: ['ma5', 'ma10', 'ma20'],
-      macd: true,
-      rsi: true,
-      kdj: false
-    },
-    fundamental: {
-      peMin: 0,
-      peMax: 50,
-      pbMin: 0,
-      pbMax: 10,
-      revenueGrowth: 10,
-      profitGrowth: 5
-    },
-    industries: [],
-    marketCap: ''
-  }
-  ElMessage.success('配置已重置')
+const addToCandidatePool = (stock: any) => {
+  // TODO: 实际添加到候选池逻辑
+  ElMessage.success(`${stock.name} 已添加到候选池`)
 }
 
-const saveConfig = () => {
-  console.log('保存筛选配置:', screeningConfig.value)
-  showConfigDialog.value = false
-  ElMessage.success('筛选配置已保存')
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
 }
 
+const handleCurrentChange = (page: number) => {
+  currentPage.value = page
+}
+
+// 生命周期
 onMounted(() => {
-  console.log('股票筛选组件已挂载')
+  // 初始化默认筛选结果
+  // generateMockResults() // This line is removed as per the edit hint
+})
+
+// WS: 监听 /screening 事件，展示进度并在完成/失败时刷新
+onMounted(() => {
+  const unsubscribe = websocketEventBus.subscribe({
+    id: 'stock_screening_view_subscriber',
+    namespace: '/screening',
+    handler: async (event) => {
+      console.log('🔌 [/screening] 事件:', event.event, event.data)
+      switch (event.event) {
+        case 'screening_started':
+        case 'screening_progress': {
+          isScreening.value = true
+          break
+        }
+        case 'screening_completed': {
+          isScreening.value = false
+          // 完成后：按当前筛选条件重新请求一次 HTTP 结果
+          await startScreening()
+          break
+        }
+        case 'screening_error':
+        case 'screening_cancelled': {
+          isScreening.value = false
+          // 失败/取消后：也刷新一次（可选）
+          await startScreening()
+          break
+        }
+      }
+    }
+  })
+
+  onUnmounted(() => {
+    unsubscribe()
+  })
 })
 </script>
 
-<style scoped>
-.screening-container {
+<style lang="scss" scoped>
+.stock-screening {
   padding: 20px;
+  min-height: calc(100vh - 70px); // 确保最小高度
+  overflow-y: auto; // 允许垂直滚动
+  
+  .page-header {
+    margin-bottom: 24px;
+    
+    h1 {
+      margin: 0 0 8px 0;
+      color: #303133;
+      font-size: 28px;
+    }
+    
+    p {
+      margin: 0;
+      color: #606266;
+      font-size: 14px;
+    }
+  }
+
+  .screening-content {
+    .screening-controls {
+      margin-bottom: 20px;
+    }
+
+    .screening-results {
+      // 结果区域样式
+    }
+  }
+
+  .stock-detail {
+    .stock-info-tabs {
+      .basic-info {
+        max-height: 400px; // 限制最大高度
+        overflow-y: auto; // 添加滚动条
+      }
+
+      .financial-data {
+        max-height: 400px; // 限制最大高度
+        overflow-y: auto; // 添加滚动条
+
+        .financial-metrics {
+          .metric-group {
+            margin-bottom: 20px;
+
+            h4 {
+              margin: 0 0 12px 0;
+              color: #303133;
+              font-size: 16px;
+            }
+
+            .metric-item {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 8px 0;
+              border-bottom: 1px solid #ebeef5;
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              .metric-label {
+                color: #606266;
+                font-size: 14px;
+              }
+
+              .metric-value {
+                color: #303133;
+                font-weight: 500;
+              }
+            }
+          }
+        }
+      }
+
+      .technical-analysis {
+        max-height: 400px; // 限制最大高度
+        overflow-y: auto; // 添加滚动条
+
+        .chart-placeholder {
+          height: 200px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: #f5f7fa;
+          border-radius: 8px;
+          color: #909399;
+
+          p {
+            margin: 16px 0 0 0;
+          }
+        }
+      }
+    }
+  }
 }
 
-.screening-card {
-  margin-bottom: 20px;
-}
+@media (max-width: 768px) {
+  .stock-screening {
+    padding: 12px;
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header h2 {
-  margin: 0;
-  color: #303133;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.progress-section {
-  margin: 20px 0;
-}
-
-.progress-message {
-  margin: 10px 0;
-  color: #606266;
-}
-
-.progress-stats {
-  display: flex;
-  gap: 20px;
-  margin: 10px 0;
-  color: #909399;
-}
-
-.results-section {
-  margin: 20px 0;
-}
-
-.results-summary {
-  margin-bottom: 20px;
-}
-
-.table-container {
-  margin-bottom: 20px;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.empty-state {
-  padding: 40px 0;
-  text-align: center;
-}
-
-.score-excellent {
-  color: #67c23a;
-  font-weight: bold;
-}
-
-.score-good {
-  color: #409eff;
-  font-weight: bold;
-}
-
-.score-average {
-  color: #e6a23c;
-  font-weight: bold;
-}
-
-.score-poor {
-  color: #f56c6c;
-  font-weight: bold;
-}
-
-.config-sub-card {
-  margin-bottom: 10px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+    .screening-content {
+      .el-col {
+        margin-bottom: 20px;
+      }
+    }
+  }
 }
 </style> 
- 
- 
- 

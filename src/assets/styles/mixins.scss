@@ -2,30 +2,29 @@
 // SCSS 混入定义
 // =============================================================================
 
-// 导入变量
 @use './variables.scss' as *;
 
 // 响应式断点混入
 @mixin mobile {
-  @media (max-width: #{$breakpoint-sm - 1px}) {
+  @media (max-width: 767px) {
     @content;
   }
 }
 
 @mixin tablet {
-  @media (min-width: #{$breakpoint-sm}) and (max-width: #{$breakpoint-lg - 1px}) {
+  @media (min-width: 768px) and (max-width: 1199px) {
     @content;
   }
 }
 
 @mixin desktop {
-  @media (min-width: #{$breakpoint-lg}) {
+  @media (min-width: 1200px) {
     @content;
   }
 }
 
 @mixin mobile-and-tablet {
-  @media (max-width: #{$breakpoint-lg - 1px}) {
+  @media (max-width: 1199px) {
     @content;
   }
 }
@@ -35,10 +34,10 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 $spacing-4;
+  padding: 0 16px;
   
   @include mobile {
-    padding: 0 $spacing-2;
+    padding: 0 8px;
   }
 }
 

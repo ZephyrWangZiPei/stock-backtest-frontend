@@ -57,9 +57,9 @@ export const useScheduledTasks = () => {
       )
       
       if (task.status === 'active') {
-        await unifiedHttpClient.scheduler.pauseScheduledJob(task.id)
+        await unifiedHttpClient.scheduler.toggleScheduledJob(task.id, false)
       } else {
-        await unifiedHttpClient.scheduler.resumeScheduledJob(task.id)
+                  await unifiedHttpClient.scheduler.toggleScheduledJob(task.id, true)
       }
       
       ElMessage.success(`${action}任务请求已发送`)

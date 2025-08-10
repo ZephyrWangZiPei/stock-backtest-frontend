@@ -1,5 +1,0 @@
-export { default as StatCard } from './StatCard.vue'
-export { default as DataOverviewChart } from './DataOverviewChart.vue'
-export { default as DataDetailCard } from './DataDetailCard.vue'
-export { default as RecentTasksTable } from './RecentTasksTable.vue'
-export { default as ConnectionStatusCard } from './ConnectionStatusCard.vue' 

@@ -1,36 +1,46 @@
 import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-// 启用 Element Plus 官方暗黑主题
-import 'element-plus/theme-chalk/dark/css-vars.css'
-
-// v-md-editor 配置
-import VMdEditor from '@kangc/v-md-editor'
-import '@kangc/v-md-editor/lib/style/base-editor.css'
-import githubTheme from '@kangc/v-md-editor/lib/theme/github.js'
-import '@kangc/v-md-editor/lib/theme/style/github.css'
-
-// highlightjs
-import hljs from 'highlight.js'
-
-VMdEditor.use(githubTheme, {
-  Hljs: hljs,
-})
-
 import App from './App.vue'
 import router from './router'
+import store from './store'
 
-// 引入全局样式
-import './assets/styles/global.scss'
+// 导入Element Plus
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
 
-// 创建Vue应用实例
+// 导入全局样式
+import '@/assets/styles/variables.scss'
+import '@/assets/styles/global.scss'
+
+// 导入store
+import { usePermissionStore } from './store/modules/permission'
+
+// 导入WebSocket连接池
+import { websocketConnectionPool } from './utils/websocketConnectionPool'
+
 const app = createApp(App)
 
-app.use(createPinia())
+app.use(store)
 app.use(router)
 app.use(ElementPlus)
-app.use(VMdEditor)
 
-// 挂载应用
-app.mount('#app') 
+// 初始化路由
+const permissionStore = usePermissionStore()
+permissionStore.generateRoutes()
+
+// 初始化WebSocket连接
+const initWebSocketConnections = async () => {
+  try {
+    console.log('🔌 初始化WebSocket连接...')
+    await websocketConnectionPool.connectToNamespace('/data_collection')
+    await websocketConnectionPool.connectToNamespace('/ai_analysis')
+    console.log('✅ WebSocket连接初始化完成')
+  } catch (error) {
+    console.error('❌ WebSocket连接初始化失败:', error)
+  }
+}
+
+// 启动应用
+app.mount('#app')
+
+// 应用挂载后初始化WebSocket
+initWebSocketConnections() 

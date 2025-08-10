@@ -3,260 +3,112 @@
  * 移除所有 Element Plus 组件的样式覆盖，使用原生样式
  */
 
-// 导入变量和混入
+@use 'sass:color';
 @use './variables.scss' as *;
 @use './mixins.scss' as *;
-@use 'sass:color';
+@use './sidebar.scss' as *;
+@use './scrollbar-fix.scss' as *; // 引入滚动条修复样式
 
-// =============================================================================
-// 基础样式重置
-// =============================================================================
-
+// 全局重置样式
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-html {
-  font-size: 16px;
-  line-height: 1.6;
+html, body {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  font-family: $font-family-base;
-  font-size: $font-size-base;
-  line-height: $line-height-base;
-  color: var(--el-text-color-primary);
-  background-color: var(--el-bg-color-page);
-  transition: color $transition-normal, background-color $transition-normal;
+#app {
+  height: 100%;
 }
 
-// =============================================================================
-// 链接样式
-// =============================================================================
+// 清除浮动
+.clearfix {
+  &:after {
+    visibility: hidden;
+    display: block;
+    font-size: 0;
+    content: " ";
+    clear: both;
+    height: 0;
+  }
+}
 
-a {
-  color: var(--el-color-primary);
-  text-decoration: none;
-  transition: color $transition-normal;
+// Element Plus 自定义样式
+.el-menu {
+  border-right: none !important;
+}
+
+.el-menu-item {
+  height: 50px !important;
+  line-height: 50px !important;
+  color: $menuText !important;
 
   &:hover {
-    color: var(--el-color-primary-light-3);
+    background-color: #ecf5ff !important;
+    color: #409eff !important;
+  }
+  
+  &.is-active {
+    background-color: #409eff !important;
+    color: #fff !important;
+  }
+}
+
+.el-submenu__title {
+  height: 50px !important;
+  line-height: 50px !important;
+  color: $menuText !important;
+
+  &:hover {
+    background-color: #ecf5ff !important;
+    color: #409eff !important;
   }
 
-  &:focus {
-    outline: 2px solid var(--el-color-primary-light-5);
-    outline-offset: 2px;
+  &.is-active {
+    color: $subMenuActiveText !important;
   }
 }
 
-// =============================================================================
-// 标题样式
-// =============================================================================
+.el-submenu .el-menu-item {
+  background-color: $subMenuBg !important;
+  
+  &:hover {
+    background-color: $subMenuHover !important;
+  }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: $font-weight-semibold;
-  line-height: $line-height-tight;
-  margin-bottom: $spacing-4;
-  color: var(--el-text-color-primary);
+  &.is-active {
+    color: $subMenuActiveText !important;
+  }
 }
 
-h1 { font-size: $font-size-4xl; }
-h2 { font-size: $font-size-3xl; }
-h3 { font-size: $font-size-2xl; }
-h4 { font-size: $font-size-xl; }
-h5 { font-size: $font-size-lg; }
-h6 { font-size: $font-size-base; }
-
-// =============================================================================
-// 段落和文本样式
-// =============================================================================
-
-p {
-  margin-bottom: $spacing-4;
-  color: var(--el-text-color-regular);
-}
-
-// 文本颜色工具类 - 使用 Element Plus 变量
-.text-primary { color: var(--el-text-color-primary); }
-.text-regular { color: var(--el-text-color-regular); }
-.text-secondary { color: var(--el-text-color-secondary); }
-.text-placeholder { color: var(--el-text-color-placeholder); }
-.text-disabled { color: var(--el-text-color-disabled); }
-
-// 状态颜色工具类 - 使用 Element Plus 变量
-.text-success { color: var(--el-color-success); }
-.text-warning { color: var(--el-color-warning); }
-.text-danger { color: var(--el-color-danger); }
-.text-info { color: var(--el-color-info); }
-
-// =============================================================================
-// 布局工具类
-// =============================================================================
-
-// Flexbox 工具类
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.flex-row { flex-direction: row; }
-.items-center { align-items: center; }
-.items-start { align-items: flex-start; }
-.items-end { align-items: flex-end; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.justify-start { justify-content: flex-start; }
-.justify-end { justify-content: flex-end; }
-
-// 间距工具类
-.gap-1 { gap: $spacing-1; }
-.gap-2 { gap: $spacing-2; }
-.gap-3 { gap: $spacing-3; }
-.gap-4 { gap: $spacing-4; }
-.gap-6 { gap: $spacing-6; }
-.gap-8 { gap: $spacing-8; }
-
-// 内边距工具类
-.p-1 { padding: $spacing-1; }
-.p-2 { padding: $spacing-2; }
-.p-3 { padding: $spacing-3; }
-.p-4 { padding: $spacing-4; }
-.p-6 { padding: $spacing-6; }
-.p-8 { padding: $spacing-8; }
-
-// 外边距工具类
-.m-1 { margin: $spacing-1; }
-.m-2 { margin: $spacing-2; }
-.m-3 { margin: $spacing-3; }
-.m-4 { margin: $spacing-4; }
-.m-6 { margin: $spacing-6; }
-.m-8 { margin: $spacing-8; }
-
-// =============================================================================
-// 响应式工具类
-// =============================================================================
-
-.hidden { display: none; }
-.block { display: block; }
-.inline-block { display: inline-block; }
-
-@include mobile {
-  .mobile-hidden { display: none; }
-  .mobile-block { display: block; }
-}
-
-@include desktop {
-  .desktop-hidden { display: none; }
-  .desktop-block { display: block; }
-}
-
-// =============================================================================
-// 滚动条样式
-// =============================================================================
-
+// 自定义滚动条样式
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--el-fill-color-light);
+  background: #f1f1f1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--el-border-color);
+  background: #c1c1c1;
   border-radius: 4px;
   
   &:hover {
-    background: var(--el-border-color-hover);
+    background: #a8a8a8;
   }
 }
 
-// =============================================================================
-// 自定义组件样式（非 Element Plus）
-// =============================================================================
-
-// 页面容器
-.page-container {
-  @include page-container;
+::-webkit-scrollbar-corner {
+  background: #f1f1f1;
 }
 
-// 卡片容器
-.card {
-  @include card-base;
-  padding: $spacing-6;
-  
-  &.card-sm {
-    padding: $spacing-4;
-  }
-  
-  &.card-lg {
-    padding: $spacing-8;
-  }
-}
 
-// 表单组
-.form-group {
-  @include form-group;
-}
-
-// 加载状态
-.loading {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-// =============================================================================
-// Element Plus 原生样式
-// =============================================================================
-// 不对 Element Plus 组件进行任何样式覆盖
-// 使用官方提供的原生样式和暗黑主题
-
-// =============================================================================
-// 动画样式
-// =============================================================================
-
-// 淡入动画
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-// 滑入动画
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-// 动画工具类
-.fade-in {
-  animation: fadeIn $transition-normal ease-out;
-}
-
-.slide-in-up {
-  animation: slideInUp $transition-normal ease-out;
-}
-
-// =============================================================================
-// 打印样式
-// =============================================================================
-
-@media print {
-  * {
-    background: white !important;
-    color: black !important;
-    box-shadow: none !important;
-  }
-  
-  .no-print {
-    display: none !important;
-  }
-}
