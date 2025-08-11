@@ -5,12 +5,19 @@
     </template>
     
     <div class="config-content" style="max-height: 600px; overflow-y: auto;">
-      <el-form :model="localConfig" label-width="120px" size="default">
+      <el-form :model="localConfig" label-width="130px" size="default">
         <!-- 基本配置 -->
         <el-divider content-position="left">基本配置</el-divider>
+      
         
         <el-form-item label="策略名称" required>
-          <el-select v-model="localConfig.strategy" placeholder="选择策略" style="width: 100%">
+          <el-select 
+            v-model="localConfig.strategy" 
+            placeholder="选择策略" 
+            style="width: 100%"
+            :loading="loadingStrategies"
+            :disabled="loadingStrategies"
+          >
             <el-option 
               v-for="strategy in availableStrategies" 
               :key="strategy.id" 
@@ -23,6 +30,13 @@
               </div>
             </el-option>
           </el-select>
+          <div v-if="loadingStrategies" style="color: #409eff; font-size: 12px; margin-top: 4px;">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            正在加载策略列表...
+          </div>
+          <div v-else-if="availableStrategies.length === 0" style="color: #f56c6c; font-size: 12px; margin-top: 4px;">
+            策略列表加载失败，请刷新页面重试
+          </div>
         </el-form-item>
         
         <el-form-item label="股票池" required>
@@ -159,7 +173,9 @@
             :key="param.name"
             :label="param.label"
           >
+            <!-- 数字类型参数 -->
             <el-input-number
+              v-if="param.type === 'number'"
               v-model="localConfig.strategyParams[param.name]"
               :min="param.min"
               :max="param.max"
@@ -168,7 +184,31 @@
               :placeholder="param.description"
               style="width: 100%"
             />
-            <span class="unit-label">{{ param.unit }}</span>
+            
+            <!-- 选择类型参数 -->
+            <el-select
+              v-else-if="param.type === 'select'"
+              v-model="localConfig.strategyParams[param.name]"
+              :placeholder="param.description"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="option in param.options"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+            
+            <!-- 默认文本输入 -->
+            <el-input
+              v-else
+              v-model="localConfig.strategyParams[param.name]"
+              :placeholder="param.description"
+              style="width: 100%"
+            />
+            
+            <span v-if="param.unit" class="unit-label">{{ param.unit }}</span>
           </el-form-item>
         </div>
         
@@ -192,12 +232,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { VideoPlay } from '@element-plus/icons-vue'
+import { VideoPlay, Loading } from '@element-plus/icons-vue'
 import unifiedHttpClient from '@/utils/unifiedHttpClient'
 
 // 接口定义
 interface StrategyConfig {
-  strategy: string
+  strategy: string | number // 支持字符串和数字类型的策略ID
   stockPool: string[]
   dateRange: [string, string] | null
   initialCapital: number
@@ -207,26 +247,29 @@ interface StrategyConfig {
   maxPositionPct: number
   stopLoss: number
   takeProfit: number
-  strategyParams: Record<string, number>
+  strategyParams: Record<string, any>
 }
 
 interface Strategy {
-  id: string
+  id: string | number // 支持字符串和数字类型的策略ID
   name: string
   description: string
-  params: StrategyParam[]
+  parameters: any // 支持两种格式：对象格式和数组格式
+  db_id?: number // 数据库ID
 }
 
 interface StrategyParam {
   name: string
-  label: string
-  description: string
-  min: number
-  max: number
-  step: number
-  precision: number
-  unit: string
-  default: number
+  label?: string
+  description?: string
+  min?: number
+  max?: number
+  step?: number
+  precision?: number
+  unit?: string
+  default: any
+  type?: string
+  options?: Array<{value: string, label: string}>
 }
 
 interface Stock {
@@ -263,12 +306,39 @@ watch(localConfig, (newConfig) => {
 }, { deep: true })
 
 // 可用策略
-const availableStrategies = ref<Strategy[]>([
-])
+const availableStrategies = ref<Strategy[]>([])
+const loadingStrategies = ref(false)
 
 // 可用股票 - 从API获取
 const availableStocks = ref<Stock[]>([])
 const loadingStocks = ref(false)
+
+// 加载可用策略列表
+const loadAvailableStrategies = async () => {
+  try {
+    loadingStrategies.value = true
+    console.log('开始加载策略列表...')
+    
+    const response = await unifiedHttpClient.backtest.getStrategies()
+    console.log('策略列表接口响应:', response)
+    
+    if (response.data.data && Array.isArray(response.data.data)) {
+      availableStrategies.value = response.data.data
+      console.log('加载策略列表成功:', response.data.data)
+      ElMessage.success(`成功加载 ${response.data.data.length} 个策略`)
+    } else {
+      console.warn('策略列表响应数据格式异常:', response)
+      availableStrategies.value = []
+      ElMessage.warning('策略列表数据格式异常')
+    }
+  } catch (error) {
+    console.error('加载策略列表失败:', error)
+    ElMessage.error(`加载策略列表失败: ${error.message || '未知错误'}`)
+    availableStrategies.value = []
+  } finally {
+    loadingStrategies.value = false
+  }
+}
 
 // 加载可用股票列表
 const loadAvailableStocks = async () => {
@@ -309,15 +379,52 @@ const loadAvailableStocks = async () => {
   }
 }
 
-// 组件挂载时加载股票列表
+// 组件挂载时加载股票列表和策略列表
 onMounted(() => {
   loadAvailableStocks()
+  loadAvailableStrategies()
 })
 
 // 计算当前选中策略的参数
 const selectedStrategyParams = computed(() => {
   const strategy = availableStrategies.value.find(s => s.id === localConfig.strategy)
-  return strategy?.params || []
+  if (!strategy) return []
+  
+  const params = strategy.parameters
+  
+  // 处理两种参数格式
+  if (Array.isArray(params)) {
+    // 数组格式：直接返回
+    return params.map(param => ({
+      name: param.name,
+      label: param.label || param.name,
+      description: param.description || '',
+      min: param.min || 0,
+      max: param.max || 100,
+      step: param.step || 1,
+      precision: param.precision || 0,
+      unit: param.unit || '',
+      default: param.default,
+      type: param.type || 'number',
+      options: param.options || []
+    }))
+  } else if (typeof params === 'object') {
+    // 对象格式：转换为数组格式
+    return Object.entries(params).map(([name, config]: [string, any]) => ({
+      name,
+      label: config.description || name,
+      description: config.description || '',
+      min: config.min || 0,
+      max: config.max || 100,
+      step: config.step || 1,
+      precision: config.precision || 0,
+      unit: '',
+      default: config.default,
+      type: config.type || 'number'
+    }))
+  }
+  
+  return []
 })
 
 // 监听策略变化，初始化参数
@@ -325,12 +432,23 @@ watch(() => localConfig.strategy, (newStrategy) => {
   if (newStrategy) {
     const strategy = availableStrategies.value.find(s => s.id === newStrategy)
     if (strategy) {
+      console.log('策略变化，初始化参数:', strategy)
+      
       // 初始化策略参数为默认值
-      const params: Record<string, number> = {}
-      strategy.params.forEach(param => {
-        params[param.name] = param.default
+      const params: Record<string, any> = {}
+      selectedStrategyParams.value.forEach(param => {
+        // 确保默认值类型正确
+        if (param.type === 'number') {
+          params[param.name] = typeof param.default === 'number' ? param.default : 0
+        } else if (param.type === 'select') {
+          params[param.name] = param.default || (param.options && param.options[0]?.value)
+        } else {
+          params[param.name] = param.default || ''
+        }
       })
+      
       localConfig.strategyParams = params
+      console.log('策略参数初始化完成:', params)
     }
   }
 })
@@ -384,6 +502,7 @@ const handleStartBacktest = () => {
 <style lang="scss" scoped>
 .strategy-config {
   .config-content {
+  padding:10px;
     .unit-label {
       margin-left: 8px;
       color: #909399;

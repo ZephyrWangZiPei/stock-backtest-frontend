@@ -207,6 +207,8 @@ interface BacktestResults {
   monthlyReturns: MonthlyReturn[]
   positionAnalysis: PositionAnalysis[]
   trades: Trade[]
+  portfolioHistory?: { date: string; total_value: number }[]
+  klineData?: any[] // 新增K线数据
 }
 
 interface MonthlyReturn {
@@ -221,6 +223,7 @@ interface PositionAnalysis {
 }
 
 interface Trade {
+  id: string; // 新增ID
   date: string
   stock: string
   action: 'buy' | 'sell'
@@ -280,6 +283,67 @@ const getReturnClass = (value: number) => {
   return 'neutral'
 }
 
+// 映射交易记录到前端格式
+const mapTrades = (trades: any[]): Trade[] => {
+  return trades.map(trade => ({
+    id: trade.id || `trade_${Date.now()}_${Math.random()}`,
+    date: trade.trade_date || trade.date || '--',
+    stock: trade.stock_code || '--',
+    action: trade.trade_type === 'buy' ? 'buy' : 'sell',
+    price: trade.price || 0,
+    quantity: trade.quantity || 0,
+    amount: trade.amount || 0,
+    return: trade.return || null,
+    reason: trade.reason || '策略信号'
+  }));
+};
+
+// 格式化数量显示（股数转手数）
+const formatQuantity = (quantity: number): string => {
+  if (quantity <= 0) return '0';
+  const lots = quantity / 100;
+  if (lots === Math.floor(lots)) {
+    return `${lots}手`;
+  } else {
+    return `${quantity}股`;
+  }
+};
+
+// 计算月度收益
+const computeMonthlyReturns = (portfolioHistory: any[]): MonthlyReturn[] => {
+  if (!portfolioHistory || portfolioHistory.length === 0) {
+    return [];
+  }
+
+  const monthlyData = new Map<string, { startValue: number; endValue: number; startDate: string }>();
+  
+  portfolioHistory.forEach((item, index) => {
+    const date = new Date(item.date);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    
+    if (!monthlyData.has(monthKey)) {
+      monthlyData.set(monthKey, {
+        startValue: item.total_value,
+        endValue: item.total_value,
+        startDate: item.date
+      });
+    } else {
+      monthlyData.get(monthKey)!.endValue = item.total_value;
+    }
+  });
+
+  return Array.from(monthlyData.entries()).map(([month, data]) => {
+    const returnRate = data.startValue > 0 ? ((data.endValue - data.startValue) / data.startValue) * 100 : 0;
+    return {
+      month,
+      return: returnRate,
+      startValue: data.startValue,
+      endValue: data.endValue,
+      startDate: data.startDate
+    };
+  });
+};
+
 // 主要功能方法
 const startBacktest = async () => {
   try {
@@ -303,8 +367,8 @@ const startBacktest = async () => {
     
     // 启动真实回测任务
     const response = await unifiedHttpClient.backtest.startBacktest({
-      strategy_id: parseInt(backtestConfig.value.strategy),
-      stock_codes: backtestConfig.value.stockPool,
+      strategy_id: backtestConfig.value.strategy, // 直接使用策略ID，不需要parseInt
+      stock_code: backtestConfig.value.stockPool[0], // 使用第一个股票代码，因为后端期望单个股票
       start_date: backtestConfig.value.dateRange[0],
       end_date: backtestConfig.value.dateRange[1],
       initial_capital: backtestConfig.value.initialCapital,
@@ -315,7 +379,7 @@ const startBacktest = async () => {
         max_position_pct: backtestConfig.value.maxPositionPct,
         stop_loss: backtestConfig.value.stopLoss,
         take_profit: backtestConfig.value.takeProfit,
-        ...backtestConfig.value.strategyParams
+        ...backtestConfig.value.strategyParams // 合并策略特定参数
       }
     })
     
@@ -368,22 +432,31 @@ const startBacktest = async () => {
 
 // 连接回测WebSocket监听进度
 const connectBacktestWebSocket = (taskId: string) => {
+  console.log('开始连接回测WebSocket，任务ID:', taskId)
+  
   // 使用统一WebSocket管理器连接回测进度监听
   websocketManager.connect('/backtest').then(() => {
-    // 正确的加入任务房间事件
-    websocketManager.emit('/backtest', 'join_task_room', { task_id: taskId })
+    console.log('回测WebSocket连接成功')
     
     // 监听进度更新（与后端一致的事件名）
     websocketManager.on('/backtest', 'backtest_progress', (data: any) => {
+      console.log('收到回测进度更新:', data)
+      
       if (data.task_id === taskId && backtestProgress.value) {
-        backtestProgress.value.overall = data.progress || data.overall_progress || 0
+        // 更新总体进度
+        backtestProgress.value.overall = data.overall_progress || data.progress || 0
+        
+        // 更新各阶段进度
         if (data.stage_progress) {
           Object.assign(backtestProgress.value.stages, data.stage_progress)
         }
+        
+        // 更新其他信息
         backtestProgress.value.processedDays = data.processed_days || 0
         backtestProgress.value.totalTrades = data.total_trades || 0
         backtestProgress.value.currentValue = data.current_value || backtestConfig.value.initialCapital
         
+        // 添加日志
         if (data.message) {
           backtestProgress.value.logs.push({
             time: new Date().toLocaleTimeString(),
@@ -391,25 +464,128 @@ const connectBacktestWebSocket = (taskId: string) => {
             message: data.message
           })
         }
+        
+        // 如果进度达到100%，标记为完成
+        if (data.overall_progress >= 100 || data.progress >= 100) {
+          isBacktestRunning.value = false
+        }
       }
     })
     
     // 监听交易事件（可选，用于日志/统计）
     websocketManager.on('/backtest', 'trade_event', (trade: any) => {
+      console.log('收到交易事件:', trade)
+      
       if (backtestProgress.value) {
+        // 添加交易日志
+        const actionText = trade.trade_type === 'buy' ? '买入' : (trade.trade_type === 'sell' ? '卖出' : String(trade.trade_type))
         backtestProgress.value.logs.push({
           time: new Date().toLocaleTimeString(),
           level: 'info',
-          message: `交易 ${trade.action?.toUpperCase?.() || ''} ${trade.stock || ''} 数量 ${trade.quantity || 0} 价格 ${trade.price || 0}`
+          message: `交易 ${actionText} ${trade.stock_code || trade.stock || ''} 数量 ${trade.quantity || 0} 价格 ¥${trade.price || 0}`
         })
+        
+        // 更新交易计数
+        backtestProgress.value.totalTrades = (backtestProgress.value.totalTrades || 0) + 1
+        
+        // 如果回测结果已存在，更新交易记录
+        if (backtestResults.value) {
+          // 规范化并追加
+          const normalized = {
+            id: `trade_${Date.now()}_${Math.random()}`,
+            date: trade.trade_date,
+            stock: trade.stock_code,
+            action: (trade.trade_type === 'buy' ? 'buy' : 'sell') as 'buy' | 'sell',
+            price: Number(trade.price ?? 0),
+            quantity: Number(trade.quantity ?? 0),
+            amount: Number(trade.amount ?? 0),
+            return: null, // 后端未提供单笔收益率，避免NaN，使用 null 显示"--"
+            reason: trade.reason || '策略信号'
+          }
+          backtestResults.value.trades = [...(backtestResults.value.trades || []), normalized]
+          backtestResults.value.totalTrades = backtestResults.value.trades.length
+          
+          // 动态追加净值点（使用交易日与当前进度中的当前净值）
+          const equityPoint = { date: normalized.date, total_value: Number(backtestProgress.value?.currentValue ?? 0) }
+          
+          // 确保净值数据按时间顺序添加并去重
+          if (backtestResults.value.portfolioHistory) {
+            const existingIndex = backtestResults.value.portfolioHistory.findIndex(p => p.date === equityPoint.date)
+            if (existingIndex >= 0) {
+              backtestResults.value.portfolioHistory[existingIndex] = equityPoint
+            } else {
+              backtestResults.value.portfolioHistory.push(equityPoint)
+            }
+            backtestResults.value.portfolioHistory.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          } else {
+            backtestResults.value.portfolioHistory = [equityPoint]
+          }
+
+          // 若K线未加载，尝试请求（仅请求一次）
+          if (!backtestResults.value.klineData || backtestResults.value.klineData.length === 0) {
+            const stockCode = trade.stock_code || backtestConfig.value.stockPool?.[0]
+            if (stockCode) {
+              websocketManager.emit('/backtest', 'get_stock_daily_data', {
+                stock_code: stockCode,
+                start_date: backtestConfig.value.dateRange?.[0],
+                end_date: backtestConfig.value.dateRange?.[1],
+                limit: 2000
+              })
+            }
+          }
+        }
       }
     })
-    
+
     // 监听回测完成
     websocketManager.on('/backtest', 'backtest_completed', (data: any) => {
+      console.log('收到回测完成事件:', data)
+      console.log('事件数据结构:', JSON.stringify(data, null, 2))
+      
       if (data.task_id === taskId) {
         isBacktestRunning.value = false
-        backtestResults.value = data.results || null
+        
+        // 处理回测结果数据
+        if (data.results) {
+          console.log('后端返回的原始结果:', data.results)
+          
+          backtestResults.value = {
+            totalReturn: Number(data.results.total_return || 0),
+            annualReturn: Number(data.results.annual_return || 0),
+            sharpeRatio: Number(data.results.sharpe_ratio || 0),
+            maxDrawdown: Number(data.results.max_drawdown || 0),
+            totalTrades: Number(data.results.total_trades || 0),
+            winRate: Number(data.results.win_rate || 0),
+            volatility: Number(data.results.volatility || 0),
+            finalValue: Number(data.results.final_capital ?? backtestConfig.value.initialCapital),
+            monthlyReturns: computeMonthlyReturns(data.results.portfolio_history),
+            positionAnalysis: [{
+              stock: data.results.stock_code,
+              return: Number(data.results.total_return || 0),
+              trades: Number(data.results.total_trades || 0)
+            }],
+            trades: mapTrades(data.trades),
+            portfolioHistory: (data.results.portfolio_history || []) as any,
+            klineData: [] as any
+          }
+
+          // 请求K线数据
+          const stockCode = data.results.stock_code || backtestConfig.value.stockPool?.[0]
+          if (stockCode) {
+            websocketManager.emit('/backtest', 'get_stock_daily_data', {
+              stock_code: stockCode,
+              start_date: backtestConfig.value.dateRange?.[0],
+              end_date: backtestConfig.value.dateRange?.[1],
+              limit: 2000
+            })
+          }
+          
+          console.log('转换后的前端结果:', backtestResults.value)
+          console.log('回测结果组件是否更新:', !!backtestResults.value)
+        } else {
+          console.warn('回测完成事件中没有results数据')
+          fetchBacktestResults(taskId)
+        }
         
         backtestProgress.value?.logs.push({
           time: new Date().toLocaleTimeString(),
@@ -418,11 +594,27 @@ const connectBacktestWebSocket = (taskId: string) => {
         })
         
         ElMessage.success('回测任务已完成')
+        loadBacktestHistory()
+      }
+    })
+
+    // 接收K线数据
+    websocketManager.on('/backtest', 'stock_daily_data', (payload: any) => {
+      try {
+        if (!backtestResults.value) return
+        const data = Array.isArray(payload?.data) ? payload.data : []
+        // 确保升序
+        const sorted = data.slice().sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime())
+        ;(backtestResults.value as any).klineData = sorted
+      } catch (e) {
+        console.error('处理K线数据失败:', e)
       }
     })
     
     // 监听回测错误
     websocketManager.on('/backtest', 'backtest_error', (data: any) => {
+      console.log('收到回测错误事件:', data)
+      
       if (data.task_id === taskId) {
         isBacktestRunning.value = false
         
@@ -435,9 +627,21 @@ const connectBacktestWebSocket = (taskId: string) => {
         ElMessage.error(`回测失败: ${data.error}`)
       }
     })
+    
+    console.log('回测WebSocket事件监听器设置完成')
+    
   }).catch(error => {
     console.error('连接回测WebSocket失败:', error)
     ElMessage.error('连接回测监听失败')
+    
+    // 即使WebSocket连接失败，也要更新进度状态
+    if (backtestProgress.value) {
+      backtestProgress.value.logs.push({
+        time: new Date().toLocaleTimeString(),
+        level: 'warning',
+        message: 'WebSocket连接失败，无法实时监听进度，但回测任务仍在后台运行'
+      })
+    }
   })
 }
 
@@ -583,17 +787,41 @@ const handleBacktestError = (data: any) => {
 
 const transformApiResultToLocal = (apiResult: any): BacktestResults => {
   return {
-    totalReturn: apiResult.total_return || 0,
-    annualReturn: apiResult.annual_return || 0,
-    sharpeRatio: apiResult.sharpe_ratio || 0,
-    maxDrawdown: apiResult.max_drawdown || 0,
-    totalTrades: apiResult.total_trades || 0,
-    winRate: apiResult.win_rate || 0,
-    volatility: apiResult.volatility || 0,
-    finalValue: apiResult.final_value || backtestConfig.value.initialCapital,
-    monthlyReturns: apiResult.monthly_returns || generateMonthlyReturns(),
-    positionAnalysis: apiResult.position_analysis || generatePositionAnalysis(),
-    trades: apiResult.trades || generateTrades()
+    totalReturn: Number(apiResult.total_return || 0),
+    annualReturn: Number(apiResult.annual_return || 0),
+    sharpeRatio: Number(apiResult.sharpe_ratio || 0),
+    maxDrawdown: Number(apiResult.max_drawdown || 0),
+    totalTrades: Number(apiResult.total_trades || 0),
+    winRate: Number(apiResult.win_rate || 0),
+    volatility: Number(apiResult.volatility || 0),
+    finalValue: Number(apiResult.final_capital ?? backtestConfig.value.initialCapital),
+    monthlyReturns: computeMonthlyReturns(apiResult.portfolio_history),
+    positionAnalysis: [{
+      stock: apiResult.stock_code,
+      return: Number(apiResult.total_return || 0),
+      trades: Number(apiResult.total_trades || 0)
+    }],
+    trades: mapTrades(apiResult.trades)
+  }
+}
+
+// 从数据库获取回测结果
+const fetchBacktestResults = async (taskId: string) => {
+  try {
+    console.log('尝试从数据库获取回测结果，任务ID:', taskId)
+    const response = await unifiedHttpClient.backtest.getResult(taskId)
+    if (response.data) {
+      console.log('从数据库获取到的回测结果:', response.data)
+      backtestResults.value = transformApiResultToLocal(response.data)
+      console.log('转换后的前端结果:', backtestResults.value)
+    } else {
+      console.warn('数据库中没有找到回测结果')
+      backtestResults.value = null
+    }
+  } catch (error) {
+    console.error('获取回测结果失败:', error)
+    ElMessage.error('获取回测结果失败')
+    backtestResults.value = null
   }
 }
 
@@ -693,6 +921,7 @@ onMounted(() => {
   .main-content {
     .results-card {
       min-height: 600px;
+      height: 100%;
     }
   }
   

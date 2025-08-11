@@ -6,7 +6,7 @@
       </el-empty>
     </div>
     
-    <div v-else class="results-content" style="max-height: 800px; overflow-y: auto;">
+    <div v-else class="results-content">
       <!-- 核心指标 -->
       <el-card class="metrics-card" style="margin-bottom: 20px;">
         <template #header>
@@ -77,54 +77,8 @@
         <template #header>
           <span>净值曲线</span>
         </template>
-        
-        <div class="chart-container">
-          <div class="chart-placeholder">
-            <el-icon size="48"><TrendCharts /></el-icon>
-            <p>净值曲线图表 (待集成ECharts)</p>
-          </div>
-        </div>
+        <NetValueChart :portfolioHistory="results?.portfolioHistory || []" :trades="results?.trades || []" :kline="results?.klineData || []" />
       </el-card>
-      
-      <!-- 收益分析 -->
-      <el-row :gutter="20" style="margin-bottom: 20px;">
-        <el-col :xs="24" :lg="12">
-          <el-card class="analysis-card">
-            <template #header>
-              <span>月度收益</span>
-            </template>
-            
-            <div class="monthly-returns" style="max-height: 300px; overflow-y: auto;">
-              <div v-for="month in results.monthlyReturns" :key="month.month" class="month-item">
-                <div class="month-label">{{ month.month }}</div>
-                <div class="month-return" :class="getReturnClass(month.return)">
-                  {{ formatPercent(month.return) }}
-                </div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-        
-        <el-col :xs="24" :lg="12">
-          <el-card class="analysis-card">
-            <template #header>
-              <span>持仓分析</span>
-            </template>
-            
-            <div class="position-analysis" style="max-height: 300px; overflow-y: auto;">
-              <div v-for="position in results.positionAnalysis" :key="position.stock" class="position-item">
-                <div class="position-stock">{{ position.stock }}</div>
-                <div class="position-metrics">
-                  <span class="position-return" :class="getReturnClass(position.return)">
-                    {{ formatPercent(position.return) }}
-                  </span>
-                  <span class="position-trades">{{ position.trades }}次</span>
-                </div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
       
       <!-- 交易记录 -->
       <el-card class="trades-card">
@@ -138,7 +92,7 @@
           </div>
         </template>
         
-        <div class="trades-table" style="max-height: 400px; overflow-y: auto;">
+        <div class="trades-table" >
           <el-table :data="results.trades" stripe size="small">
             <el-table-column prop="date" label="日期" width="100" />
             <el-table-column prop="stock" label="股票" width="100" />
@@ -154,21 +108,18 @@
                 ¥{{ row.price.toFixed(2) }}
               </template>
             </el-table-column>
-            <el-table-column prop="quantity" label="数量" width="80" />
-            <el-table-column prop="amount" label="金额" width="100">
+            <el-table-column prop="quantity" label="数量"  >
+              <template #default="{ row }">
+                {{ formatQuantity(row.quantity) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="amount" label="金额" >
               <template #default="{ row }">
                 {{ formatCurrency(row.amount) }}
               </template>
             </el-table-column>
-            <el-table-column prop="return" label="收益率" width="100">
-              <template #default="{ row }">
-                <span v-if="row.return !== null" :class="getReturnClass(row.return)">
-                  {{ formatPercent(row.return) }}
-                </span>
-                <span v-else>--</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="reason" label="交易原因" min-width="120" show-overflow-tooltip />
+
+            <el-table-column prop="reason" label="交易原因" show-overflow-tooltip min-width="200"/>
           </el-table>
         </div>
       </el-card>
@@ -179,8 +130,14 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { TrendCharts, Download } from '@element-plus/icons-vue'
+import NetValueChart from './NetValueChart.vue'
 
 // 接口定义
+interface MonthlyReturn { month: string; return: number }
+interface PositionAnalysis { stock: string; return: number; trades: number }
+interface Trade { date: string; stock: string; action: 'buy' | 'sell'; price: number; quantity: number; amount: number; return: number | null; reason: string }
+interface KLineBar { time: string; open: number; high: number; low: number; close: number; volume?: number }
+
 interface BacktestResults {
   totalReturn: number
   annualReturn: number
@@ -193,34 +150,12 @@ interface BacktestResults {
   monthlyReturns: MonthlyReturn[]
   positionAnalysis: PositionAnalysis[]
   trades: Trade[]
-}
-
-interface MonthlyReturn {
-  month: string
-  return: number
-}
-
-interface PositionAnalysis {
-  stock: string
-  return: number
-  trades: number
-}
-
-interface Trade {
-  date: string
-  stock: string
-  action: 'buy' | 'sell'
-  price: number
-  quantity: number
-  amount: number
-  return: number | null
-  reason: string
+  portfolioHistory?: { date: string; total_value: number }[]
+  klineData?: KLineBar[]
 }
 
 // Props
-defineProps<{
-  results: BacktestResults | null
-}>()
+defineProps<{ results: BacktestResults | null }>()
 
 // 工具函数
 const formatPercent = (value: number) => {
@@ -229,6 +164,16 @@ const formatPercent = (value: number) => {
 
 const formatCurrency = (value: number) => {
   return `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+const formatQuantity = (value: number) => {
+  if (value <= 0) return '0手';
+  const lots = value / 100;
+  if (lots === Math.floor(lots)) {
+    return `${lots}手`;
+  } else {
+    return `${value}股`;
+  }
 }
 
 const getReturnClass = (value: number) => {
@@ -410,27 +355,4 @@ const exportTrades = () => {
   }
 }
 
-@media (max-width: 768px) {
-  .backtest-results {
-    .results-content {
-      .metrics-card {
-        .metric-item {
-          padding: 8px 4px;
-          
-          .metric-value {
-            font-size: 18px;
-          }
-          
-          .metric-label {
-            font-size: 11px;
-          }
-        }
-      }
-      
-      .analysis-card {
-        margin-bottom: 16px;
-      }
-    }
-  }
-}
 </style> 
