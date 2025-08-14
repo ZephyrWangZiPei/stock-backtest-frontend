@@ -73,11 +73,14 @@
       </el-card>
       
       <!-- 净值曲线图 -->
-      <el-card class="chart-card" style="margin-bottom: 20px;">
+      <el-card v-if="!hideChart" class="chart-card" style="margin-bottom: 20px;">
         <template #header>
           <span>净值曲线</span>
         </template>
-        <NetValueChart :portfolioHistory="results?.portfolioHistory || []" :trades="results?.trades || []" :kline="results?.klineData || []" />
+        <BacktestChart :key="(results?.klineData?.length||0)+'-'+(results?.trades?.length||0)"
+          :portfolioHistory="results?.portfolioHistory || []"
+          :trades="results?.trades || []"
+          :kline="results?.klineData || []" />
       </el-card>
       
       <!-- 交易记录 -->
@@ -92,7 +95,7 @@
           </div>
         </template>
         
-        <div class="trades-table" >
+        <div class="trades-table">
           <el-table :data="results.trades" stripe size="small">
             <el-table-column prop="date" label="日期" width="100" />
             <el-table-column prop="stock" label="股票" width="100" />
@@ -118,7 +121,6 @@
                 {{ formatCurrency(row.amount) }}
               </template>
             </el-table-column>
-
             <el-table-column prop="reason" label="交易原因" show-overflow-tooltip min-width="200"/>
           </el-table>
         </div>
@@ -130,7 +132,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { TrendCharts, Download } from '@element-plus/icons-vue'
-import NetValueChart from './NetValueChart.vue'
+import BacktestChart from './BacktestChart.vue'
 
 // 接口定义
 interface MonthlyReturn { month: string; return: number }
@@ -155,7 +157,11 @@ interface BacktestResults {
 }
 
 // Props
-defineProps<{ results: BacktestResults | null }>()
+const props = defineProps<{ 
+  results: BacktestResults | null,
+  hideChart?: boolean
+}>()
+const hideChart = props.hideChart === true
 
 // 工具函数
 const formatPercent = (value: number) => {

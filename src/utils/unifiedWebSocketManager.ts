@@ -69,7 +69,6 @@ export class UnifiedWebSocketManager {
         clearTimeout(timeout)
         resolve()
         
-        // 通过事件总线发布连接事件
         websocketEventBus.emit(namespace, 'connect', { namespace }, 'success')
       })
       
@@ -77,10 +76,8 @@ export class UnifiedWebSocketManager {
         console.log(`❌ Disconnected from ${namespace}:`, reason)
         this.connectionStatus.set(namespace, false)
         
-        // 通过事件总线发布断开连接事件
         websocketEventBus.emit(namespace, 'disconnect', { namespace, reason }, 'warning')
         
-        // 如果不是主动断开，尝试重连
         if (reason !== 'io client disconnect') {
           this.scheduleReconnect(namespace)
         }
@@ -92,7 +89,6 @@ export class UnifiedWebSocketManager {
         clearTimeout(timeout)
         reject(error)
         
-        // 通过事件总线发布连接错误事件
         websocketEventBus.emit(namespace, 'connect_error', { namespace, error }, 'error')
       })
 
@@ -100,14 +96,12 @@ export class UnifiedWebSocketManager {
         console.log(`🔄 Reconnected to ${namespace}, attempt ${attemptNumber}`)
         this.connectionStatus.set(namespace, true)
         
-        // 通过事件总线发布重连事件
         websocketEventBus.emit(namespace, 'reconnect', { namespace, attemptNumber }, 'success')
       })
 
       socket.on('reconnect_error', (error) => {
         console.error(`❌ Reconnection error for ${namespace}:`, error)
         
-        // 通过事件总线发布重连错误事件
         websocketEventBus.emit(namespace, 'reconnect_error', { namespace, error }, 'error')
       })
 
@@ -115,7 +109,6 @@ export class UnifiedWebSocketManager {
         console.error(`❌ Reconnection failed for ${namespace}`)
         this.connectionStatus.set(namespace, false)
         
-        // 通过事件总线发布重连失败事件
         websocketEventBus.emit(namespace, 'reconnect_failed', { namespace }, 'error')
       })
 
@@ -126,68 +119,44 @@ export class UnifiedWebSocketManager {
 
   // 设置业务事件转发
   private setupBusinessEventForwarding(socket: Socket, namespace: string): void {
-    // 定义需要转发的业务事件
     const businessEvents = [
-      // 数据采集事件
       'collection_started', 'collection_progress', 'collection_completed', 'collection_error',
       'collection_status', 'database_stats',
-      
-      // 任务相关事件
       'task_started', 'task_progress', 'task_completed', 'task_failed', 'task_paused',
-      
-      // 回测事件
-      'backtest_started', 'backtest_progress', 'backtest_completed', 'backtest_error',
-      'backtest_paused', 'backtest_resumed',
-      
-      // AI分析事件
+      'backtest_started', 'backtest_progress', 'backtest_completed', 'backtest_error', 'backtest_paused', 'backtest_resumed',
       'analysis_started', 'analysis_progress', 'analysis_completed', 'analysis_error',
-      
-      // 新闻分析事件
       'news_analysis_started', 'news_analysis_completed', 'news_update',
-      
-      // 调度器事件
-      'scheduler_status', 'job_started', 'job_completed', 'job_failed',
-      'update_progress', 'update_complete', 'update_error', 'update_logs_response',
-      
-      // 筛选事件
+      'scheduler_status', 'job_started', 'job_completed', 'job_failed', 'update_progress', 'update_complete', 'update_error', 'update_logs_response',
       'screening_started', 'screening_completed', 'screening_results',
-      
-      // 候选池事件
       'candidate_added', 'candidate_updated', 'candidate_removed',
-      
-      // 系统事件
-      'system_status', 'health_check', 'error_report'
+      'system_status', 'health_check', 'error_report',
+      // 新增：相似K线事件
+      'pattern_similarity_progress', 'pattern_similarity_result'
     ]
 
     businessEvents.forEach(eventName => {
       socket.on(eventName, (data: any) => {
-        // 确定事件类型
         let eventType: 'info' | 'success' | 'warning' | 'error' = 'info'
-        
-        if (eventName.includes('completed') || eventName.includes('success')) {
+        if (eventName.includes('completed') || eventName.includes('success') || eventName === 'pattern_similarity_result') {
           eventType = 'success'
         } else if (eventName.includes('error') || eventName.includes('failed')) {
           eventType = 'error'
-        } else if (eventName.includes('started') || eventName.includes('progress')) {
+        } else if (eventName.includes('started') || eventName.includes('progress') || eventName.includes('fetching') || eventName.includes('phase')) {
           eventType = 'info'
         }
-
-        // 转发到事件总线
         websocketEventBus.emit(namespace, eventName, data, eventType)
       })
     })
 
-    // onAny 兜底：转发所有未列出的事件，例如 task_technical_updated、task_phase_start 等
     socket.onAny((eventName: string, data: any) => {
       let eventType: 'info' | 'success' | 'warning' | 'error' = 'info'
-      if (eventName.includes('completed') || eventName.includes('success') || eventName.includes('updated')) {
+      if (eventName.includes('completed') || eventName.includes('success') || eventName.includes('updated') || eventName === 'pattern_similarity_result') {
         eventType = 'success'
       } else if (eventName.includes('error') || eventName.includes('failed')) {
         eventType = 'error'
       } else if (eventName.includes('started') || eventName.includes('progress') || eventName.includes('fetching') || eventName.includes('phase')) {
         eventType = 'info'
       }
-
       websocketEventBus.emit(namespace, eventName, data, eventType)
     })
   }
@@ -301,16 +270,7 @@ export class UnifiedWebSocketManager {
       this.connectionStatus.delete(namespace)
       this.configs.delete(namespace)
       
-      // 清除重连定时器
-      if (this.reconnectTimers.has(namespace)) {
-        clearTimeout(this.reconnectTimers.get(namespace)!)
-        this.reconnectTimers.delete(namespace)
-      }
-      
       console.log(`🔌 Disconnected from ${namespace}`)
-      
-      // 通知事件总线清除连接信息
-      // Connection info will be cleaned up by the event bus automatically
     }
   }
 
@@ -330,32 +290,26 @@ export class UnifiedWebSocketManager {
     })
     console.log('🔌 Disconnected from all namespaces')
     
-    // 重置事件总线
     websocketEventBus.reset()
   }
 
-  // 获取所有活跃的命名空间
   getActiveNamespaces(): string[] {
     return Array.from(this.sockets.keys())
   }
 
-  // 检查是否已连接
   isConnected(namespace: string): boolean {
     return this.connectionStatus.get(namespace) || false
   }
 
-  // 获取事件总线实例（供外部访问）
   getEventBus() {
     return websocketEventBus
   }
 
-  // 批量连接多个命名空间
   async connectMultiple(namespaces: string[]): Promise<void> {
     const promises = namespaces.map(namespace => this.connect(namespace))
     await Promise.allSettled(promises)
   }
 
-  // 健康检查
   async healthCheck(): Promise<Record<string, boolean>> {
     const status: Record<string, boolean> = {}
     
@@ -367,8 +321,6 @@ export class UnifiedWebSocketManager {
   }
 }
 
-// 创建并导出单例实例
 export const unifiedWebSocketManager = new UnifiedWebSocketManager()
 
-// 默认导出
 export default unifiedWebSocketManager 

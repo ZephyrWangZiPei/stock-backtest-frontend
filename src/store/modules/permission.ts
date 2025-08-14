@@ -115,6 +115,20 @@ export const constantRoutes: RouteRecordRaw[] = [
         meta: { title: '统一AI分析', icon: 'nested' }
       }
     ]
+  },
+  {
+    path: '/pattern-similarity',
+    component: () => import('../../layout/index.vue'),
+    name: 'PatternSimilarity',
+    meta: { title: '相似K线', icon: 'trend-charts' },
+    children: [
+      {
+        path: 'search',
+        name: 'SimilaritySearch',
+        component: () => import('../../views/SimilaritySearchView.vue'),
+        meta: { title: '相似走势检索', icon: 'search' }
+      }
+    ]
   }
 ]
 

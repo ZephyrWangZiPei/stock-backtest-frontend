@@ -228,35 +228,26 @@ class UnifiedHttpClient {
       (error) => {
         console.error('❌ Response Error:', error)
         
-        if (error.response) {
-          const { status, data } = error.response
-          let message = data?.message || data?.error || '请求失败'
-          
-          switch (status) {
-            case 400:
-              message = `请求参数错误: ${message}`
-              break
-            case 401:
-              message = '未授权访问'
-              break
-            case 403:
-              message = '访问被拒绝'
-              break
-            case 404:
-              message = '接口不存在'
-              break
-            case 500:
-              message = `服务器内部错误: ${message}`
-              break
-            default:
-              message = `请求失败 (${status}): ${message}`
+        // 静默错误：当设置了 X-Silent-Error 时不弹 toast
+        const silent = error?.config?.headers && (error.config.headers['X-Silent-Error'] === '1' || error.config.headers['X-Silent-Error'] === 1)
+        if (!silent) {
+          if (error.response) {
+            const { status, data } = error.response
+            let message = data?.message || data?.error || '请求失败'
+            switch (status) {
+              case 400: message = `请求参数错误: ${message}`; break
+              case 401: message = '未授权访问'; break
+              case 403: message = '访问被拒绝'; break
+              case 404: message = '接口不存在'; break
+              case 500: message = `服务器内部错误: ${message}`; break
+              default: message = `请求失败 (${status}): ${message}`
+            }
+            ElMessage.error(message)
+          } else if (error.request) {
+            ElMessage.error('网络连接失败，请检查网络设置')
+          } else {
+            ElMessage.error('请求配置错误')
           }
-          
-          ElMessage.error(message)
-        } else if (error.request) {
-          ElMessage.error('网络连接失败，请检查网络设置')
-        } else {
-          ElMessage.error('请求配置错误')
         }
         
         return Promise.reject(error)
@@ -581,6 +572,29 @@ class UnifiedHttpClient {
     // 获取工作流列表
     getWorkflows: (): Promise<ApiResponse<any[]>> =>
       this.instance.get('/workflow/list')
+  }
+
+  // 相似K线与AI预测
+  patternSimilarity = {
+    // 触发融合预测
+    requestAIForecast: (params: { runId: string; horizon?: number; baseDate?: string; baseClose?: number }): Promise<ApiResponse<any>> =>
+      this.instance.post('/analysis/pattern-similarity/ai-forecast', params),
+
+    // 获取融合预测
+    getAIForecast: (runId: string): Promise<ApiResponse<any>> =>
+      this.instance.get(`/analysis/pattern-similarity/ai-forecast/${runId}`),
+
+    // 静默获取融合预测（404不弹toast）
+    getAIForecastSilent: (runId: string): Promise<ApiResponse<any>> =>
+      this.instance.get(`/analysis/pattern-similarity/ai-forecast/${runId}`, { headers: { 'X-Silent-Error': '1' } }),
+
+    // 获取相似区间路径
+    getPath: (params: { stock: string; start: string; end: string; extendDays?: number }): Promise<ApiResponse<any>> =>
+      this.instance.get('/analysis/pattern-similarity/path', { params }),
+
+    // 获取检索结果（含 query，可用于恢复表单）
+    getResult: (runId: string): Promise<ApiResponse<any>> =>
+      this.instance.get(`/analysis/pattern-similarity/result/${runId}`)
   }
 }
 

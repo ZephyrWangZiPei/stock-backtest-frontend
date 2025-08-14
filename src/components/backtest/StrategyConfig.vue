@@ -44,9 +44,12 @@
             v-model="localConfig.stockPool" 
             multiple 
             filterable 
+            remote
+            :remote-method="remoteSearchStocks"
+            :loading="loadingStocks"
             placeholder="选择股票" 
             style="width: 100%"
-            max-collapse-tags="3"
+            :max-collapse-tags="3"
             collapse-tags
           >
             <el-option 
@@ -136,7 +139,7 @@
             :step="5"
             show-stops
             show-tooltip
-            :format-tooltip="(val: number) => `${val}%`"
+            :format-tooltip="(val) => `${val}%`"
           />
         </el-form-item>
         
@@ -233,7 +236,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { VideoPlay, Loading } from '@element-plus/icons-vue'
-import unifiedHttpClient from '@/utils/unifiedHttpClient'
+import unifiedHttpClient from '../../utils/unifiedHttpClient'
 
 // 接口定义
 interface StrategyConfig {
@@ -322,10 +325,12 @@ const loadAvailableStrategies = async () => {
     const response = await unifiedHttpClient.backtest.getStrategies()
     console.log('策略列表接口响应:', response)
     
-    if (response.data.data && Array.isArray(response.data.data)) {
-      availableStrategies.value = response.data.data
-      console.log('加载策略列表成功:', response.data.data)
-      ElMessage.success(`成功加载 ${response.data.data.length} 个策略`)
+    const payload: any = (response as any)?.data ?? response
+    const list: any[] = payload?.data ?? []
+    if (Array.isArray(list)) {
+      availableStrategies.value = list as any
+      console.log('加载策略列表成功:', list)
+      ElMessage.success(`成功加载 ${list.length} 个策略`)
     } else {
       console.warn('策略列表响应数据格式异常:', response)
       availableStrategies.value = []
@@ -340,48 +345,32 @@ const loadAvailableStrategies = async () => {
   }
 }
 
-// 加载可用股票列表
-const loadAvailableStocks = async () => {
-  try {
+// 远程搜索股票（与相似K线页面一致的容错处理）
+const _searchTimer = ref<number | null>(null)
+const remoteSearchStocks = (query: string) => {
+  if (_searchTimer.value) window.clearTimeout(_searchTimer.value)
+  _searchTimer.value = window.setTimeout(async () => {
     loadingStocks.value = true
-    
-    const response = await unifiedHttpClient.dataCollection.getStocksList({
-      limit: 500  // 获取更多股票供选择
-    })
-    
-    if (response.data && response.data.stock_list) {
-      availableStocks.value = response.data.stock_list.map((stock: any) => ({
-        code: stock.code,
-        name: stock.name,
-        industry: stock.industry || '未知'
+    try {
+      const res = await unifiedHttpClient.dataCollection.getStocksList({ limit: 30, search: query || '' })
+      const payload = (res as any)?.data?.data ?? (res as any)?.data ?? {}
+      const rawList = payload.stock_list ?? payload.list ?? payload.items ?? []
+      availableStocks.value = rawList.map((x: any) => ({
+        code: x.stock_code ?? x.code ?? x.symbol ?? x.ticker,
+        name: x.stock_name ?? x.name ?? x.title ?? '',
+        industry: x.industry || '未知'
       }))
-    } else {
-      // 备用方案：从筛选API获取股票列表
-      try {
-        const screeningResponse = await unifiedHttpClient.screening.getAvailableStocks()
-        if (screeningResponse.data && screeningResponse.data.data) {
-          availableStocks.value = screeningResponse.data.data.map((stock: any) => ({
-            code: stock.code,
-            name: stock.name,
-            industry: stock.industry || '未知'
-          }))
-        }
-      } catch (error) {
-        console.warn('备用股票列表获取也失败:', error)
-      }
+    } catch (e) {
+      availableStocks.value = []
+    } finally {
+      loadingStocks.value = false
     }
-  } catch (error) {
-    console.error('加载股票列表失败:', error)
-    ElMessage.warning('加载股票列表失败，请检查网络连接')
-    availableStocks.value = []
-  } finally {
-    loadingStocks.value = false
-  }
+  }, 250)
 }
 
 // 组件挂载时加载股票列表和策略列表
 onMounted(() => {
-  loadAvailableStocks()
+  remoteSearchStocks('')
   loadAvailableStrategies()
 })
 

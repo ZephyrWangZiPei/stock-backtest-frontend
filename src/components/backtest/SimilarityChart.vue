@@ -8,50 +8,39 @@
       <div class="row"><span class="label">MA5</span><span class="val">{{ hoverInfo.ma5?.toFixed(2) }}</span></div>
       <div class="row"><span class="label">MA10</span><span class="val">{{ hoverInfo.ma10?.toFixed(2) }}</span></div>
       <div class="row"><span class="label">MA20</span><span class="val">{{ hoverInfo.ma20?.toFixed(2) }}</span></div>
-      <div class="row"><span class="label">净值</span><span class="val">{{ hoverInfo.equity?.toFixed(2) }}</span></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch, nextTick, defineExpose } from 'vue'
-import { createChart, ColorType } from 'lightweight-charts'
-
-interface TradePoint {
-  date: string
-  stock: string
-  action: 'buy' | 'sell'
-  price: number
-  quantity: number
-  amount: number
-  reason?: string
-}
+import { createChart, ColorType, CandlestickSeries, LineSeries } from 'lightweight-charts'
 
 interface KLineBar { time: string; open: number; high: number; low: number; close: number; volume?: number }
 
 const props = defineProps<{
-  portfolioHistory?: { date: string; total_value: number }[]
-  trades: TradePoint[]
   kline?: KLineBar[]
-  overlayLines?: { id: string; data: { time: string; value: number }[]; color?: string; title?: string }[]
+  predLine?: { time: string; value: number }[]
+  bandP25?: { time: string; value: number }[]
+  bandP75?: { time: string; value: number }[]
   highlightRange?: [string, string] | null
+  previewOverlays?: { id: string; data: { time: string; value: number }[]; color?: string; title?: string }[]
 }>()
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const highlightStyle = ref<Record<string, string> | null>(null)
 let chart: any = null
-let areaEquity: any
 let candle: any
 let ma5Series: any
 let ma10Series: any
 let ma20Series: any
+let overlayPred: any
+let overlayP25: any
+let overlayP75: any
+const overlaySeriesMap: Map<string, any> = new Map()
 let resizeObserver: ResizeObserver | null = null
 
-// 叠加线管理
-const overlaySeriesMap: Map<string, any> = new Map()
-
-// 悬浮信息
-const hoverInfo = ref<{ time?: string; close?: number; ma5?: number; ma10?: number; ma20?: number; equity?: number }>({})
+const hoverInfo = ref<{ time?: string; close?: number; ma5?: number; ma10?: number; ma20?: number }>({})
 
 const sortAscByTime = <T extends { time?: string; date?: string }>(arr: T[]) =>
   [...arr].sort((a, b) => new Date((a as any).time || (a as any).date).getTime() - new Date((b as any).time || (b as any).date).getTime())
@@ -69,9 +58,6 @@ const normalizeDate = (d: string | any): string => {
   return `${y}-${m}-${day}`
 }
 
-const toEquitySeries = (history: { date: string; total_value: number }[]) =>
-  sortAscByTime(history).map(p => ({ time: normalizeDate(p.date) as any, value: Number(p.total_value || 0) }))
-
 const toCandleSeries = (bars: KLineBar[]) =>
   sortAscByTime(bars).map(b => ({ time: normalizeDate(b.time) as any, open: b.open, high: b.high, low: b.low, close: b.close }))
 
@@ -88,15 +74,15 @@ const computeMA = (bars: KLineBar[], period: number) => {
   return result
 }
 
-// v4 API 简化封装
 function addCandlestickSeriesCompat(chartApi: any, options: any) {
-  return chartApi.addCandlestickSeries(options)
+  if (typeof chartApi?.addCandlestickSeries === 'function') return chartApi.addCandlestickSeries(options)
+  if (typeof chartApi?.addSeries === 'function') return chartApi.addSeries(CandlestickSeries, options)
+  throw new Error('lightweight-charts: cannot add candlestick series')
 }
 function addLineSeriesCompat(chartApi: any, options: any) {
-  return chartApi.addLineSeries(options)
-}
-function addAreaSeriesCompat(chartApi: any, options: any) {
-  return chartApi.addAreaSeries(options)
+  if (typeof chartApi?.addLineSeries === 'function') return chartApi.addLineSeries(options)
+  if (typeof chartApi?.addSeries === 'function') return chartApi.addSeries(LineSeries, options)
+  throw new Error('lightweight-charts: cannot add line series')
 }
 function removeSeriesCompat(chartApi: any, series: any) {
   if (typeof chartApi?.removeSeries === 'function') return chartApi.removeSeries(series)
@@ -114,26 +100,8 @@ function updateHighlight() {
     const left = Math.min(x1, x2)
     const width = Math.max(2, Math.abs(x2 - x1))
     const rect = containerRef.value.getBoundingClientRect()
-    highlightStyle.value = {
-      left: `${left}px`,
-      width: `${width}px`,
-      top: '0px',
-      height: `${rect.height}px`,
-      background: 'rgba(170, 0, 255, 0.10)',
-      position: 'absolute'
-    }
+    highlightStyle.value = { left: `${left}px`, width: `${width}px`, top: '0px', height: `${rect.height}px`, background: 'rgba(170, 0, 255, 0.10)', position: 'absolute' }
   } catch { highlightStyle.value = null }
-}
-
-const buildMarkers = (trades: TradePoint[]) => {
-  const sortedTrades = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  return sortedTrades.map(t => ({
-    time: normalizeDate(t.date) as any,
-    position: t.action === 'buy' ? 'belowBar' : 'aboveBar',
-    color: t.action === 'buy' ? '#67C23A' : '#F56C6C',
-    shape: t.action === 'buy' ? 'arrowUp' : 'arrowDown',
-    text: `${t.action === 'buy' ? '买' : '卖'} ${Math.round((t.quantity||0)/100)}手`
-  }))
 }
 
 onMounted(async () => {
@@ -142,53 +110,24 @@ onMounted(async () => {
 
   try {
     chart = createChart(containerRef.value, {
-      layout: {
-        textColor: '#2B2F36',
-        background: { type: ColorType.Solid, color: 'transparent' },
-        fontFamily: 'Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, Arial, sans-serif'
-      },
+      layout: { textColor: '#2B2F36', background: { type: ColorType.Solid, color: 'transparent' }, fontFamily: 'Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, Arial, sans-serif' },
       height: 380,
-      timeScale: {
-        rightOffset: 4,
-        fixLeftEdge: true,
-        fixRightEdge: false,
-        borderVisible: true,
-        timeVisible: true,
-        secondsVisible: false
-      },
+      timeScale: { rightOffset: 4, fixLeftEdge: true, fixRightEdge: false, borderVisible: true, timeVisible: true, secondsVisible: false },
       rightPriceScale: { visible: true, borderVisible: true, autoScale: true, scaleMargins: { top: 0.1, bottom: 0.1 } },
-      leftPriceScale: { visible: true, borderVisible: true, autoScale: true, scaleMargins: { top: 0.1, bottom: 0.1 } },
-      grid: {
-        horzLines: { color: 'rgba(0,0,0,0.08)' },
-        vertLines: { color: 'rgba(0,0,0,0.04)' }
-      },
-      crosshair: {
-        vertLine: { color: 'rgba(60,70,90,0.65)', width: 1, style: 1 },
-        horzLine: { color: 'rgba(60,70,90,0.35)', width: 1, style: 1 }
-      },
+      grid: { horzLines: { color: 'rgba(0,0,0,0.08)' }, vertLines: { color: 'rgba(0,0,0,0.04)' } },
+      crosshair: { vertLine: { color: 'rgba(60,70,90,0.65)', width: 1, style: 1 }, horzLine: { color: 'rgba(60,70,90,0.35)', width: 1, style: 1 } },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true },
       handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
       localization: { locale: 'zh-CN' }
     })
 
-    // K线（右轴）
-    candle = addCandlestickSeriesCompat(chart, {
-      priceScaleId: 'right',
-      upColor: '#F56C6C',
-      downColor: '#26A69A',
-      borderUpColor: '#F56C6C',
-      borderDownColor: '#26A69A',
-      wickUpColor: '#F56C6C',
-      wickDownColor: '#26A69A'
-    })
+    // K线
+    candle = addCandlestickSeriesCompat(chart, { priceScaleId: 'right', upColor: '#F56C6C', downColor: '#26A69A', borderUpColor: '#F56C6C', borderDownColor: '#26A69A', wickUpColor: '#F56C6C', wickDownColor: '#26A69A' })
 
-    // 均线（右轴）
+    // MA
     ma5Series = addLineSeriesCompat(chart, { priceScaleId: 'right', color: '#FFD166', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false })
     ma10Series = addLineSeriesCompat(chart, { priceScaleId: 'right', color: '#06D6A0', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false })
     ma20Series = addLineSeriesCompat(chart, { priceScaleId: 'right', color: '#118AB2', lineWidth: 1.5, lastValueVisible: false, priceLineVisible: false })
-
-    // 净值曲线（左轴）
-    areaEquity = addAreaSeriesCompat(chart, { priceScaleId: 'left', lineColor: '#409EFF', topColor: 'rgba(64,158,255,0.25)', bottomColor: 'rgba(64,158,255,0.02)', lineWidth: 2, priceFormat: { type: 'price', precision: 2, minMove: 0.01 } })
 
     // 初始数据
     if (props.kline?.length) {
@@ -200,13 +139,10 @@ onMounted(async () => {
       chart.timeScale().fitContent()
     }
 
-    if (props.portfolioHistory?.length) {
-      areaEquity.setData(toEquitySeries(props.portfolioHistory))
-    }
-
-    if (props.trades?.length) {
-      candle.setMarkers(buildMarkers(props.trades))
-    }
+    // 预测与带
+    overlayPred = addLineSeriesCompat(chart, { priceScaleId: 'right', color: '#A020F0', lineWidth: 3, lineStyle: 1, lastValueVisible: false, priceLineVisible: false })
+    overlayP25 = addLineSeriesCompat(chart, { priceScaleId: 'right', color: 'rgba(160,32,240,0.35)', lineWidth: 1, lineStyle: 1, lastValueVisible: false, priceLineVisible: false })
+    overlayP75 = addLineSeriesCompat(chart, { priceScaleId: 'right', color: 'rgba(160,32,240,0.35)', lineWidth: 1, lineStyle: 1, lastValueVisible: false, priceLineVisible: false })
 
     // 悬浮信息
     chart.subscribeCrosshairMove((param: any) => {
@@ -230,15 +166,7 @@ onMounted(async () => {
       const ma5Point: any = seriesMap.get(ma5Series)
       const ma10Point: any = seriesMap.get(ma10Series)
       const ma20Point: any = seriesMap.get(ma20Series)
-      const equityPoint: any = seriesMap.get(areaEquity)
-      hoverInfo.value = {
-        time: toTimeStr(param.time),
-        close: candlePoint?.close ?? candlePoint?.value,
-        ma5: ma5Point?.value,
-        ma10: ma10Point?.value,
-        ma20: ma20Point?.value,
-        equity: equityPoint?.value
-      }
+      hoverInfo.value = { time: toTimeStr(param.time), close: candlePoint?.close ?? candlePoint?.value, ma5: ma5Point?.value, ma10: ma10Point?.value, ma20: ma20Point?.value }
     })
 
     // 自适应
@@ -252,12 +180,10 @@ onMounted(async () => {
     resizeObserver.observe(containerRef.value)
 
     chart.timeScale().fitContent()
-  } catch (error) {
-    console.error('图表初始化失败:', error)
-  }
+  } catch (e) { console.error('图表初始化失败:', e) }
 })
 
-onBeforeUnmount(() => { 
+onBeforeUnmount(() => {
   if (resizeObserver && containerRef.value) resizeObserver.unobserve(containerRef.value)
   if (chart && typeof chart.remove === 'function') chart.remove()
 })
@@ -270,92 +196,55 @@ watch(() => props.kline, (val) => {
     ma5Series.setData(computeMA(val, 5))
     ma10Series.setData(computeMA(val, 10))
     ma20Series.setData(computeMA(val, 20))
-    // 重新应用交易标记，避免先有交易后到K线时未标注
-    if (props.trades?.length) {
-      candle.setMarkers(buildMarkers(props.trades))
-    }
     chart.timeScale().fitContent()
     updateHighlight()
   } catch (e) { console.error('更新K线失败:', e) }
 }, { deep: true })
 
-watch(() => props.portfolioHistory, (val) => {
-  if (!val || !val.length || !areaEquity) return
+watch(() => props.predLine, (val) => {
+  if (!overlayPred) return
   try {
-    areaEquity.setData(toEquitySeries(val))
-  } catch (e) { console.error('更新净值失败:', e) }
+    const sorted = sortAscByTime(val || [])
+    overlayPred.setData(sorted.map(p => ({ time: normalizeDate(p.time) as any, value: Number(p.value) })))
+  } catch (e) { console.error('更新预测线失败:', e) }
 }, { deep: true })
 
-watch(() => props.trades, (val) => {
-  if (!val || !candle) return
+watch(() => props.bandP25, (val) => {
+  if (!overlayP25) return
   try {
-    candle.setMarkers(buildMarkers(val))
-  } catch (e) { console.error('更新标注失败:', e) }
+    const sorted = sortAscByTime(val || [])
+    overlayP25.setData(sorted.map(p => ({ time: normalizeDate(p.time) as any, value: Number(p.value) })))
+  } catch (e) { console.error('更新p25失败:', e) }
 }, { deep: true })
 
-// 监听 overlayLines 变化
-watch(() => props.overlayLines, (val) => {
+watch(() => props.bandP75, (val) => {
+  if (!overlayP75) return
+  try {
+    const sorted = sortAscByTime(val || [])
+    overlayP75.setData(sorted.map(p => ({ time: normalizeDate(p.time) as any, value: Number(p.value) })))
+  } catch (e) { console.error('更新p75失败:', e) }
+}, { deep: true })
+
+watch(() => props.previewOverlays, (val) => {
   if (!chart) return
   try {
-    // 删除不存在的叠加线
     const incomingIds = new Set((val || []).map(l => l.id))
     for (const [id, series] of overlaySeriesMap.entries()) {
-      if (!incomingIds.has(id)) {
-        removeSeriesCompat(chart, series)
-        overlaySeriesMap.delete(id)
-      }
+      if (!incomingIds.has(id)) { removeSeriesCompat(chart, series); overlaySeriesMap.delete(id) }
     }
-    // 更新/新增叠加线
     ;(val || []).forEach(line => {
       let series = overlaySeriesMap.get(line.id)
-      const isAiPred = line.id === 'ai_pred'
-      const opts = { priceScaleId: 'right', color: line.color || '#A020F0', lineWidth: isAiPred ? 3 : 1.5, lineStyle: isAiPred ? 1 : 0, lastValueVisible: false, priceLineVisible: false }
-      if (!series) {
-        series = addLineSeriesCompat(chart, opts)
-        overlaySeriesMap.set(line.id, series)
-      } else {
-        series.applyOptions(opts)
-      }
+      const opts = { priceScaleId: 'right', color: line.color || '#999', lineWidth: 1.2, lineStyle: 0, lastValueVisible: false, priceLineVisible: false }
+      if (!series) { series = addLineSeriesCompat(chart, opts); overlaySeriesMap.set(line.id, series) }
+      else { series.applyOptions(opts) }
       const sorted = sortAscByTime(line.data)
-      series.setData(sorted.map(p => ({ time: p.time as any, value: Number(p.value) })))
-      // 为AI预测端点加标记
-      if (isAiPred && sorted.length) {
-        try {
-          const markers = [
-            { time: sorted[0].time as any, position: 'aboveBar', color: '#A020F0', shape: 'circle', text: '预测' },
-            { time: sorted[sorted.length-1].time as any, position: 'aboveBar', color: '#A020F0', shape: 'circle', text: '' }
-          ]
-          series.setMarkers?.(markers as any)
-        } catch {}
-      }
+      series.setData(sorted.map(p => ({ time: normalizeDate(p.time) as any, value: Number(p.value) })))
     })
     updateHighlight()
-  } catch (e) {
-    console.error('更新叠加线失败:', e)
-  }
+  } catch (e) { console.error('更新预览叠加失败:', e) }
 }, { deep: true })
 
 watch(() => props.highlightRange, () => updateHighlight(), { deep: true })
-
-// 暴露方法
-function updateEquityPoint(point: { date: string; total_value: number }) {
-  if (!areaEquity) return
-  try {
-    areaEquity.update({ time: point.date as any, value: Number(point.total_value || 0) })
-  } catch (e) { console.error('追加净值点失败:', e) }
-}
-
-function clearOverlays() {
-  try {
-    for (const [, series] of overlaySeriesMap.entries()) {
-      removeSeriesCompat(chart, series)
-    }
-    overlaySeriesMap.clear()
-    updateHighlight()
-  } catch (e) { console.error('清理叠加线失败:', e) }
-}
-
-defineExpose({ updateEquityPoint, clearOverlays })
 </script>
 
 <script lang="ts">

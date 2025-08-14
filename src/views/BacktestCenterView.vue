@@ -6,10 +6,11 @@
       <p>配置交易策略，进行历史数据回测，分析策略效果</p>
     </div>
 
-    <!-- 主要内容区域 -->
-    <el-row :gutter="20" class="main-content">
-      <!-- 左侧策略配置 -->
-      <el-col :xs="24" :lg="8">
+    <!-- 主体布局：左侧固定配置；右侧上下分区：上-结果+相似K，下-进度+历史 -->
+    <el-row :gutter="16" class="layout">
+      <!-- 左侧：策略配置（粘性） -->
+      <el-col :xs="24" :lg="6">
+        <div class="sticky">
         <StrategyConfig
           :config="backtestConfig"
           :is-running="isBacktestRunning"
@@ -17,118 +18,74 @@
           @start-backtest="startBacktest"
           @reset-config="resetConfig"
           @save-template="saveTemplate"
-        />
-        
-        <!-- 回测进度 -->
-        <div style="margin-top: 20px;">
-          <BacktestProgress
-            :progress="backtestProgress"
-            :is-running="isBacktestRunning"
-            @stop-backtest="stopBacktest"
-            @clear-logs="clearLogs"
           />
         </div>
       </el-col>
       
-      <!-- 右侧结果展示 -->
-      <el-col :xs="24" :lg="16">
-        <el-card class="results-card">
+      <!-- 右侧：上半区：结果 + 相似K线 -->
+      <el-col :xs="24" :lg="18">
+        <div class="right-grid">
+          <el-card class="results-card grid-results">
           <template #header>
             <div class="card-header">
               <span>回测结果</span>
               <div class="header-actions" v-if="backtestResults">
-                <el-button size="small" @click="compareResults">
-                  <el-icon><TrendCharts /></el-icon>
-                  对比分析
-                </el-button>
-                <el-button size="small" @click="exportReport">
-                  <el-icon><Document /></el-icon>
-                  导出报告
-                </el-button>
+                  <el-button size="small" @click="compareResults"><el-icon><TrendCharts /></el-icon>对比分析</el-button>
+                  <el-button size="small" @click="exportReport"><el-icon><Document /></el-icon>导出报告</el-button>
               </div>
             </div>
           </template>
-          
-          <BacktestResults :results="backtestResults" />
+            <BacktestResultsComp :results="backtestResults" :overlayLines="overlayLines" />
         </el-card>
-      </el-col>
-    </el-row>
 
-    <!-- 历史回测记录 -->
-    <el-row :gutter="20" style="margin-top: 20px;">
-      <el-col :span="24">
-        <el-card class="history-card">
+          
+          <el-card class="history-card grid-history">
           <template #header>
             <div class="card-header">
               <span>历史回测记录</span>
-              <el-button size="small" @click="refreshHistory">
-                <el-icon><Refresh /></el-icon>
-                刷新
-              </el-button>
+                <el-button size="small" @click="refreshHistory"><el-icon><Refresh /></el-icon>刷新</el-button>
             </div>
           </template>
-          
-          <div class="history-content" style="max-height: 400px; overflow-y: auto;">
+            <div class="history-content">
             <el-table :data="backtestHistory" stripe size="small">
               <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="strategyName" label="策略名称" width="120" />
+                <el-table-column prop="strategyName" label="策略" width="120" />
               <el-table-column prop="stockPool" label="股票池" width="150">
                 <template #default="{ row }">
-                  <el-tag v-for="stock in row.stockPool.slice(0, 2)" :key="stock" size="small" style="margin: 1px;">
-                    {{ stock }}
-                  </el-tag>
-                  <span v-if="row.stockPool.length > 2" class="more-stocks">
-                    +{{ row.stockPool.length - 2 }}
-                  </span>
+                    <el-tag v-for="stock in row.stockPool.slice(0, 2)" :key="stock" size="small" style="margin: 1px;">{{ stock }}</el-tag>
+                    <span v-if="row.stockPool.length > 2" class="more-stocks">+{{ row.stockPool.length - 2 }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="dateRange" label="回测期间" width="200" />
-              <el-table-column prop="totalReturn" label="总收益率" width="100">
-                <template #default="{ row }">
-                  <span :class="getReturnClass(row.totalReturn)">
-                    {{ formatPercent(row.totalReturn) }}
-                  </span>
-                </template>
+                <el-table-column prop="totalReturn" label="收益" width="100">
+                  <template #default="{ row }"><span :class="getReturnClass(row.totalReturn)">{{ formatPercent(row.totalReturn) }}</span></template>
               </el-table-column>
-              <el-table-column prop="sharpeRatio" label="夏普比率" width="100" />
-              <el-table-column prop="maxDrawdown" label="最大回撤" width="100">
-                <template #default="{ row }">
-                  <span class="negative">{{ formatPercent(row.maxDrawdown) }}</span>
-                </template>
+                <el-table-column prop="sharpeRatio" label="夏普" width="80" />
+                <el-table-column prop="maxDrawdown" label="回撤" width="90">
+                  <template #default="{ row }"><span class="negative">{{ formatPercent(row.maxDrawdown) }}</span></template>
               </el-table-column>
               <el-table-column prop="createTime" label="创建时间" width="150" />
               <el-table-column label="操作" width="150" fixed="right">
                 <template #default="{ row }">
                   <el-button-group size="small">
-                    <el-button @click="viewHistoryDetail(row)">
-                      <el-icon><View /></el-icon>
-                      查看
-                    </el-button>
-                    <el-button @click="cloneBacktest(row)">
-                      <el-icon><CopyDocument /></el-icon>
-                      克隆
-                    </el-button>
-                    <el-button type="danger" @click="deleteBacktest(row)">
-                      <el-icon><Delete /></el-icon>
-                      删除
-                    </el-button>
+                      <el-button @click="viewHistoryDetail(row)"><el-icon><View /></el-icon>查看</el-button>
+                      <el-button @click="cloneBacktest(row)"><el-icon><CopyDocument /></el-icon>克隆</el-button>
+                      <el-button type="danger" @click="deleteBacktest(row)"><el-icon><Delete /></el-icon>删除</el-button>
                   </el-button-group>
                 </template>
               </el-table-column>
             </el-table>
-            
-            <!-- 分页 -->
             <div class="pagination-wrapper">
-              <el-pagination
-                :current-page="historyPage"
-                :page-size="historyPageSize"
-                :total="historyTotal"
-                layout="total, prev, pager, next"
-                @current-change="handleHistoryPageChange"
-              />
+                <el-pagination :current-page="historyPage" :page-size="historyPageSize" :total="historyTotal" layout="total, prev, pager, next" @current-change="handleHistoryPageChange" />
             </div>
           </div>
         </el-card>
+
+          <el-card class="progress-card grid-progress" style="min-height: 240px;">
+            <template #header><span>回测进度</span></template>
+            <BacktestProgress :progress="backtestProgress" :is-running="isBacktestRunning" @stop-backtest="stopBacktest" @clear-logs="clearLogs" />
+          </el-card>
+        </div>
       </el-col>
     </el-row>
   </div>
@@ -146,15 +103,94 @@ import {
   Delete 
 } from '@element-plus/icons-vue'
 import { StrategyConfig, BacktestResults, BacktestProgress } from '../components/backtest'
+import BacktestResultsComp from '../components/backtest/BacktestResults.vue'
 
 // 导入API客户端和WebSocket服务
-import unifiedHttpClient from '@/utils/unifiedHttpClient'
-import type { BacktestConfig as APIBacktestConfig, BacktestResult } from '@/utils/unifiedHttpClient'
-import { websocketEventBus } from '@/utils/websocketEventBus'
-import { realtimeDataService } from '@/services/realtimeDataService'
-import { UnifiedWebSocketManager } from '@/utils/unifiedWebSocketManager'
+import unifiedHttpClient from '../utils/unifiedHttpClient'
+import type { BacktestConfig as APIBacktestConfig, BacktestResult } from '../utils/unifiedHttpClient'
+import { websocketEventBus } from '../utils/websocketEventBus'
+import { realtimeDataService } from '../services/realtimeDataService'
+import { UnifiedWebSocketManager } from '../utils/unifiedWebSocketManager'
 
 const websocketManager = new UnifiedWebSocketManager()
+const overlayLines = ref<{ id: string; data: { time: string; value: number }[]; color?: string }[]>([])
+let backtestListenersRegistered = false
+
+function handleOverlay(line: { id: string; data: { time: string; value: number }[]; color?: string }) {
+  // 简单策略：只保留一条叠加线
+  overlayLines.value = [line]
+}
+function clearOverlays() {
+  overlayLines.value = []
+}
+
+async function ensureBacktestSocketListeners() {
+  try {
+    await websocketManager.connect('/backtest')
+  } catch (e) {
+    console.warn('连接/backtest失败:', e)
+  }
+  if (backtestListenersRegistered) return
+  websocketManager.on('/backtest', 'backtest_progress', (data: any) => {
+    if (!currentTaskId.value || data.task_id !== currentTaskId.value || !backtestProgress.value) return
+    backtestProgress.value.overall = data.overall_progress || data.progress || 0
+    if (data.stage_progress) Object.assign(backtestProgress.value.stages, data.stage_progress)
+    backtestProgress.value.processedDays = data.processed_days || 0
+    backtestProgress.value.totalTrades = data.total_trades || 0
+    backtestProgress.value.currentValue = data.current_value || backtestConfig.value.initialCapital
+    if (data.message) {
+      backtestProgress.value.logs.push({ time: new Date().toLocaleTimeString(), level: data.level || 'info', message: data.message })
+    }
+    if (data.overall_progress >= 100 || data.progress >= 100) { isBacktestRunning.value = false }
+  })
+  websocketManager.on('/backtest', 'trade_event', (trade: any) => {
+    if (!currentTaskId.value || !backtestProgress.value) return
+    const actionText = trade.trade_type === 'buy' ? '买入' : (trade.trade_type === 'sell' ? '卖出' : String(trade.trade_type))
+    backtestProgress.value.logs.push({ time: new Date().toLocaleTimeString(), level: 'info', message: `交易 ${actionText} ${trade.stock_code || trade.stock || ''} 数量 ${trade.quantity || 0} 价格 ¥${trade.price || 0}` })
+    backtestProgress.value.totalTrades = (backtestProgress.value.totalTrades || 0) + 1
+  })
+  // 回测完成 -> 构建结果并请求K线
+  websocketManager.on('/backtest', 'backtest_completed', (data: any) => {
+    if (!currentTaskId.value || data.task_id !== currentTaskId.value) return
+    isBacktestRunning.value = false
+    if (data.results) {
+      backtestResults.value = {
+        totalReturn: Number(data.results.total_return || 0),
+        annualReturn: Number(data.results.annual_return || 0),
+        sharpeRatio: Number(data.results.sharpe_ratio || 0),
+        maxDrawdown: Number(data.results.max_drawdown || 0),
+        totalTrades: Number(data.results.total_trades || 0),
+        winRate: Number(data.results.win_rate || 0),
+        volatility: Number(data.results.volatility || 0),
+        finalValue: Number(data.results.final_capital ?? backtestConfig.value.initialCapital),
+        monthlyReturns: computeMonthlyReturns(data.results.portfolio_history),
+        positionAnalysis: [{ stock: data.results.stock_code, return: Number(data.results.total_return || 0), trades: Number(data.results.total_trades || 0) }],
+        trades: mapTrades(data.trades),
+        portfolioHistory: (data.results.portfolio_history || []) as any,
+        klineData: [] as any
+      }
+      const stockCode = data.results.stock_code || backtestConfig.value.stockPool?.[0]
+      if (stockCode) {
+        const fmt = (d: any) => { const dt = new Date(d); const y = dt.getFullYear(); const m = String(dt.getMonth() + 1).padStart(2, '0'); const day = String(dt.getDate()).padStart(2, '0'); return `${y}-${m}-${day}` }
+        websocketManager.emit('/backtest', 'get_stock_daily_data', {
+          stock_code: stockCode,
+          start_date: fmt(backtestConfig.value.dateRange?.[0]),
+          end_date: fmt(backtestConfig.value.dateRange?.[1]),
+          limit: 2000
+        })
+      }
+    }
+  })
+  // 接收K线
+  websocketManager.on('/backtest', 'stock_daily_data', (payload: any) => {
+    if (!backtestResults.value) return
+    const data = Array.isArray(payload?.data) ? payload.data : []
+    const sorted = data.slice().sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime())
+    ;(backtestResults.value as any).klineData = sorted
+    try { console.log('[BacktestCenterView] stock_daily_data received, count:', sorted.length, 'range:', sorted[0]?.time, '->', sorted[sorted.length-1]?.time) } catch {}
+  })
+  backtestListenersRegistered = true
+}
 
 // 接口定义
 interface BacktestConfig {
@@ -258,7 +294,13 @@ const historyTotal = ref(0)
 const backtestConfig = ref<BacktestConfig>({
   strategy: '',
   stockPool: [],
-  dateRange: null,
+  dateRange: (() => {
+    const end = new Date()
+    const start = new Date()
+    start.setFullYear(end.getFullYear() - 1)
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    return [fmt(start), fmt(end)] as [string, string]
+  })(),
   initialCapital: 100000,
   commission: 0.0003,
   stampTax: 0.001,
@@ -285,18 +327,24 @@ const getReturnClass = (value: number) => {
 
 // 映射交易记录到前端格式
 const mapTrades = (trades: any[]): Trade[] => {
-  return trades.map(trade => ({
+  const norm = (d: any) => {
+    const dt = new Date(d)
+    if (isNaN(dt.getTime())) return String(d || '')
+    const y = dt.getFullYear(); const m = String(dt.getMonth() + 1).padStart(2, '0'); const day = String(dt.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+  return (trades || []).map(trade => ({
     id: trade.id || `trade_${Date.now()}_${Math.random()}`,
-    date: trade.trade_date || trade.date || '--',
-    stock: trade.stock_code || '--',
-    action: trade.trade_type === 'buy' ? 'buy' : 'sell',
-    price: trade.price || 0,
-    quantity: trade.quantity || 0,
-    amount: trade.amount || 0,
-    return: trade.return || null,
+    date: trade.trade_date || trade.date ? norm(trade.trade_date || trade.date) : '--',
+    stock: trade.stock_code || trade.stock || '--',
+    action: (trade.trade_type || trade.action) === 'buy' ? 'buy' : 'sell',
+    price: Number(trade.price || 0),
+    quantity: Number(trade.quantity || 0),
+    amount: Number(trade.amount || 0),
+    return: trade.return ?? null,
     reason: trade.reason || '策略信号'
-  }));
-};
+  }))
+}
 
 // 格式化数量显示（股数转手数）
 const formatQuantity = (quantity: number): string => {
@@ -348,6 +396,7 @@ const computeMonthlyReturns = (portfolioHistory: any[]): MonthlyReturn[] => {
 const startBacktest = async () => {
   try {
     isBacktestRunning.value = true
+    await ensureBacktestSocketListeners()
     
     // 验证配置
     if (!backtestConfig.value.strategy) {
@@ -365,12 +414,20 @@ const startBacktest = async () => {
       return
     }
     
+    const fmt = (d: any) => {
+      const dt = new Date(d)
+      const y = dt.getFullYear()
+      const m = String(dt.getMonth() + 1).padStart(2, '0')
+      const day = String(dt.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    }
+    
     // 启动真实回测任务
     const response = await unifiedHttpClient.backtest.startBacktest({
-      strategy_id: backtestConfig.value.strategy, // 直接使用策略ID，不需要parseInt
-      stock_code: backtestConfig.value.stockPool[0], // 使用第一个股票代码，因为后端期望单个股票
-      start_date: backtestConfig.value.dateRange[0],
-      end_date: backtestConfig.value.dateRange[1],
+      strategy_id: backtestConfig.value.strategy as any, // 后端接受字符串/数字ID
+      stock_codes: [backtestConfig.value.stockPool[0]],
+      start_date: fmt(backtestConfig.value.dateRange[0]),
+      end_date: fmt(backtestConfig.value.dateRange[1]),
       initial_capital: backtestConfig.value.initialCapital,
       parameters: {
         commission: backtestConfig.value.commission,
@@ -379,12 +436,12 @@ const startBacktest = async () => {
         max_position_pct: backtestConfig.value.maxPositionPct,
         stop_loss: backtestConfig.value.stopLoss,
         take_profit: backtestConfig.value.takeProfit,
-        ...backtestConfig.value.strategyParams // 合并策略特定参数
+        ...backtestConfig.value.strategyParams
       }
     })
     
-    if (response.data && response.data.task_id) {
-      currentTaskId.value = response.data.task_id
+    if (response.data && (response.data as any).task_id) {
+      currentTaskId.value = (response.data as any).task_id
       
              // 初始化进度状态
        backtestProgress.value = {
@@ -395,7 +452,7 @@ const startBacktest = async () => {
            trading_simulation: 0,
            result_analysis: 0
          },
-         currentDate: backtestConfig.value.dateRange[0],
+         currentDate: fmt(backtestConfig.value.dateRange[0]),
          processedDays: 0,
          totalTrades: 0,
          currentValue: backtestConfig.value.initialCapital,
@@ -405,14 +462,11 @@ const startBacktest = async () => {
          logs: [{
            time: new Date().toLocaleTimeString(),
            level: 'info',
-           message: '回测任务已启动，正在连接WebSocket监听进度...'
+           message: '回测任务已启动，已建立进度监听...'
          }]
        }
       
-      // 连接WebSocket监听回测进度
-      connectBacktestWebSocket(response.data.task_id)
-      
-      ElMessage.success(`回测任务已启动，任务ID: ${response.data.task_id}`)
+       ElMessage.success(`回测任务已启动，任务ID: ${(response.data as any).task_id}`)
     } else {
       throw new Error('回测任务启动失败')
     }
@@ -432,6 +486,13 @@ const startBacktest = async () => {
 
 // 连接回测WebSocket监听进度
 const connectBacktestWebSocket = (taskId: string) => {
+  const fmt = (d: any) => {
+    const dt = new Date(d)
+    const y = dt.getFullYear()
+    const m = String(dt.getMonth() + 1).padStart(2, '0')
+    const day = String(dt.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
   console.log('开始连接回测WebSocket，任务ID:', taskId)
   
   // 使用统一WebSocket管理器连接回测进度监听
@@ -527,8 +588,8 @@ const connectBacktestWebSocket = (taskId: string) => {
             if (stockCode) {
               websocketManager.emit('/backtest', 'get_stock_daily_data', {
                 stock_code: stockCode,
-                start_date: backtestConfig.value.dateRange?.[0],
-                end_date: backtestConfig.value.dateRange?.[1],
+                start_date: fmt(backtestConfig.value.dateRange?.[0]),
+                end_date: fmt(backtestConfig.value.dateRange?.[1]),
                 limit: 2000
               })
             }
@@ -574,8 +635,8 @@ const connectBacktestWebSocket = (taskId: string) => {
           if (stockCode) {
             websocketManager.emit('/backtest', 'get_stock_daily_data', {
               stock_code: stockCode,
-              start_date: backtestConfig.value.dateRange?.[0],
-              end_date: backtestConfig.value.dateRange?.[1],
+              start_date: fmt(backtestConfig.value.dateRange?.[0]),
+              end_date: fmt(backtestConfig.value.dateRange?.[1]),
               limit: 2000
             })
           }
@@ -606,6 +667,7 @@ const connectBacktestWebSocket = (taskId: string) => {
         // 确保升序
         const sorted = data.slice().sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime())
         ;(backtestResults.value as any).klineData = sorted
+        try { console.log('[BacktestCenterView] stock_daily_data received (secondary), count:', sorted.length) } catch {}
       } catch (e) {
         console.error('处理K线数据失败:', e)
       }
@@ -665,7 +727,13 @@ const resetConfig = () => {
   backtestConfig.value = {
     strategy: '',
     stockPool: [],
-    dateRange: null,
+    dateRange: (() => {
+      const end = new Date()
+      const start = new Date()
+      start.setFullYear(end.getFullYear() - 1)
+      const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      return [fmt(start), fmt(end)] as [string, string]
+    })(),
     initialCapital: 100000,
     commission: 0.0003,
     stampTax: 0.001,
@@ -897,96 +965,28 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.backtest-center {
-  padding: 20px;
-  min-height: calc(100vh - 70px); // 确保最小高度
-  overflow-y: auto; // 允许垂直滚动
-  
-  .page-header {
-    margin-bottom: 24px;
-    
-    h1 {
-      margin: 0 0 8px 0;
-      color: #303133;
-      font-size: 28px;
-    }
-    
-    p {
-      margin: 0;
-      color: #606266;
-      font-size: 14px;
-    }
-  }
-  
-  .main-content {
-    .results-card {
-      min-height: 600px;
-      height: 100%;
-    }
-  }
-  
-  .history-card {
-    .history-content {
-      .more-stocks {
-        font-size: 12px;
-        color: #909399;
-        margin-left: 4px;
-      }
-      
-      .pagination-wrapper {
-        margin-top: 16px;
-        text-align: center;
-      }
-    }
-  }
-  
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    .header-actions {
-      display: flex;
-      gap: 8px;
-    }
-  }
-}
+.backtest-center { padding-bottom: 12px; }
+.layout { align-items: flex-start; }
+.sticky { position: sticky; top: 76px; }
+.results-card, .history-card, .progress-card, .similarity-card { height: 100%; }
+.history-content { max-height: 400px; overflow-y: auto; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.more-stocks { color: #909399; margin-left: 6px; }
 
-// 表格中的颜色样式
-:deep(.el-table) {
-  .positive {
-    color: #67c23a;
-  }
-  
-  .negative {
-    color: #f56c6c;
-  }
-  
-  .neutral {
-    color: #909399;
-  }
+.right-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    'results history'
+    'results progress';
+  gap: 16px;
 }
+.grid-results { grid-area: results; }
+.grid-history { grid-area: history; }
+.grid-progress { grid-area: progress; }
 
-@media (max-width: 768px) {
-  .backtest-center {
-    padding: 12px;
-    
-    .main-content {
-      .el-col {
-        margin-bottom: 16px;
-      }
-    }
-    
-    .card-header {
-      flex-direction: column;
-      gap: 8px;
-      align-items: flex-start;
-      
-      .header-actions {
-        width: 100%;
-        justify-content: flex-end;
-      }
-    }
-  }
+@media (min-width: 1920px) {
+  /* 超宽屏更紧凑：左 5/24，右 19/24 */
 }
 </style> 

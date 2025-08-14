@@ -185,7 +185,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Connection, CircleCheck, CircleClose } from '@element-plus/icons-vue'
-import { unifiedWebSocketManager } from '@/utils/unifiedWebSocketManager'
+import { unifiedWebSocketManager } from '../../utils/unifiedWebSocketManager'
 
 interface LogEntry {
   timestamp: Date
@@ -355,6 +355,17 @@ const copyEventData = () => {
   }
 }
 
+// 监听 pattern_similarity 事件并增强数据展示
+const setupPatternSimilarityListeners = () => {
+  const ns = '/backtest'
+  unifiedWebSocketManager.on(ns, 'pattern_similarity_progress', (data: any) => {
+    addLogEntry(ns, 'pattern_similarity_progress', data, 'info')
+  })
+  unifiedWebSocketManager.on(ns, 'pattern_similarity_result', (data: any) => {
+    addLogEntry(ns, 'pattern_similarity_result', data, 'success')
+  })
+}
+
 // 设置事件监听器
 const setupEventListeners = () => {
   const namespaces = Object.keys(connectionStatus)
@@ -394,15 +405,19 @@ const setupEventListeners = () => {
     const businessEvents = [
       'task_started', 'task_progress', 'task_completed', 'task_failed',
       'backtest_started', 'backtest_progress', 'backtest_completed',
-      'analysis_started', 'analysis_completed', 'news_update'
+      'analysis_started', 'analysis_completed', 'news_update',
+      // 新增：相似K线事件
+      'pattern_similarity_progress', 'pattern_similarity_result'
     ]
     
     businessEvents.forEach(event => {
       unifiedWebSocketManager.on(namespace, event, (data: any) => {
-        addLogEntry(namespace, event, data, 'info')
+        addLogEntry(namespace, event, data, event.includes('result') ? 'success' : 'info')
       })
     })
   })
+
+  setupPatternSimilarityListeners()
 }
 
 // 生命周期
